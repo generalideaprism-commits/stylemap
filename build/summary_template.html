@@ -31,7 +31,25 @@
   .mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 14px;
         position:sticky;top:54px;z-index:8;background:var(--bg);padding:10px 0 8px}
   .mrow .flabel{margin-right:4px}
-  .panels{columns:430px 3;column-gap:14px}
+  .panels{margin:0}
+  /* 집계 표 */
+  .tw{overflow-x:auto}
+  table.sum{width:100%;border-collapse:collapse;font-size:12px}
+  table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
+  table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
+    font-size:11px;border-bottom:1px solid var(--line);z-index:2}
+  table.sum th.nm{text-align:left;font-weight:600;color:var(--sub)}
+  table.sum td.num,table.sum thead th.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.sum td.num{font-weight:700}
+  table.sum td.dim{color:#c3c9d2;font-weight:400}
+  table.sum td.bar{background:linear-gradient(to right,var(--blue-soft) var(--w),transparent var(--w))}
+  table.sum tr.grprow th{background:var(--soft);color:var(--sub);font-size:11px;font-weight:800;
+    text-align:left;border-bottom:1px solid var(--line)}
+  table.sum tr.ttl td,table.sum tr.ttl th{background:#fbfcfe;font-weight:800;color:var(--ink)}
+  table.sum tr.grand td,table.sum tr.grand th{background:#f4f6fb;border-top:1px solid var(--line)}
+  table.sum tbody tr:hover td{background:#fafbfd}
+  .mrow.sm{margin:2px 0 10px;position:static;padding:0;background:none}
+  .chip.sm{padding:3px 10px;font-size:11px}
   #cmp{margin-top:34px}   /* 멀티컬럼 마지막 표와 전년 비교 표 사이 간격 */
   .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;
          box-shadow:0 1px 3px rgba(16,24,40,.06);
@@ -190,19 +208,83 @@
   <div id="cmp"></div>
 </section>
 <script>
-/* ================= 집계표 ================= */
 const SUM = /*__SUM__*/{};
 
-const METRICS = [
-  // 입고 진행은 세 값이 같이 봐야 읽히므로 한 캡슐로 묶는다 (막대 = 입고율, 0~100% 절대)
-  {k:'intake',   label:'기획량 / 입고량 / 입고율', f:'p'},
+/* 화면 구성
+   위쪽 캡슐 = 집계표 선택(4종). 고른 표 하나를 넓게 펴서 지표를 전부 한 줄에 보여준다.
+   아래쪽 = 전년(25년) 동시점 비교. 비교 가능한 지표만 따로 고른다. */
+const VIEWS = [
+  {k:'season',  label:'26FW 시즌별 / 복종별',        sub:'신상품 기준 · 시즌 안에서 복종별'},
+  {k:'newItem', label:'26FW 신상품 복종별',          sub:'복종 TOTAL 기준'},
+  {k:'newCat',  label:'26FW 신상품 카테고리별',      sub:'값이 있는 카테고리만'},
+  {k:'run',     label:'26FW 러닝 복종 / 카테고리별', sub:'러닝 품번 기준'},
+];
+let VIEW = 'season';
+
+/* 표의 열 = 기존 지표 전부. bar:true 인 열은 칸 안에 옅은 막대를 함께 그린다(0~100%). */
+const COLS = [
+  {k:'plan',     label:'기획량',      f:'n'},
+  {k:'qtyIn',    label:'입고량',      f:'n'},
+  {k:'inRate',   label:'입고율',      f:'p', bar:true},
   {k:'sales',    label:'누계판매량',  f:'n'},
-  {k:'sellRate', label:'수량판매율',  f:'p'},
+  {k:'sellRate', label:'수량판매율',  f:'p', bar:true},
   {k:'salesTag', label:'누계판매TAG', f:'w'},
   {k:'salesAmt', label:'실판매금액',  f:'w'},
   {k:'disc',     label:'할인율',      f:'p'},
 ];
-/* 전년 비교가 가능한 지표 (종합 시트 AD~AI). 통합 지표(intake)를 고르면 입고량으로 비교한다. */
+
+const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
+const fmtW = v => v==null ? '-'
+  : Math.abs(v)>=1e8 ? (v/1e8).toFixed(1)+'억'
+  : Math.abs(v)>=1e4 ? Math.round(v/1e4).toLocaleString('ko-KR')+'만' : fmtN(v);
+const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
+const FMT = {n:fmtN, w:fmtW, p:fmtP};
+const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
+const inRateOf = o => o==null ? null
+  : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
+
+/* ---------- 집계 표 ---------- */
+function cell(v, col){
+  const txt = FMT[col.f](v);
+  if(col.bar && v!=null){
+    const w = Math.max(0, Math.min(100, v*100));
+    return `<td class="num bar" style="--w:${w}%">${txt}</td>`;
+  }
+  return `<td class="num${v==null?' dim':''}">${txt}</td>`;
+}
+function dataRow(name, o, cls){
+  const cells = COLS.map(c=>cell(c.k==='inRate' ? inRateOf(o) : get(o,c.k), c)).join('');
+  return `<tr class="${cls||''}"><th class="nm">${name}</th>${cells}</tr>`;
+}
+function groupRow(label){
+  return `<tr class="grprow"><th colspan="${COLS.length+1}">${label}</th></tr>`;
+}
+function table(rows){
+  return `<div class="tw"><table class="sum">
+    <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num">${c.label}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function rowsOf(view){
+  if(view==='season'){
+    const b1 = SUM.block1.filter(d=>d.mode==='new');
+    const seasons = [...new Set(b1.filter(d=>d.season).map(d=>d.season))];
+    return seasons.map(s2 => groupRow(s2) + b1.filter(d=>d.season===s2)
+        .map(d=>dataRow(d.item==='TTL' ? (s2+' TTL') : d.item, d.cur, d.item==='TTL'?'ttl':''))
+        .join('')).join('')
+      + b1.filter(d=>d.kind==='신상품 TTL').map(d=>dataRow('신상품 TTL', d.cur, 'ttl grand')).join('');
+  }
+  if(view==='newItem')
+    return SUM.newItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'')).join('');
+  if(view==='newCat')
+    return [...new Set(SUM.newCat.map(d=>d.item))].map(g =>
+      groupRow(g) + SUM.newCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d)).join('')).join('');
+  return groupRow('복종') + SUM.runItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'')).join('')
+    + [...new Set(SUM.runCat.map(d=>d.item))].map(g =>
+        groupRow(g+' 카테고리') + SUM.runCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d)).join('')).join('');
+}
+
+/* ---------- 전년 동시점 비교 ---------- */
 const CMP_META = {
   qtyIn   : {label:'입고량',      f:'n'},
   sales   : {label:'누계판매량',  f:'n'},
@@ -211,74 +293,20 @@ const CMP_META = {
   salesAmt: {label:'실판매금액',  f:'w'},
   disc    : {label:'할인율',      f:'p'},
 };
-const CMP_KEYS = Object.keys(CMP_META);
-let MK = 'intake';
+let CMK = 'qtyIn';
 
-const fmtN = v => (v==null?'-':Math.round(v).toLocaleString('ko-KR'));
-const fmtW = v => v==null ? '-'
-  : Math.abs(v)>=1e8 ? (v/1e8).toFixed(1)+'억'
-  : Math.abs(v)>=1e4 ? Math.round(v/1e4).toLocaleString('ko-KR')+'만' : fmtN(v);
-const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';   // 집계표 비율은 소수점 2자리
-const met = () => METRICS.find(m=>m.k===MK);
-const fmt = v => ({n:fmtN, w:fmtW, p:fmtP})[met().f](v);
-const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
-
-/* 통합 지표(intake): 막대는 입고율, 숫자는 '입고량 / 기획량 | 입고율' */
-const isIntake = () => MK === 'intake';
-const intakeRate = o => {
-  if(!o) return null;
-  if(o.inRate != null) return o.inRate;
-  return (o.plan) ? (o.qtyIn||0)/o.plan : null;      // 시트에 입고율이 비어 있으면 계산
-};
-const intakeText = o => {
-  if(!o) return '-';
-  const r = intakeRate(o);
-  return `${fmtN(o.qtyIn)} <span class="sl">/</span> ${fmtN(o.plan)}`
-       + ` <span class="sl">|</span> <b>${r==null?'-':fmtP(r)}</b>`;
-};
-
-/* 막대 길이 기준
-   - 비율 지표(입고율/수량판매율/할인율): 0~100% 절대 스케일 (100% 초과 값이 있으면 그 값이 기준)
-   - 수량/금액 지표: 패널 전체가 공유하는 최댓값 (TTL·TOTAL 행은 기준에서 제외)            */
-function scaleOf(list, valFn){
-  const vs = list.map(valFn).map(v=>Math.abs(v||0));
-  const mx = Math.max(...vs, 0);
-  return met().f === 'p' ? Math.max(1, mx) : Math.max(mx, 1e-9);
-}
-function scaleAll(lists, valFn){
-  return Math.max(...lists.map(l=>scaleOf(l, valFn)), 1e-9);
-}
-
-// 가로 막대 목록
-function bars(list, nameFn, valFn, opt={}){
-  const vs = list.map(valFn).map(v=>v||0);
-  const max = opt.max || scaleOf(list, valFn);
-  return list.map((d,i)=>{
-    const v = vs[i], w = Math.max(0, Math.min(100, Math.abs(v)/max*100));
-    const isTtl = opt.ttl && opt.ttl(d);
-    return `<div class="brow${isTtl?' ttl':''}"><span class="nm" title="${nameFn(d)}">${nameFn(d)}</span>
-      <span class="tr"><i style="width:${w}%"></i></span>
-      <span class="vl">${opt.rowText ? opt.rowText(d) : fmt(valFn(d))}</span></div>`;
-  }).join('');
-}
-
-function panel(title, sub, body, wide){
-  return `<div class="panel${wide?' wide':''}"><h3>${title}</h3><div class="sub">${sub}</div>${body}</div>`;
-}
-
-// 5) 전년 동시점 비교
 function cmpPanel(){
-  const key = CMP_KEYS.includes(MK) ? MK : 'qtyIn';
-  const {label, f} = CMP_META[key];
-  const fm = v => ({n:fmtN, w:fmtW, p:fmtP})[f](v);
+  const meta = CMP_META[CMK], fm = FMT[meta.f];
   const rows = SUM.block1.filter(d=>d.mode==='new');
-  const max = Math.max(...rows.flatMap(d=>[get(d.cur,key)||0, get(d.prev,key)||0].map(Math.abs)), .0001);
+  const max = Math.max(...rows.flatMap(d=>[get(d.cur,CMK)||0, get(d.prev,CMK)||0].map(Math.abs)), .0001);
+  const chips = Object.keys(CMP_META).map(k =>
+    `<button class="chip sm${k===CMK?' on':''}" data-c="${k}">${CMP_META[k].label}</button>`).join('');
   const body = rows.map(d=>{
-    const c = get(d.cur,key), p = get(d.prev,key);
+    const c = get(d.cur,CMK), p = get(d.prev,CMK);
     const isTtl = d.item==='TTL';
-    const nm = isTtl ? (d.kind||'TTL') : `${d.season} · ${d.item}`;
-    let dl = '-', cls='flat';
-    if(c!=null && p) { const r=(c-p)/Math.abs(p)*100; dl=(r>0?'+':'')+r.toFixed(0)+'%'; cls=r>0?'up':(r<0?'down':'flat'); }
+    const nm = isTtl ? (d.kind||'TTL') : (d.season+' · '+d.item);
+    let dl = '-', cls = 'flat';
+    if(c!=null && p){ const r=(c-p)/Math.abs(p)*100; dl=(r>0?'+':'')+r.toFixed(0)+'%'; cls=r>0?'up':(r<0?'down':'flat'); }
     const bar = (v,c2,tag)=>`<div class="cbar ${c2}"><span>${tag}</span>
         <span class="tr"><i style="width:${Math.min(100,Math.abs(v||0)/max*100)}%"></i></span>
         <b>${fm(v)}</b></div>`;
@@ -286,60 +314,37 @@ function cmpPanel(){
       <div class="bars">${bar(c,'cur','26FW')}${bar(p,'prv','전년')}</div>
       <span class="delta ${cls}">${dl}</span></div>`;
   }).join('');
-  return panel('26FW vs 전년(25년) 동시점 비교', `지표: ${label} · 파랑=26FW, 회색=전년 동요일 시점`,
-    `<div class="legend"><span><i style="background:var(--blue)"></i>26FW</span>
-     <span><i style="background:#c7cedb"></i>전년</span></div>${body}`, true);
+  return `<div class="panel">
+    <h3>26FW vs 전년(25년) 동시점 비교</h3>
+    <div class="sub">파랑 = 26FW, 회색 = 전년 동요일 시점 · 우측은 증감률</div>
+    <div class="mrow sm">${chips}</div>
+    ${body}</div>`;
 }
 
+/* ---------- 렌더 ---------- */
+function bindCmp(){
+  document.querySelectorAll('#cmp .chip').forEach(b=>b.addEventListener('click',()=>{
+    CMK = b.dataset.c;
+    document.getElementById('cmp').innerHTML = cmpPanel();
+    bindCmp();
+  }));
+}
 function renderSum(){
-  document.getElementById('metrics').innerHTML = '<span class="flabel">지표</span>' +
-    METRICS.map(m=>`<button class="chip${m.k===MK?' on':''}" data-m="${m.k}">${m.label}</button>`).join('');
+  document.getElementById('metrics').innerHTML = '<span class="flabel">집계표</span>' +
+    VIEWS.map(v=>`<button class="chip${v.k===VIEW?' on':''}" data-v="${v.k}">${v.label}</button>`).join('');
   document.querySelectorAll('#metrics .chip').forEach(b=>b.addEventListener('click',()=>{
-    MK = b.dataset.m; renderSum();
+    VIEW = b.dataset.v; renderSum();
   }));
 
-  const b1 = SUM.block1.filter(d=>d.mode==='new');
-  const seasons = [...new Set(b1.filter(d=>d.season).map(d=>d.season))];
-  const cv = isIntake() ? (d=>intakeRate(d.cur)) : (d=>get(d.cur,MK));
-  const basis = isIntake() ? '숫자 = 입고량 / 기획량 | 입고율 · 막대 = 입고율(0~100%)'
-              : met().f==='p' ? '막대 = 0~100% 절대 기준'
-                              : '막대 = 표 안 최대 항목(TTL 제외) 대비';
-  const cText = isIntake() ? (d=>intakeText(d.cur)) : null;
-  const iText = isIntake() ? (d=>intakeText(d)) : null;
-  document.getElementById('panels').classList.toggle('wideval', isIntake());
+  const v = VIEWS.find(x=>x.k===VIEW);
+  document.getElementById('panels').innerHTML =
+    `<div class="panel"><h3>${v.label}</h3>
+     <div class="sub">${v.sub} · 입고율·수량판매율 칸의 옅은 막대는 0~100% 기준</div>
+     ${table(rowsOf(VIEW))}</div>`;
 
-  // 패널마다 공통 최댓값 하나를 써서 그룹이 달라도 길이를 그대로 비교할 수 있게 함
-  const max1 = scaleOf(b1.filter(d=>d.item!=='TTL'), cv);
-  const p1 = seasons.map(s2=>
-    `<div class="grp">${s2}</div>` +
-    bars(b1.filter(d=>d.season===s2), d=>d.item, cv, {ttl:d=>d.item==='TTL', max:max1, rowText:cText})
-  ).join('') + bars(b1.filter(d=>d.kind==='신상품 TTL'), ()=>'신상품 TTL', cv,
-                    {ttl:()=>true, max:max1, rowText:cText});
-
-  const iv = isIntake() ? intakeRate : (d=>d[MK]);
-  const max2  = scaleOf(SUM.newItem.filter(d=>d.item!=='TOTAL'), iv);
-  const max3  = scaleOf(SUM.newCat, iv);
-  const max4i = scaleOf(SUM.runItem.filter(d=>d.item!=='TOTAL'), iv);
-  const max4c = scaleOf(SUM.runCat, iv);
-  const grouped = (list, max) => [...new Set(list.map(d=>d.item))].map(g=>
-    `<div class="grp">${g}</div>` +
-    bars(list.filter(d=>d.item===g), d=>d.cat, iv, {max, rowText:iText})).join('');
-
-  const html = [
-    panel('① 26FW 시즌별 / 복종별', `신상품 기준 · ${basis}`, p1),
-    panel('② 26FW 신상품 복종별', `복종 TOTAL 기준 · ${basis}`,
-      bars(SUM.newItem, d=>d.item, iv, {ttl:d=>d.item==='TOTAL', max:max2, rowText:iText})),
-    panel('③ 26FW 신상품 카테고리별', `값이 있는 카테고리만 · ${basis}`,
-      grouped(SUM.newCat, max3)),
-    panel('④ 26FW 러닝 복종 / 카테고리별', `러닝 품번 기준 · ${basis}`,
-      bars(SUM.runItem, d=>d.item, iv, {ttl:d=>d.item==='TOTAL', max:max4i, rowText:iText}) +
-      grouped(SUM.runCat, max4c)),
-  ].join('');
-  document.getElementById('panels').innerHTML = html;
   document.getElementById('cmp').innerHTML = cmpPanel();
+  bindCmp();
 }
-
-
 renderSum();
 </script>
 </body>
