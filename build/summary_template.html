@@ -43,10 +43,14 @@
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
   table.sum td.g{white-space:nowrap}
-  /* 게이지를 칸 왼쪽 끝(입고량 쪽)에서 살짝 띄워 입고율 값 쪽에 붙인다 */
-  table.sum td.g .gwrap{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:6px;
-    padding-left:24px}
-  table.sum td.g .gwrap .v{text-align:right}
+  /* 입고율 칸은 폭을 고정해 두고 그 안에서 [게이지][값] 을 붙여 둔다.
+     화면이 넓어져도 남는 폭은 다른 열이 가져가므로 게이지가 입고량 쪽으로 밀리지 않는다. */
+  table.sum th:nth-child(4),table.sum td:nth-child(4){width:104px}
+  /* [남는 폭][게이지][값] — 게이지가 항상 입고율 값 바로 왼쪽에 붙는다.
+     값에 최소 폭을 줘서 8% / 13% / 100% 처럼 자릿수가 달라도 게이지 줄이 맞는다. */
+  table.sum td.g .gwrap{display:grid;grid-template-columns:1fr 34px auto;align-items:center;gap:6px}
+  table.sum td.g .gwrap::before{content:''}
+  table.sum td.g .gwrap .v{text-align:right;min-width:34px}
   table.sum .dt{margin-left:5px;font-size:10.5px;font-weight:700}
   table.sum .dt.up{color:var(--red)}
   table.sum .dt.down{color:var(--blue)}
