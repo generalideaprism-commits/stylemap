@@ -357,7 +357,36 @@ if '종합' in wb.sheetnames:
                 if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
                     SUM[key_cat].append({'item': gubun, 'cat': f, 'code': e, **v})
 
+# ---- 직전 스타일맵 대비 증감 ----
+# 각 행에 고유 키를 달아 스냅샷과 대조한다. 날짜가 같은 파일을 다시 빌드하면
+# 스냅샷을 덮지 않으므로 증감 표기가 그대로 유지된다.
+for d in SUM['block1']:
+    d['_k'] = 'b1|%s|%s|%s' % (d['mode'], d['season'], d.get('kind') or d['item'])
+for name in ('newItem', 'runItem'):
+    for d in SUM[name]:
+        d['_k'] = '%s|%s' % (name, d['item'])
+for name in ('newCat', 'runCat'):
+    for d in SUM[name]:
+        d['_k'] = '%s|%s|%s' % (name, d['item'], d['cat'])
+
+MET_KEYS = list(MET.keys())
+
+
+def row_vals(d):
+    src = d['cur'] if 'cur' in d else d
+    return {k: src.get(k) for k in MET_KEYS if src.get(k) is not None}
+
+
+def all_rows():
+    for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat'):
+        for d in SUM[name]:
+            yield d
+
+
+SNAP = os.path.join(HERE, 'sum_prev.json')
+snap = json.load(open(SNAP, encoding='utf-8')) if os.path.exists(SNAP) else None
 print('집계표:', {k: len(v) for k, v in SUM.items()})
+
 
 # 업데이트 날짜: 파일명 앞 6자리(YYMMDD)
 base = os.path.basename(SRC)
@@ -365,6 +394,33 @@ updated = ''
 if base[:6].isdigit():
     updated = '20%s-%s-%s' % (base[0:2], base[2:4], base[4:6])
 print('updated:', updated)
+
+if snap and snap.get('date') and snap['date'] != updated:
+    hit = 0
+    for d in all_rows():
+        was = snap['rows'].get(d['_k'])
+        if was:
+            d['was'] = was
+            hit += 1
+    print('증감 비교: %s -> %s (%d행)' % (snap['date'], updated, hit))
+elif snap:
+    # 같은 날짜 파일을 다시 빌드한 경우 — 직전 스냅샷을 그대로 두고 증감도 유지
+    for d in all_rows():
+        was = snap.get('carry', {}).get(d['_k'])
+        if was:
+            d['was'] = was
+    if snap.get('carry'):
+        print('증감 비교: %s 유지' % snap.get('carryDate'))
+else:
+    print('증감 비교: 직전 스냅샷 없음 (이번 빌드부터 기록)')
+
+if not snap or snap.get('date') != updated:
+    json.dump({'date': updated,
+               'rows': {d['_k']: row_vals(d) for d in all_rows()},
+               'carry': (snap or {}).get('rows', {}),
+               'carryDate': (snap or {}).get('date')},
+              open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
+    print('스냅샷 저장:', os.path.basename(SNAP), updated)
 
 def render(tpl_name, out_path, **repl):
     tpl = open(os.path.join(HERE, tpl_name), encoding='utf-8').read()

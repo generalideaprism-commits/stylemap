@@ -43,6 +43,9 @@
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
   table.sum td.g{white-space:nowrap}
+  table.sum .dt{margin-left:5px;font-size:10.5px;font-weight:700}
+  table.sum .dt.up{color:var(--red)}
+  table.sum .dt.down{color:var(--blue)}
   table.sum .gauge{display:inline-block;width:34px;height:5px;border-radius:3px;
     background:#e6eaf1;margin-right:6px;vertical-align:middle;overflow:hidden}
   table.sum .gauge i{display:block;height:100%;background:var(--blue);border-radius:3px}
@@ -249,16 +252,36 @@ const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
 
 /* ---------- 집계 표 ---------- */
-function cell(v, col){
-  const txt = FMT[col.f](v);
+/* 직전 스타일맵 대비 증감. 증가 = 빨강 ▲, 감소 = 파랑 ▼ (비율은 %p) */
+function deltaHtml(v, was, col){
+  if(v==null || was==null) return '';
+  const d = v - was;
+  if(!d) return '';
+  let txt;
+  if(col.f[0]==='p'){                       // 비율은 %p, 표기 자릿수로 반올림해 0 이면 생략
+    const dec = col.f==='p0' ? 0 : 1;
+    const val = +(Math.abs(d)*100).toFixed(dec);
+    if(!val) return '';
+    txt = val.toFixed(dec)+'%p';
+  }else{
+    const val = Math.round(Math.abs(d));
+    if(!val) return '';
+    txt = fmtN(val);
+  }
+  return `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${txt}</span>`;
+}
+function cell(v, col, was){
+  const txt = FMT[col.f](v) + deltaHtml(v, was, col);
   if(col.gauge && v!=null){
     const w = Math.max(0, Math.min(100, v*100));
     return `<td class="num g"><span class="gauge"><i style="width:${w}%"></i></span>${txt}</td>`;
   }
   return `<td class="num${v==null?' dim':''}">${txt}</td>`;
 }
-function dataRow(name, o, cls){
-  const cells = COLS.map(c=>cell(c.k==='inRate' ? inRateOf(o) : get(o,c.k), c)).join('');
+function dataRow(name, o, cls, was){
+  const cells = COLS.map(c=>cell(
+      c.k==='inRate' ? inRateOf(o) : get(o,c.k), c,
+      c.k==='inRate' ? inRateOf(was) : get(was,c.k))).join('');
   return `<tr class="${cls||''}"><th class="nm">${name}</th>${cells}</tr>`;
 }
 function groupRow(label){
@@ -275,18 +298,18 @@ function rowsOf(view){
     const b1 = SUM.block1.filter(d=>d.mode==='new');
     const seasons = [...new Set(b1.filter(d=>d.season).map(d=>d.season))];
     return seasons.map(s2 => groupRow(s2) + b1.filter(d=>d.season===s2)
-        .map(d=>dataRow(d.item==='TTL' ? (s2+' TTL') : d.item, d.cur, d.item==='TTL'?'ttl':''))
+        .map(d=>dataRow(d.item==='TTL' ? (s2+' TTL') : d.item, d.cur, d.item==='TTL'?'ttl':'', d.was))
         .join('')).join('')
-      + b1.filter(d=>d.kind==='신상품 TTL').map(d=>dataRow('신상품 TTL', d.cur, 'ttl grand')).join('');
+      + b1.filter(d=>d.kind==='신상품 TTL').map(d=>dataRow('신상품 TTL', d.cur, 'ttl grand', d.was)).join('');
   }
   if(view==='newItem')
-    return SUM.newItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'')).join('');
+    return SUM.newItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('');
   if(view==='newCat')
     return [...new Set(SUM.newCat.map(d=>d.item))].map(g =>
-      groupRow(g) + SUM.newCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d)).join('')).join('');
-  return groupRow('복종') + SUM.runItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'')).join('')
+      groupRow(g) + SUM.newCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d, '', d.was)).join('')).join('');
+  return groupRow('복종') + SUM.runItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('')
     + [...new Set(SUM.runCat.map(d=>d.item))].map(g =>
-        groupRow(g+' 카테고리') + SUM.runCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d)).join('')).join('');
+        groupRow(g+' 카테고리') + SUM.runCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d, '', d.was)).join('')).join('');
 }
 
 /* ---------- 전년 동시점 비교 ---------- */
@@ -344,7 +367,7 @@ function renderSum(){
   const v = VIEWS.find(x=>x.k===VIEW);
   document.getElementById('panels').innerHTML =
     `<div class="panel"><h3>${v.label}</h3>
-     <div class="sub">${v.sub} · 입고율 옆 게이지는 0~100% 기준</div>
+     <div class="sub">${v.sub} · 입고율 옆 게이지는 0~100% 기준 · 값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감</div>
      ${table(rowsOf(VIEW))}</div>`;
 
   document.getElementById('cmp').innerHTML = cmpPanel();
