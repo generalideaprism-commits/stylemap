@@ -21,7 +21,17 @@ data/                            원본 스타일맵 엑셀 (재생성용 스냅
 python build/build_salecards.py
 ```
 
-3. 커밋 & 푸시. production-hub 쪽 `share/index.html` 의 해당 항목 `updated` / `history` 도 같이 고쳐 준다.
+3. 커밋 & 푸시.
+4. 허브로 옮긴다. (`production-hub` 은 stylemap 옆 폴더에 클론돼 있다고 가정 — 아니면 `--hub 경로`)
+
+```bash
+python build/sync_to_hub.py --note "260825 스타일맵 반영" --commit
+```
+
+   HTML·이미지를 허브 `share/` 로 복사하고, `share/index.html` 의 `updated` 를 이번 데이터 날짜로 맞추고,
+   `--note` 를 주면 변경 이력 한 줄을 추가한 뒤 커밋·푸시까지 한다.
+
+5. **배포는 수동이다.** 허브 저장소 루트에서 `npx vercel --prod` (계정 generalideaprism-1085, scope `pip7`).
 
 새 품번이 추가돼 도식화 이미지가 비어 있으면, 빌드 전에 한 번 돌린다 (게시된 구글 시트에서 이미지 수집).
 
