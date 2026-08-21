@@ -43,7 +43,9 @@
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
   table.sum td.g{white-space:nowrap}
-  table.sum td.g .gwrap{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:6px}
+  /* 게이지를 칸 왼쪽 끝(입고량 쪽)에서 살짝 띄워 입고율 값 쪽에 붙인다 */
+  table.sum td.g .gwrap{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:6px;
+    padding-left:24px}
   table.sum td.g .gwrap .v{text-align:right}
   table.sum .dt{margin-left:5px;font-size:10.5px;font-weight:700}
   table.sum .dt.up{color:var(--red)}
