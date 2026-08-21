@@ -81,6 +81,7 @@
   .brow.ttl .nm,.brow.ttl .vl{color:var(--ink);font-weight:800}
   .brow.ttl .tr i{background:#111827}
   /* 전년 비교 — 세로 막대 */
+  .cseason + .cseason{margin-top:16px}
   .cgrp{border-top:1px solid var(--line);padding:12px 0 4px;display:grid;
     grid-template-columns:92px 1fr;align-items:start;gap:12px}
   .cgrp:first-of-type{border-top:0}
@@ -363,14 +364,11 @@ const CMP_META = {
   disc    : {label:'할인율',      f:'p'},
 };
 const CSEASONS = [...new Set(SUM.block1.filter(d=>d.mode==='new' && d.season).map(d=>d.season))];
-let CSEASON = CSEASONS[0] || '';
 
-function cmpPanel(){
-  const rows = SUM.block1.filter(d=>d.mode==='new' && d.season===CSEASON);
-  const chips = CSEASONS.map(x=>
-    `<button class="chip sm${x===CSEASON?' on':''}" data-cs="${x}">${x}</button>`).join('');
-
-  const blocks = rows.map(d=>{
+/* 시즌(가을·겨울)을 캡슐로 고르지 않고 한 화면에 이어서 보여준다 */
+function cmpBlocks(season){
+  const rows = SUM.block1.filter(d=>d.mode==='new' && d.season===season);
+  return rows.map(d=>{
     const isTtl = d.item==='TTL';
     const mets = Object.keys(CMP_META).map(k=>{
       const meta = CMP_META[k], fm = FMT[meta.f];
@@ -389,26 +387,22 @@ function cmpPanel(){
       </div>`;
     }).join('');
     return `<div class="cgrp${isTtl?' ttl':''}">
-      <div class="cnm">${isTtl ? (CSEASON+' TTL') : d.item}</div>
+      <div class="cnm">${isTtl ? (season+' TTL') : d.item}</div>
       <div class="cmets">${mets}</div></div>`;
   }).join('');
+}
 
+function cmpPanel(){
+  const seasons = CSEASONS.map(x=>
+    `<div class="cseason"><div class="grp">${x}</div>${cmpBlocks(x)}</div>`).join('');
   return `<div class="panel">
     <h3>26FW vs 전년(25년) 동시점 비교</h3>
-    <div class="sub">복종별로 지표를 나란히 비교 · 막대는 지표마다 두 값 중 큰 쪽을 100% 로 잡는다</div>
-    <div class="mrow sm">${chips}
+    <div class="sub">시즌별 · 복종별로 지표를 나란히 비교 · 막대는 지표마다 두 값 중 큰 쪽을 100% 로 잡는다
       <span class="lg"><i class="cur"></i>26FW</span><span class="lg"><i class="prv"></i>전년</span></div>
-    ${blocks}</div>`;
+    ${seasons}</div>`;
 }
 
 /* ---------- 렌더 ---------- */
-function bindCmp(){
-  document.querySelectorAll('#cmp .chip').forEach(b=>b.addEventListener('click',()=>{
-    CSEASON = b.dataset.cs;
-    document.getElementById('cmp').innerHTML = cmpPanel();
-    bindCmp();
-  }));
-}
 function renderSum(){
   document.getElementById('metrics').innerHTML = '<span class="flabel">집계표</span>' +
     VIEWS.map(v=>`<button class="chip${v.k===VIEW?' on':''}" data-v="${v.k}">${v.label}</button>`).join('');
@@ -423,7 +417,6 @@ function renderSum(){
      ${table(rowsOf(VIEW))}</div>`;
 
   document.getElementById('cmp').innerHTML = cmpPanel();
-  bindCmp();
 }
 renderSum();
 </script>
