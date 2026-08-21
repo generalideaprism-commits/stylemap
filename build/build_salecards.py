@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
-"""260814_26FW 스타일맵.xlsx -> 판매자료 카드 뷰어(HTML) 생성"""
-import json, datetime, os, re, sys
+"""26FW 스타일맵.xlsx -> 판매자료 카드 / 시즌 집계표 HTML 생성
+
+  결과물:  share/26fw-sales-cards.html
+           share/26fw-season-summary.html
+           share/img/{품번}.jpg            (Supabase 에 없는 도식화 이미지)
+"""
+import base64, json, datetime, os, re, sys
 import openpyxl
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-# 바탕화면에서 가장 최신 날짜의 스타일맵 파일 사용 (인자로 경로를 주면 그 파일)
+HERE = os.path.dirname(os.path.abspath(__file__))                 # .../build
+ROOT = os.path.dirname(HERE) if os.path.basename(HERE) == 'build' else HERE
+DATA_DIR = os.path.join(ROOT, 'data') if os.path.isdir(os.path.join(ROOT, 'data')) else ROOT
+SHARE_DIR = os.path.join(ROOT, 'share')
+IMG_DIR = os.path.join(SHARE_DIR, 'img')
+os.makedirs(IMG_DIR, exist_ok=True)
+
+# data/ 에서 날짜가 가장 큰 스타일맵 파일 사용 (인자로 경로를 주면 그 파일)
 if len(sys.argv) > 1:
     SRC = sys.argv[1]
 else:
-    # 260818_26FW 스타일맵.xlsx 형태 중 날짜가 가장 큰 파일 (엑셀 임시파일 ~$ 는 제외)
-    cands = sorted(f for f in os.listdir(HERE)
+    cands = sorted(f for f in os.listdir(DATA_DIR)
                    if re.match(r'^\d{6}_26FW 스타일맵.*\.xlsx$', f) and not f.startswith('~$'))
     if not cands:
-        raise SystemExit('바탕화면에 "YYMMDD_26FW 스타일맵.xlsx" 파일이 없습니다.')
-    SRC = os.path.join(HERE, cands[-1])
-    print('원본:', os.path.basename(SRC))
-OUT_CARD = os.path.join(HERE, '26FW_판매카드.html')
-OUT_SUM = os.path.join(HERE, '26FW_집계표.html')
+        raise SystemExit('%s 에 "YYMMDD_26FW 스타일맵.xlsx" 파일이 없습니다.' % DATA_DIR)
+    SRC = os.path.join(DATA_DIR, cands[-1])
+print('원본:', os.path.basename(SRC))
+OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html')
+OUT_SUM = os.path.join(SHARE_DIR, '26fw-season-summary.html')
 
 # 시트명은 파일마다 '생판재주간-' / '생판재-' 로 다를 수 있어 앞부분만 매칭
 def sheet(*keys):
@@ -260,20 +270,35 @@ if todo:
 
 gs_path = os.path.join(HERE, 'gs_images.json')
 gs = json.load(open(gs_path, encoding='utf-8')) if os.path.exists(gs_path) else {}
-linked = embedded = 0
+linked = saved = 0
+written = set()
 for s in styles.values():
     hit = [c for c in s['imgCodes'] if cache.get(c)]
     if hit:                                   # Supabase 에 있으면 링크로 사용
         s['imgCodes'] = hit + [c for c in s['imgCodes'] if c not in hit]
         linked += 1
         continue
-    for c in [s['style']] + s['imgCodes']:    # 없으면 base64 정적 삽입
+    for c in [s['style']] + s['imgCodes']:    # 없으면 share/img/ 에 파일로 저장
         uri = gs.get(c.upper())
-        if uri:
-            s['img'] = uri
-            embedded += 1
-            break
-print('images: supabase 링크 %d / 정적 삽입 %d / 총 %d' % (linked, embedded, len(data)))
+        if not uri:
+            continue
+        name = c.upper() + '.jpg'
+        path = os.path.join(IMG_DIR, name)
+        raw = base64.b64decode(uri.split(',', 1)[1])
+        if not os.path.exists(path) or open(path, 'rb').read() != raw:
+            open(path, 'wb').write(raw)       # 내용이 같으면 다시 쓰지 않음(깃 diff 방지)
+        s['img'] = 'img/' + name
+        written.add(name)
+        saved += 1
+        break
+
+# 더 이상 쓰이지 않는 이미지 파일 정리
+for f in os.listdir(IMG_DIR):
+    if f.lower().endswith('.jpg') and f not in written:
+        os.remove(os.path.join(IMG_DIR, f))
+        print('  삭제(미사용):', f)
+
+print('images: supabase 링크 %d / 파일 %d장 (share/img) / 카드 %d' % (linked, len(written), len(data)))
 
 # ---------------- '종합' 시트 -> 집계표 데이터 ----------------
 # 좌측 블록(신상품) 지표 열. 러닝 블록은 여기서 27칸 오른쪽으로 밀려 있다.

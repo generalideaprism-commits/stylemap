@@ -6,17 +6,19 @@ production-hub 의 `PIP 공유파일`(`/share/`) 에 그대로 얹어 쓰는 것
 ```
 share/26fw-sales-cards.html      판매자료 카드 (품번별 카드 204장)
 share/26fw-season-summary.html   시즌 집계표 (5종 · 지표 8종 전환)
-build/                           빌드 스크립트 · 템플릿 · 이미지 저장소
+share/img/{품번}.jpg              도식화 이미지 (Supabase 에 없는 품번만)
+build/                           빌드 스크립트 · 템플릿 · 이미지 원본(base64)
 data/                            원본 스타일맵 엑셀 (재생성용 스냅샷)
 ```
 
 ## 1. 주간 업데이트 방법
 
 1. 새 `YYMMDD_26FW 스타일맵.xlsx` 를 `data/` 에 넣는다 (파일명 앞 6자리가 화면의 *업데이트 날짜*).
-2. 빌드한다. → `share/` 의 HTML 2개가 새로 만들어진다.
+2. 빌드한다. `data/` 안에서 날짜가 가장 큰 파일을 자동으로 고른다.
+   → `share/` 의 HTML 2개와 `share/img/` 가 새로 만들어진다.
 
 ```bash
-python build/build_salecards.py data/260818_26FW\ 스타일맵.xlsx
+python build/build_salecards.py
 ```
 
 3. 커밋 & 푸시. production-hub 쪽 `share/index.html` 의 해당 항목 `updated` / `history` 도 같이 고쳐 준다.
@@ -47,9 +49,13 @@ python build/fetch_pubhtml_images.py 1620257578
 
 ## 3. 이미지 처리
 
-1. **Supabase 갤러리에 있으면 URL 링크** — `…/product-gallery/{품번}/cut_0.jpg` (파일 용량 절약)
-2. 없으면 `build/gs_images.json` 의 **base64 도식화 이미지를 HTML 안에 정적 삽입**
+1. **Supabase 갤러리에 있으면 URL 링크** — `…/product-gallery/{품번}/cut_0.jpg`
+2. 없으면 `build/gs_images.json`(구글 시트에서 수집한 도식화) 을 **`share/img/{품번}.jpg` 파일로 저장**하고
+   HTML 은 `img/품번.jpg` 상대경로만 참조한다. 내용이 같으면 다시 쓰지 않으므로 깃 diff 가 생기지 않고,
+   더 이상 쓰이지 않는 이미지는 빌드할 때 자동 삭제된다.
 3. 러닝 품번은 `품번 → CU열 신품번 → 러닝 매핑표 짝 품번` 순으로 후보를 시도
+
+> HTML 안에 이미지를 넣지 않으므로 판매카드는 0.23MB 다. `share/` 폴더를 통째로 옮겨야 이미지가 함께 간다.
 
 `build/supabase_cache.json` 은 Supabase 존재 여부 캐시라 지우면 빌드 때 다시 조회한다.
 
