@@ -80,21 +80,28 @@
   .brow.ttl{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .brow.ttl .nm,.brow.ttl .vl{color:var(--ink);font-weight:800}
   .brow.ttl .tr i{background:#111827}
-  /* 비교 */
-  .crow{display:grid;grid-template-columns:112px 1fr 92px;align-items:center;gap:8px;
-        padding:6px 0;border-bottom:1px solid #f1f3f7;font-size:11.5px}
-  .crow .bars{display:grid;gap:3px}
-  .cbar{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:6px;font-size:10.5px}
-  .cbar span{color:var(--muted)}
-  .cbar .tr{height:11px;background:var(--soft);border-radius:3px;overflow:hidden}
-  .cbar .tr i{display:block;height:100%;border-radius:3px}
-  .cbar.cur .tr i{background:var(--blue)}
-  .cbar.prv .tr i{background:#c7cedb}
-  .cbar b{font-variant-numeric:tabular-nums;min-width:60px;text-align:right}
-  .delta{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
-  .delta.up{color:var(--blue)} .delta.down{color:var(--red)} .delta.flat{color:var(--muted)}
-  .legend{display:flex;gap:10px;font-size:10.5px;color:var(--muted);margin-bottom:8px}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+  /* 전년 비교 — 세로 막대 */
+  .cgrp{border-top:1px solid var(--line);padding:12px 0 4px;display:grid;
+    grid-template-columns:92px 1fr;align-items:start;gap:12px}
+  .cgrp:first-of-type{border-top:0}
+  .cgrp.ttl .cnm{color:var(--ink);font-weight:800}
+  .cnm{font-size:12px;font-weight:700;color:var(--sub);padding-top:24px}
+  .cmets{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
+  .cmet{text-align:center}
+  .cbars{display:flex;align-items:flex-end;justify-content:center;gap:7px;height:74px;
+    border-bottom:1px solid var(--line);padding-top:14px}
+  .cb{width:20px;min-height:0;border-radius:3px 3px 0 0;position:relative}
+  .cb.cur{background:var(--blue)}
+  .cb.prv{background:#c7cedb}
+  .cb span{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    font-size:9.5px;color:var(--sub);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .cml{font-size:10.5px;color:var(--muted);margin-top:5px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .cdl{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+  .cdl.up{color:var(--red)} .cdl.down{color:var(--blue)} .cdl.flat{color:var(--muted)}
+  .lg{font-size:10.5px;color:var(--muted);margin-left:10px;display:inline-flex;align-items:center}
+  .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+  .lg i.cur{background:var(--blue)} .lg i.prv{background:#c7cedb}
   .search{margin-left:auto;display:flex;align-items:center;gap:8px}
   input#q{border:1px solid var(--line);background:var(--soft);border-radius:999px;
           padding:8px 14px;font-size:12.5px;width:230px;outline:none;color:var(--ink)}
@@ -334,38 +341,49 @@ const CMP_META = {
   salesAmt: {label:'실판매금액',  f:'w'},
   disc    : {label:'할인율',      f:'p'},
 };
-let CMK = 'qtyIn';
+const CSEASONS = [...new Set(SUM.block1.filter(d=>d.mode==='new' && d.season).map(d=>d.season))];
+let CSEASON = CSEASONS[0] || '';
 
 function cmpPanel(){
-  const meta = CMP_META[CMK], fm = FMT[meta.f];
-  const rows = SUM.block1.filter(d=>d.mode==='new');
-  const max = Math.max(...rows.flatMap(d=>[get(d.cur,CMK)||0, get(d.prev,CMK)||0].map(Math.abs)), .0001);
-  const chips = Object.keys(CMP_META).map(k =>
-    `<button class="chip sm${k===CMK?' on':''}" data-c="${k}">${CMP_META[k].label}</button>`).join('');
-  const body = rows.map(d=>{
-    const c = get(d.cur,CMK), p = get(d.prev,CMK);
+  const rows = SUM.block1.filter(d=>d.mode==='new' && d.season===CSEASON);
+  const chips = CSEASONS.map(x=>
+    `<button class="chip sm${x===CSEASON?' on':''}" data-cs="${x}">${x}</button>`).join('');
+
+  const blocks = rows.map(d=>{
     const isTtl = d.item==='TTL';
-    const nm = isTtl ? (d.kind||'TTL') : (d.season+' · '+d.item);
-    let dl = '-', cls = 'flat';
-    if(c!=null && p){ const r=(c-p)/Math.abs(p)*100; dl=(r>0?'+':'')+r.toFixed(0)+'%'; cls=r>0?'up':(r<0?'down':'flat'); }
-    const bar = (v,c2,tag)=>`<div class="cbar ${c2}"><span>${tag}</span>
-        <span class="tr"><i style="width:${Math.min(100,Math.abs(v||0)/max*100)}%"></i></span>
-        <b>${fm(v)}</b></div>`;
-    return `<div class="crow"><span class="nm"${isTtl?' style="font-weight:800"':''}>${nm}</span>
-      <div class="bars">${bar(c,'cur','26FW')}${bar(p,'prv','전년')}</div>
-      <span class="delta ${cls}">${dl}</span></div>`;
+    const mets = Object.keys(CMP_META).map(k=>{
+      const meta = CMP_META[k], fm = FMT[meta.f];
+      const c = get(d.cur,k), p = get(d.prev,k);
+      const max = Math.max(Math.abs(c||0), Math.abs(p||0)) || 1;
+      const h = v => (v==null ? 0 : Math.max(v ? 3 : 0, Math.min(100, Math.abs(v)/max*100)));
+      let dl='', cls='flat';
+      if(c!=null && p){ const r=(c-p)/Math.abs(p)*100; dl=(r>0?'+':'')+r.toFixed(0)+'%'; cls=r>0?'up':(r<0?'down':'flat'); }
+      return `<div class="cmet">
+        <div class="cbars">
+          <div class="cb cur" style="height:${h(c)}%"><span>${fm(c)}</span></div>
+          <div class="cb prv" style="height:${h(p)}%"><span>${fm(p)}</span></div>
+        </div>
+        <div class="cml">${meta.label}</div>
+        <div class="cdl ${cls}">${dl||'&nbsp;'}</div>
+      </div>`;
+    }).join('');
+    return `<div class="cgrp${isTtl?' ttl':''}">
+      <div class="cnm">${isTtl ? (CSEASON+' TTL') : d.item}</div>
+      <div class="cmets">${mets}</div></div>`;
   }).join('');
+
   return `<div class="panel">
     <h3>26FW vs 전년(25년) 동시점 비교</h3>
-    <div class="sub">파랑 = 26FW, 회색 = 전년 동요일 시점 · 우측은 증감률</div>
-    <div class="mrow sm">${chips}</div>
-    ${body}</div>`;
+    <div class="sub">복종별로 지표를 나란히 비교 · 막대는 지표마다 두 값 중 큰 쪽을 100% 로 잡는다</div>
+    <div class="mrow sm">${chips}
+      <span class="lg"><i class="cur"></i>26FW</span><span class="lg"><i class="prv"></i>전년</span></div>
+    ${blocks}</div>`;
 }
 
 /* ---------- 렌더 ---------- */
 function bindCmp(){
   document.querySelectorAll('#cmp .chip').forEach(b=>b.addEventListener('click',()=>{
-    CMK = b.dataset.c;
+    CSEASON = b.dataset.cs;
     document.getElementById('cmp').innerHTML = cmpPanel();
     bindCmp();
   }));
