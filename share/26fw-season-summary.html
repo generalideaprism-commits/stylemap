@@ -313,6 +313,20 @@ function table(rows){
     <tbody>${rows}</tbody></table></div>`;
 }
 
+/* 여러 행을 더한 합계. 수량·금액은 단순 합, 비율은 합계로 다시 계산한다
+   (비율을 평균 내면 규모가 큰 항목이 묻히므로 쓰지 않는다) */
+function sumRows(list){
+  const t = {};
+  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku'].forEach(k=>{
+    const vs = list.map(d=>d[k]).filter(v=>v!=null);
+    t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
+  });
+  t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
+  t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
+  t.disc     = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
+  return t;
+}
+
 function rowsOf(view){
   if(view==='season'){
     const b1 = SUM.block1.filter(d=>d.mode==='new');
@@ -325,11 +339,18 @@ function rowsOf(view){
   if(view==='newItem')
     return SUM.newItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('');
   if(view==='newCat')
-    return [...new Set(SUM.newCat.map(d=>d.item))].map(g =>
-      groupRow(g) + SUM.newCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d, '', d.was)).join('')).join('');
+    return [...new Set(SUM.newCat.map(d=>d.item))].map(g => {
+      const list = SUM.newCat.filter(d=>d.item===g);
+      return groupRow(g) + list.map(d=>dataRow(d.cat, d, '', d.was)).join('')
+        + dataRow(g+' 합계', sumRows(list), 'ttl');
+    }).join('') + dataRow('TOTAL', sumRows(SUM.newCat), 'ttl grand');
   return groupRow('복종') + SUM.runItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('')
-    + [...new Set(SUM.runCat.map(d=>d.item))].map(g =>
-        groupRow(g+' 카테고리') + SUM.runCat.filter(d=>d.item===g).map(d=>dataRow(d.cat, d, '', d.was)).join('')).join('');
+    + [...new Set(SUM.runCat.map(d=>d.item))].map(g => {
+        const list = SUM.runCat.filter(d=>d.item===g);
+        return groupRow(g+' 카테고리') + list.map(d=>dataRow(d.cat, d, '', d.was)).join('')
+          + dataRow(g+' 합계', sumRows(list), 'ttl');
+      }).join('')
+    + dataRow('카테고리 TOTAL', sumRows(SUM.runCat), 'ttl grand');
 }
 
 /* ---------- 전년 동시점 비교 ---------- */
