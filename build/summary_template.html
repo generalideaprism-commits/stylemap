@@ -42,7 +42,10 @@
   table.sum td.num,table.sum thead th.num{text-align:right;font-variant-numeric:tabular-nums}
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
-  table.sum td.bar{background:linear-gradient(to right,var(--blue-soft) var(--w),transparent var(--w))}
+  table.sum td.g{white-space:nowrap}
+  table.sum .gauge{display:inline-block;width:34px;height:5px;border-radius:3px;
+    background:#e6eaf1;margin-right:6px;vertical-align:middle;overflow:hidden}
+  table.sum .gauge i{display:block;height:100%;background:var(--blue);border-radius:3px}
   table.sum tr.grprow th{background:var(--soft);color:var(--sub);font-size:11px;font-weight:800;
     text-align:left;border-bottom:1px solid var(--line)}
   table.sum tr.ttl td,table.sum tr.ttl th{background:#fbfcfe;font-weight:800;color:var(--ink)}
@@ -225,12 +228,12 @@ let VIEW = 'season';
 const COLS = [
   {k:'plan',     label:'기획량',      f:'n'},
   {k:'qtyIn',    label:'입고량',      f:'n'},
-  {k:'inRate',   label:'입고율',      f:'p', bar:true},
+  {k:'inRate',   label:'입고율',      f:'p',  gauge:true},   // 값 왼쪽에 작은 가로 게이지
   {k:'sales',    label:'누계판매량',  f:'n'},
-  {k:'sellRate', label:'수량판매율',  f:'p', bar:true},
-  {k:'salesTag', label:'누계판매TAG', f:'w'},
-  {k:'salesAmt', label:'실판매금액',  f:'w'},
-  {k:'disc',     label:'할인율',      f:'p'},
+  {k:'sellRate', label:'수량판매율',  f:'p1'},
+  {k:'salesTag', label:'누계판매TAG', f:'n'},
+  {k:'salesAmt', label:'실판매금액',  f:'n'},
+  {k:'disc',     label:'할인율',      f:'p1'},
 ];
 
 const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
@@ -238,7 +241,8 @@ const fmtW = v => v==null ? '-'
   : Math.abs(v)>=1e8 ? (v/1e8).toFixed(1)+'억'
   : Math.abs(v)>=1e4 ? Math.round(v/1e4).toLocaleString('ko-KR')+'만' : fmtN(v);
 const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
-const FMT = {n:fmtN, w:fmtW, p:fmtP};
+const fmtP1 = v => v==null ? '-' : (v*100).toFixed(1)+'%';
+const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
@@ -246,9 +250,9 @@ const inRateOf = o => o==null ? null
 /* ---------- 집계 표 ---------- */
 function cell(v, col){
   const txt = FMT[col.f](v);
-  if(col.bar && v!=null){
+  if(col.gauge && v!=null){
     const w = Math.max(0, Math.min(100, v*100));
-    return `<td class="num bar" style="--w:${w}%">${txt}</td>`;
+    return `<td class="num g"><span class="gauge"><i style="width:${w}%"></i></span>${txt}</td>`;
   }
   return `<td class="num${v==null?' dim':''}">${txt}</td>`;
 }
@@ -339,7 +343,7 @@ function renderSum(){
   const v = VIEWS.find(x=>x.k===VIEW);
   document.getElementById('panels').innerHTML =
     `<div class="panel"><h3>${v.label}</h3>
-     <div class="sub">${v.sub} · 입고율·수량판매율 칸의 옅은 막대는 0~100% 기준</div>
+     <div class="sub">${v.sub} · 입고율 옆 게이지는 0~100% 기준</div>
      ${table(rowsOf(VIEW))}</div>`;
 
   document.getElementById('cmp').innerHTML = cmpPanel();
