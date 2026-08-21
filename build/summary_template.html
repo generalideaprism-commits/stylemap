@@ -42,21 +42,11 @@
   table.sum td.num,table.sum thead th.num{text-align:right;font-variant-numeric:tabular-nums}
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
-  table.sum td.g{white-space:nowrap}
   /* 입고율 칸은 폭을 고정해 두고 그 안에서 [게이지][값] 을 붙여 둔다.
      화면이 넓어져도 남는 폭은 다른 열이 가져가므로 게이지가 입고량 쪽으로 밀리지 않는다. */
-  table.sum th:nth-child(4),table.sum td:nth-child(4){width:104px}
-  /* [남는 폭][게이지][값] — 게이지가 항상 입고율 값 바로 왼쪽에 붙는다.
-     값에 최소 폭을 줘서 8% / 13% / 100% 처럼 자릿수가 달라도 게이지 줄이 맞는다. */
-  table.sum td.g .gwrap{display:grid;grid-template-columns:1fr 34px auto;align-items:center;gap:6px}
-  table.sum td.g .gwrap::before{content:''}
-  table.sum td.g .gwrap .v{text-align:right;min-width:34px}
   table.sum .dt{margin-left:5px;font-size:10.5px;font-weight:700}
   table.sum .dt.up{color:var(--red)}
   table.sum .dt.down{color:var(--blue)}
-  table.sum .gauge{display:inline-block;width:34px;height:5px;border-radius:3px;
-    background:#e6eaf1;vertical-align:middle;overflow:hidden}
-  table.sum .gauge i{display:block;height:100%;background:var(--blue);border-radius:3px}
   table.sum tr.grprow th{background:var(--soft);color:var(--sub);font-size:11px;font-weight:800;
     text-align:left;border-bottom:1px solid var(--line)}
   table.sum tr.ttl td,table.sum tr.ttl th{background:#fbfcfe;font-weight:800;color:var(--ink)}
@@ -239,7 +229,7 @@ let VIEW = 'season';
 const COLS = [
   {k:'plan',     label:'기획량',      f:'n'},
   {k:'qtyIn',    label:'입고량',      f:'n'},
-  {k:'inRate',   label:'입고율',      f:'p0', gauge:true},   // 값 왼쪽에 작은 가로 게이지
+  {k:'inRate',   label:'입고율',      f:'p0'},
   {k:'sales',    label:'누계판매량',  f:'n'},
   {k:'sellRate', label:'수량판매율',  f:'p1'},
   {k:'salesTag', label:'누계판매TAG', f:'n'},
@@ -280,12 +270,6 @@ function deltaHtml(v, was, col){
 }
 function cell(v, col, was){
   const txt = FMT[col.f](v) + deltaHtml(v, was, col);
-  if(col.gauge && v!=null){
-    const w = Math.max(0, Math.min(100, v*100));
-    // 게이지는 칸 왼쪽 고정, 숫자는 오른쪽 정렬 (숫자 길이가 달라도 게이지 줄이 맞도록)
-    return `<td class="num g"><span class="gwrap"><span class="gauge"><i style="width:${w}%"></i></span>`
-         + `<span class="v">${txt}</span></span></td>`;
-  }
   return `<td class="num${v==null?' dim':''}">${txt}</td>`;
 }
 function dataRow(name, o, cls, was){
@@ -377,7 +361,7 @@ function renderSum(){
   const v = VIEWS.find(x=>x.k===VIEW);
   document.getElementById('panels').innerHTML =
     `<div class="panel"><h3>${v.label}</h3>
-     <div class="sub">${v.sub} · 입고율 옆 게이지는 0~100% 기준 · 값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감</div>
+     <div class="sub">${v.sub} · 값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감</div>
      ${table(rowsOf(VIEW))}</div>`;
 
   document.getElementById('cmp').innerHTML = cmpPanel();
