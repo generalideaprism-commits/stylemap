@@ -272,6 +272,8 @@ function card(s){
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>
       <em class="n">${s.item||'-'}</em>
+      ${s.sub && (SORT==='rateDesc'||SORT==='rateAsc')
+          ? `<em>${s.altStyle} 판매율 ${pct(s.sub.ttl.rate)}</em>` : ''}
       ${s.sub?`<em class="n click">클릭 → ${s.altStyle} 단독 실적</em>`:''}
     </div>
   </div>`;
@@ -290,7 +292,13 @@ const SORTS = [
   {k:'salesDesc', label:'누계판매 많은순'},
 ];
 let SORT = '';
-const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
+/* 러닝(통합 카드)은 신규품번(CU열) 단독 판매율로 줄 세운다.
+   카드에 보이는 값은 구품번+신규품번 통합이라 정렬 기준과 다르므로,
+   판매율 정렬 중에는 카드 하단에 신규품번 판매율을 함께 띄운다. */
+const rateOf = s => {
+  const t = s.sub ? s.sub.ttl : s.ttl;
+  return (t && t.rate != null) ? t.rate : null;
+};
 function applySort(list){
   if(!SORT) return list;
   const key = SORT==='salesDesc' ? (s=>(s.ttl&&s.ttl.total)||0) : rateOf;
