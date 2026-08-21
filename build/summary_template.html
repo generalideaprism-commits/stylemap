@@ -28,15 +28,16 @@
   #sum.on{display:block}
   #sum .note{background:#fff;border:1px dashed var(--line);border-radius:12px;
              padding:40px 20px;text-align:center;color:var(--muted);line-height:1.8}
-  .mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 14px;
+        position:sticky;top:54px;z-index:8;background:var(--bg);padding:10px 0 8px}
   .mrow .flabel{margin-right:4px}
-  .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:14px;
-          align-items:start}
+  .panels{columns:430px 3;column-gap:14px}
+  #cmp{margin-top:0}
   .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;
-         box-shadow:0 1px 3px rgba(16,24,40,.06)}
+         box-shadow:0 1px 3px rgba(16,24,40,.06);
+         break-inside:avoid;-webkit-column-break-inside:avoid;display:flow-root;margin:0 0 14px}
   .panel h3{margin:0 0 2px;font-size:13.5px;letter-spacing:-.2px}
   .panel .sub{font-size:11px;color:var(--muted);margin-bottom:12px}
-  .panel.wide{grid-column:1/-1}
   .grp{font-size:11px;font-weight:800;color:var(--sub);background:var(--soft);
        border-radius:6px;padding:3px 8px;display:inline-block;margin:10px 0 6px}
   .brow{display:grid;grid-template-columns:112px 1fr 96px;align-items:center;gap:8px;
@@ -184,6 +185,7 @@
 <section id="sum">
   <div class="mrow" id="metrics"><span class="flabel">지표</span></div>
   <div class="panels" id="panels"></div>
+  <div id="cmp"></div>
 </section>
 <script>
 /* ================= 집계표 ================= */
@@ -305,9 +307,9 @@ function renderSum(){
     panel('④ 26FW 러닝 복종 / 카테고리별', `러닝 품번 기준 · ${basis}`,
       bars(SUM.runItem, d=>d.item, iv, {ttl:d=>d.item==='TOTAL', max:max4i}) +
       grouped(SUM.runCat, max4c)),
-    cmpPanel(),
   ].join('');
   document.getElementById('panels').innerHTML = html;
+  document.getElementById('cmp').innerHTML = cmpPanel();
 }
 
 
