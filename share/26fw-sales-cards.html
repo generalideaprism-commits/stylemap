@@ -282,6 +282,28 @@ const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여
               ['gender','성별'],['item','품목']];
 // 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목
 const ROWS = [['season','line','arrived'], ['gender','item']];
+// 정렬 (판매율 = 누계판매 ÷ 입고량. 값이 없는 스타일은 항상 뒤로)
+const SORTS = [
+  {k:'',          label:'기본순'},
+  {k:'rateDesc',  label:'판매율 높은순'},
+  {k:'rateAsc',   label:'판매율 낮은순'},
+  {k:'salesDesc', label:'누계판매 많은순'},
+];
+let SORT = '';
+const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
+function applySort(list){
+  if(!SORT) return list;
+  const key = SORT==='salesDesc' ? (s=>(s.ttl&&s.ttl.total)||0) : rateOf;
+  const asc = SORT==='rateAsc';
+  return list.slice().sort((a,b)=>{
+    const va=key(a), vb=key(b);
+    if(va==null && vb==null) return 0;
+    if(va==null) return 1;              // 값 없는 스타일은 뒤로
+    if(vb==null) return -1;
+    return asc ? va-vb : vb-va;
+  });
+}
+
 // 카테고리별 버튼 노출 순서 (목록에 없는 값은 뒤에 자동 추가)
 const ORDER = {
   season : ['봄','여름','가을','겨울'],
@@ -309,10 +331,18 @@ function buildFilters(){
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
+  const sortGroup = `<div class="fgroup"><span class="flabel">정렬</span>` +
+    SORTS.map(o=>`<button class="chip${o.k===SORT?' on':''}" data-s="${o.k}">${o.label}</button>`).join('') +
+    `</div>`;
   document.getElementById('filters').innerHTML =
-    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('');
+    ROWS.map((r,i)=>`<div class="frow">${r.map(group).join('')}${i===ROWS.length-1?sortGroup:''}</div>`).join('');
+  document.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{
+    SORT = b.dataset.s;
+    document.querySelectorAll('.chip[data-s]').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  }));
   KEYS.forEach(([k])=>sel[k]='');
-  document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-k]').forEach(b=>b.addEventListener('click',()=>{
     sel[b.dataset.k] = b.dataset.v;
     document.querySelectorAll(`.chip[data-k="${b.dataset.k}"]`).forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
@@ -341,6 +371,7 @@ function render(){
     (!q || (s.style||'').toUpperCase().includes(q) || (s.altStyle||'').toUpperCase().includes(q)
         || (s.name||'').toUpperCase().includes(q))
   );
+  view = applySort(view);
   shown = 0;
   listEl.innerHTML = view.length ? '' : '<div class="empty">조건에 맞는 스타일이 없습니다.</div>';
   scrollTo(0, 0);
@@ -372,7 +403,9 @@ buildFilters();
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('reset').addEventListener('click',()=>{
   document.getElementById('q').value='';
-  document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on', b.dataset.v===''));
+  SORT='';
+  document.querySelectorAll('.chip[data-k]').forEach(b=>b.classList.toggle('on', b.dataset.v===''));
+  document.querySelectorAll('.chip[data-s]').forEach(b=>b.classList.toggle('on', b.dataset.s===''));
   KEYS.forEach(([k])=>sel[k]='');
   render();
 });
