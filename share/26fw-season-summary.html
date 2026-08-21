@@ -228,7 +228,7 @@ let VIEW = 'season';
 const COLS = [
   {k:'plan',     label:'기획량',      f:'n'},
   {k:'qtyIn',    label:'입고량',      f:'n'},
-  {k:'inRate',   label:'입고율',      f:'p',  gauge:true},   // 값 왼쪽에 작은 가로 게이지
+  {k:'inRate',   label:'입고율',      f:'p0', gauge:true},   // 값 왼쪽에 작은 가로 게이지
   {k:'sales',    label:'누계판매량',  f:'n'},
   {k:'sellRate', label:'수량판매율',  f:'p1'},
   {k:'salesTag', label:'누계판매TAG', f:'n'},
@@ -242,7 +242,8 @@ const fmtW = v => v==null ? '-'
   : Math.abs(v)>=1e4 ? Math.round(v/1e4).toLocaleString('ko-KR')+'만' : fmtN(v);
 const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
 const fmtP1 = v => v==null ? '-' : (v*100).toFixed(1)+'%';
-const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1};
+const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';   // 입고율: 소수점 없이
+const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
