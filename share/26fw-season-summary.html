@@ -43,11 +43,13 @@
   table.sum td.num{font-weight:700}
   table.sum td.dim{color:#c3c9d2;font-weight:400}
   table.sum td.g{white-space:nowrap}
+  table.sum td.g .gwrap{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:6px}
+  table.sum td.g .gwrap .v{text-align:right}
   table.sum .dt{margin-left:5px;font-size:10.5px;font-weight:700}
   table.sum .dt.up{color:var(--red)}
   table.sum .dt.down{color:var(--blue)}
   table.sum .gauge{display:inline-block;width:34px;height:5px;border-radius:3px;
-    background:#e6eaf1;margin-right:6px;vertical-align:middle;overflow:hidden}
+    background:#e6eaf1;vertical-align:middle;overflow:hidden}
   table.sum .gauge i{display:block;height:100%;background:var(--blue);border-radius:3px}
   table.sum tr.grprow th{background:var(--soft);color:var(--sub);font-size:11px;font-weight:800;
     text-align:left;border-bottom:1px solid var(--line)}
@@ -274,7 +276,9 @@ function cell(v, col, was){
   const txt = FMT[col.f](v) + deltaHtml(v, was, col);
   if(col.gauge && v!=null){
     const w = Math.max(0, Math.min(100, v*100));
-    return `<td class="num g"><span class="gauge"><i style="width:${w}%"></i></span>${txt}</td>`;
+    // 게이지는 칸 왼쪽 고정, 숫자는 오른쪽 정렬 (숫자 길이가 달라도 게이지 줄이 맞도록)
+    return `<td class="num g"><span class="gwrap"><span class="gauge"><i style="width:${w}%"></i></span>`
+         + `<span class="v">${txt}</span></span></td>`;
   }
   return `<td class="num${v==null?' dim':''}">${txt}</td>`;
 }
