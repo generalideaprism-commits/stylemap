@@ -274,7 +274,7 @@ function deltaHtml(v, was, col){
     const dec = col.f==='p0' ? 0 : 1;
     const val = +(Math.abs(d)*100).toFixed(dec);
     if(!val) return '';
-    txt = val.toFixed(dec)+'%p';
+    txt = val.toFixed(dec)+'%';
   }else{
     const val = Math.round(Math.abs(d));
     if(!val) return '';
