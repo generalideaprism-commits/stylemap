@@ -361,7 +361,8 @@ if '종합' in wb.sheetnames:
 # 각 행에 고유 키를 달아 스냅샷과 대조한다. 날짜가 같은 파일을 다시 빌드하면
 # 스냅샷을 덮지 않으므로 증감 표기가 그대로 유지된다.
 for d in SUM['block1']:
-    d['_k'] = 'b1|%s|%s|%s' % (d['mode'], d['season'], d.get('kind') or d['item'])
+    # kind 는 항목 행이면 모두 '항목' 이라 복종명(item)까지 넣어야 행이 구분된다
+    d['_k'] = 'b1|%s|%s|%s|%s' % (d['mode'], d['season'], d['item'], d.get('kind') or '')
 for name in ('newItem', 'runItem'):
     for d in SUM[name]:
         d['_k'] = '%s|%s' % (name, d['item'])
