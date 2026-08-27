@@ -45,7 +45,7 @@ def C(letter):
 
 
 # ST 시트 열
-ST = dict(season=C('D'), gender=C('E'), item=C('F'), style=C('M'), name=C('N'),
+ST = dict(season=C('D'), gender=C('E'), item=C('F'), theme=C('K'), style=C('M'), name=C('N'),
           vendor=C('P'), real=C('Y'), tag=C('Z'), cost=C('AA'),
           tag_amt=C('BH'), sale_amt=C('BI'), img_code=C('BR'))
 # CO 시트 열
@@ -123,6 +123,8 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'season': season,
             'gender': txt(r[ST['gender']]),
             'item': txt(r[ST['item']]),
+            # 테마 = 생판재 시트 K열(컨셉). '노르딕,패턴' 처럼 쉼표로 여러 개가 올 수 있다
+            'themes': [t.strip() for t in txt(r[ST['theme']]).split(',') if t.strip()],
             'vendor': txt(r[ST['vendor']]),
             'tag': tag,
             'real': num(r[ST['real']]),

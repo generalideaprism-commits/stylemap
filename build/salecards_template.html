@@ -84,37 +84,38 @@
   #reset:hover{background:#eceff4}
 
   /* ---------- 카드 ---------- */
-  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;
+  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:14px;
        align-items:start}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
         box-shadow:0 1px 3px rgba(16,24,40,.06);
         /* 화면 밖 카드는 렌더링을 건너뛰고, 레이아웃 영향도 카드 안으로 가둠 */
-        content-visibility:auto;contain-intrinsic-size:auto 620px;contain:layout paint style}
-  .chead{display:flex;align-items:center;gap:6px;padding:9px 12px 0}
+        content-visibility:auto;contain-intrinsic-size:auto 520px;contain:layout paint style}
+  .chead{display:flex;align-items:center;gap:4px;padding:7px 10px 0}
   .chead .code{font-size:11px;color:var(--muted);letter-spacing:.4px}
   .tags{margin-left:auto;display:flex;gap:4px}
-  .tag{font-size:10.5px;border-radius:5px;padding:2px 7px;font-weight:700}
+  .tag{font-size:9.5px;border-radius:5px;padding:1px 5px;font-weight:700}
   .tag.b{background:var(--blue);color:#fff}
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
-  .cname{font-size:15.5px;font-weight:800;letter-spacing:-.3px;padding:3px 12px 8px}
+  .cname{font-size:13px;font-weight:800;letter-spacing:-.3px;padding:2px 10px 7px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  .thumb{position:relative;background:var(--soft);height:250px;display:flex;
+  .thumb{position:relative;background:var(--soft);height:186px;display:flex;
          align-items:center;justify-content:center}
   .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--soft)}
   .thumb .noimg{font-size:11px;color:#c3c9d2;letter-spacing:1px}
 
   .prices{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line);
           border-bottom:1px solid var(--line);background:#fff}
-  .prices div{padding:8px 6px;text-align:center;border-right:1px solid var(--line)}
+  .prices div{padding:6px 3px;text-align:center;border-right:1px solid var(--line)}
   .prices div:last-child{border-right:0}
-  .prices b{display:block;font-size:14px;font-weight:800}
-  .prices span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .prices b{display:block;font-size:12px;font-weight:800}
+  .prices span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:9px 4px 7px}
   .stats div{text-align:center}
-  .stats b{display:block;font-size:17px;font-weight:800;letter-spacing:-.5px}
-  .stats span{display:block;font-size:10.5px;color:var(--muted);margin-top:3px}
+  .stats b{display:block;font-size:14px;font-weight:800;letter-spacing:-.5px}
+  .stats span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
   .stats .hl b{color:var(--blue)}
 
   .prog{margin:0 12px 9px;background:var(--soft);border:1px solid var(--line);border-radius:8px;
@@ -125,13 +126,13 @@
   .bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
 
   table{width:100%;border-collapse:collapse;table-layout:fixed}
-  th,td{font-size:11.5px;padding:3px 6px;text-align:right;white-space:nowrap;
+  th,td{font-size:10.5px;padding:2px 4px;text-align:right;white-space:nowrap;
         overflow:hidden;text-overflow:ellipsis;line-height:1.25}
   th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:#fff}
   td.c{text-align:left}
   tbody tr+tr td{border-top:1px solid #f1f3f7}
   .cl{color:var(--blue);font-weight:700;font-size:11.5px;line-height:1.15}
-  .cl small{display:block;color:var(--muted);font-weight:400;font-size:9.5px;line-height:1.15}
+  .cl small{display:block;color:var(--muted);font-weight:400;font-size:9px;line-height:1.15}
   tr.ttl td{border-top:1px solid var(--line);font-weight:800;background:#fbfcfe}
   .dim{color:#c3c9d2}
 
@@ -147,8 +148,9 @@
         line-height:1.5}
   .meta div span{color:var(--muted)}
   .foot{border-top:1px solid var(--line);padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap}
-  .foot em{font-style:normal;font-size:10.5px;background:var(--blue-soft);color:var(--blue);
-           border-radius:5px;padding:3px 8px;font-weight:700}
+  .foot em{font-style:normal;font-size:9.5px;background:var(--blue-soft);color:var(--blue);
+           border-radius:5px;padding:2px 6px;font-weight:700}
+  .foot em.th{background:#fff4e5;color:#b45309}
   .foot em.n{background:var(--soft);color:var(--sub)}
   .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:70px 0}
   .chead .code b{color:var(--blue);font-weight:800}
@@ -272,6 +274,7 @@ function card(s){
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>
       <em class="n">${s.item||'-'}</em>
+      ${(s.themes||[]).map(x=>`<em class="th">${x}</em>`).join('')}
       ${s.sub && (SORT==='rateDesc'||SORT==='rateAsc')
           ? `<em>${s.altStyle} 판매율 ${pct(s.sub.ttl.rate)}</em>` : ''}
       ${s.sub?`<em class="n click">클릭 → ${s.altStyle} 단독 실적</em>`:''}
@@ -281,9 +284,9 @@ function card(s){
 
 /* ---------- 필터 (버튼형) ---------- */
 const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여부'],
-              ['gender','성별'],['item','품목']];
-// 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목
-const ROWS = [['season','line','arrived'], ['gender','item']];
+              ['gender','성별'],['item','품목'],['themes','테마']];
+// 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목, 3줄 = 테마(+정렬)
+const ROWS = [['season','line','arrived'], ['gender','item'], ['themes']];
 // 정렬 (판매율 = 누계판매 ÷ 입고량. 값이 없는 스타일은 항상 뒤로)
 const SORTS = [
   {k:'',          label:'기본순'},
@@ -334,7 +337,8 @@ const sel = {};
 function buildFilters(){
   const group = k => {
     const label = KEYS.find(x=>x[0]===k)[1];
-    const vals = sortByOrder([...new Set(DATA.map(s=>s[k]).filter(Boolean))], k);
+    const raw = DATA.flatMap(s=>Array.isArray(s[k]) ? s[k] : [s[k]]).filter(Boolean);
+    const vals = sortByOrder([...new Set(raw)], k);
     const btns = [`<button class="chip on" data-k="${k}" data-v="">전체</button>`]
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
@@ -375,7 +379,7 @@ function more(){
 function render(){
   const q = document.getElementById('q').value.trim().toUpperCase();
   view = DATA.filter(s =>
-    KEYS.every(([k]) => !sel[k] || s[k]===sel[k]) &&
+    KEYS.every(([k]) => !sel[k] || (Array.isArray(s[k]) ? s[k].includes(sel[k]) : s[k]===sel[k])) &&
     (!q || (s.style||'').toUpperCase().includes(q) || (s.altStyle||'').toUpperCase().includes(q)
         || (s.name||'').toUpperCase().includes(q))
   );
