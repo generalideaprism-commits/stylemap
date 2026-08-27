@@ -74,6 +74,8 @@
   .frow{display:flex;align-items:center;gap:14px;padding:3px 0;flex-wrap:wrap}
   .fgroup{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
   .fgroup+.fgroup{border-left:1px solid var(--line);padding-left:14px}
+  /* 정렬 묶음은 줄 오른쪽 끝으로 (마지막 캡슐이 헤더 우측 끝과 맞도록) */
+  .fgroup.sortg{margin-left:auto;border-left:0;padding-left:0}
   .flabel{flex:none;font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
   .chip{border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:999px;
         padding:5px 12px;font-size:12px;cursor:pointer;transition:.12s;white-space:nowrap}
@@ -343,7 +345,7 @@ function buildFilters(){
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
-  const sortGroup = `<div class="fgroup"><span class="flabel">정렬</span>` +
+  const sortGroup = `<div class="fgroup sortg"><span class="flabel">정렬</span>` +
     SORTS.map(o=>`<button class="chip${o.k===SORT?' on':''}" data-s="${o.k}">${o.label}</button>`).join('') +
     `</div>`;
   document.getElementById('filters').innerHTML =
