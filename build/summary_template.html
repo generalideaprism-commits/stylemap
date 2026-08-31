@@ -209,6 +209,8 @@
   #modal .card{cursor:default}
 
   #sum{display:block}
+  /* 열 그룹 구분선 (주간판매·누계판매 시작 열 왼쪽) */
+  table.sum td.sep,table.sum th.sep{border-left:1px solid var(--line)}
   /* 접이식 행 — 복종(prow) 클릭 시 하위 카테고리(srow) 펼침 */
   table.sum tr.prow.has{cursor:pointer}
   table.sum tr.prow.has:hover th.nm{color:var(--blue)}
@@ -249,13 +251,13 @@ const COLS = [
   {k:'plan',     label:'기획량',      f:'n'},
   {k:'qtyIn',    label:'입고량',      f:'n'},
   {k:'inRate',   label:'입고율',      f:'p0', donut:true},
-  {k:'sales',    label:'누계판매량',  f:'n'},
+  {k:'wkQty',    label:'주간판매량',  f:'n', sep:true},   // 왼쪽에 얇은 세로 구분선
+  {k:'wkAmt',    label:'주간판매금액', f:'n'},
+  {k:'sales',    label:'누계판매량',  f:'n', sep:true},
   {k:'sellRate', label:'수량판매율',  f:'p1'},
   {k:'salesTag', label:'누계판매TAG', f:'n'},
   {k:'salesAmt', label:'실판매금액',  f:'n'},
   {k:'disc',     label:'할인율',      f:'p1'},
-  {k:'wkQty',    label:'주간판매량',  f:'n'},
-  {k:'wkAmt',    label:'주간판매금액', f:'n'},
 ];
 
 const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
@@ -302,9 +304,10 @@ function donut(v){
 }
 function cell(v, col, was){
   const txt = FMT[col.f](v) + deltaHtml(v, was, col);
+  const sep = col.sep ? ' sep' : '';
   if(col.donut && v!=null)
-    return `<td class="num dcell"><span class="dwrap">${donut(v)}<span class="v">${txt}</span></span></td>`;
-  return `<td class="num${v==null?' dim':''}">${txt}</td>`;
+    return `<td class="num dcell${sep}"><span class="dwrap">${donut(v)}<span class="v">${txt}</span></span></td>`;
+  return `<td class="num${v==null?' dim':''}${sep}">${txt}</td>`;
 }
 function cellsOf(o, was){
   return COLS.map(c=>cell(
@@ -316,7 +319,7 @@ function dataRow(name, o, cls, was){
 }
 function table(rows){
   return `<div class="tw"><table class="sum">
-    <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num">${c.label}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 function panel(title, sub, body){
