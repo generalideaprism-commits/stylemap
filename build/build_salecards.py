@@ -507,7 +507,8 @@ mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
-    _iE, _iF, _iAI, _iAM, _iAN, _iED = (C('E'), C('F'), C('AI'), C('AM'), C('AN'), C('ED'))
+    _iE, _iF, _iAI, _iAJ, _iAK, _iAM, _iAN, _iED = (
+        C('E'), C('F'), C('AI'), C('AJ'), C('AK'), C('AM'), C('AN'), C('ED'))
     BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
     blocks, cur = [], None
     with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
@@ -517,17 +518,17 @@ if os.path.exists(MDP_PATH):
                 if cur:
                     blocks.append(cur)
                 _season = txt(_d.get(_iE))
+                # SKU/기획량은 스타일 행의 공식 열(AJ/AK)을 쓴다 — 컬러 행(AM/AN)은
+                # 미입력분이 있어 합계가 모자랄 수 있다 (예: 컬러명 없는 SKU, 수량 미배분)
                 cur = {'season': '러닝' if '(러닝)' in _season else _season,
                        'bok': BOKMAP.get(txt(_d.get(_iF)), 'ACC'),
-                       'ok': False, 'sku': 0, 'plan': 0.0}
+                       'ok': False,
+                       'sku': _d.get(_iAJ) if isinstance(_d.get(_iAJ), (int, float)) else 0,
+                       'plan': _d.get(_iAK) if isinstance(_d.get(_iAK), (int, float)) else 0.0}
             if cur is None:
                 continue
             if txt(_d.get(_iED)) == '확정':
                 cur['ok'] = True
-            if _d.get(_iAM):
-                cur['sku'] += 1
-            if isinstance(_d.get(_iAN), (int, float)):
-                cur['plan'] += _d[_iAN]
     if cur:
         blocks.append(cur)
     for b in blocks:
