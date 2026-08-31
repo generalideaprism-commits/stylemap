@@ -268,7 +268,7 @@ for s in styles.values():
 data = [styles[c] for c in order if c not in subs]
 
 # ---- 러닝 현재고: 시점재고 시트(기존품번 M열 -> BO열 '전체') + 신규품번 입고량 ----
-point_stock = {}
+point_stock, point_stock_color = {}, {}
 stock_sheet = next((n for n in wb.sheetnames if '시점재고' in n), None)
 if stock_sheet:
     for r in wb[stock_sheet].iter_rows(min_row=4, values_only=True):
@@ -278,35 +278,50 @@ if stock_sheet:
         v = num(r[C('BO')]) if len(r) > C('BO') else None
         if v is not None:
             point_stock[code] = point_stock.get(code, 0) + v
-    print('시점재고:', len(point_stock), '스타일')
+            col = txt(r[C('O')] if len(r) > C('O') else '')
+            if col:
+                k = (code, col)
+                point_stock_color[k] = point_stock_color.get(k, 0) + v
+    print('시점재고:', len(point_stock), '스타일 /', len(point_stock_color), '컬러')
 
 for s in data:
     if s['line'] != '러닝':
         continue
-    # 신규품번 기준 값 (통합 카드는 sub = 신규품번 단독, 짝 없는 GF7 단독 카드는 자기 자신)
-    tt = (s['sub'] if s.get('sub') else s)['ttl']
+    sub = s['sub'] if s.get('sub') else s          # 신규품번 (짝 없는 GF7 단독 카드는 자기 자신)
+    tt = sub['ttl']
     new_in = tt['qtyIn'] or 0
-    base = next((point_stock[c] for c in [s['style']] + s['imgCodes'] if c in point_stock), 0)
+    codes = [s['style']] + s['imgCodes']
+    base_code = next((c for c in codes if c in point_stock), None)
+    base = point_stock.get(base_code, 0)
     stock = base + new_in
-    # 판매율 분자: 구품번의 8/1 이후 판매 + 신규품번 누계판매 (단독 GF7 카드는 자기 누계만)
+    # 현재고 기준 판매: 구품번의 8/1 이후 판매 + 신규품번 누계판매
     run_sales = ((s.get('augSales') or 0) if s.get('sub') else 0) + (tt['total'] or 0)
     s['stock'] = stock
-    s['runStat'] = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
-                    'stock': stock, 'sales': run_sales,
-                    'rate': (run_sales / stock * 100) if stock else None}
-    # 컬러 표: 신규품번에 기획된 컬러만. 기획·입고 = 신규품번 값,
-    # 전주·2주전 = 구+신 합산, 누계 = 8/1 이후 판매(구 W5~ + 신).
-    # 색상별 기초재고가 없어 색상별 판매율은 계산하지 않는다.
-    sub_colors = (s['sub'] if s.get('sub') else s)['colors']
-    rows = []
-    for sc in sub_colors:
-        mc = next((c for c in s['colors'] if c['color'] == sc['color']), None)
-        src = mc or sc
-        rows.append({'color': sc['color'], 'cname': sc['cname'],
-                     'plan': sc['plan'], 'qtyIn': sc['qtyIn'],
-                     'w1': src.get('w1'), 'w2': src.get('w2'),
-                     'total': src.get('aug') or 0, 'rate': None})
-    s['colorsRun'] = rows
+    stat = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
+            'stock': stock, 'sales': run_sales,
+            'rate': (run_sales / stock * 100) if stock else None}
+    # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규입고,
+    # 전주/2주전·누계(8/1 이후)는 구+신 합산, 판매율 = 누계 ÷ (기초+입고)
+    merged_colors = s['colors']                    # CU 통합본 (w1/w2/aug 포함)
+    prows = []
+    for sc in sub['colors']:
+        mc = next((c for c in merged_colors if c['color'] == sc['color']), None) or sc
+        base_c = point_stock_color.get((base_code, sc['color']), 0) if base_code else 0
+        in_c = sc['qtyIn'] or 0
+        plan_c = base_c + in_c
+        tot = mc.get('aug') or 0
+        prows.append({'color': sc['color'], 'cname': sc['cname'],
+                      'plan': plan_c, 'qtyIn': in_c,
+                      'w1': mc.get('w1'), 'w2': mc.get('w2'),
+                      'total': tot, 'rate': (tot / plan_c * 100) if plan_c else None})
+    s['popup'] = {'stat': stat, 'colors': prows}
+    # 본 카드는 신규품번 내용으로 표시 (메인 카드와 동일 레이아웃)
+    if s.get('sub'):
+        s['ttl'] = sub['ttl']
+        s['colors'] = sub['colors']
+        for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate'):
+            s[f] = sub.get(f)
+    s['arrived'] = '입고' if new_in > 0 else '미입고'
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
 

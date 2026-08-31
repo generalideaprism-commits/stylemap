@@ -193,7 +193,7 @@
 </header>
 <main id="list"></main>
 <div id="modal"><div class="box">
-  <div class="mhead"><b id="mtitle"></b><span>러닝 신규품번 단독 실적</span>
+  <div class="mhead"><b id="mtitle"></b><span>시점재고 + 신규품번 · 현재고 기준</span>
     <button class="x" id="mclose">×</button></div>
   <div id="mbody"></div>
 </div></div>
@@ -217,20 +217,15 @@ function nextImg(el){
 
 function card(s){
   const t = s.ttl, codes = s.imgCodes || [s.style];
-  const shownRate = s.runStat ? s.runStat.rate : t.rate;
-  const rate = shownRate==null ? 0 : Math.max(0, Math.min(100, shownRate));
-  const colorRows = s.runStat ? (s.colorsRun||[]) : s.colors;
-  // 러닝 TTL 행은 신규품번 기준 값 + 현재고 기준 판매율
-  const tv = s.runStat ? {plan:s.runStat.addPlan, qtyIn:s.runStat.newIn, w1:t.w1, w2:t.w2,
-                          total:s.runStat.sales, rate:s.runStat.rate} : t;
-  const rows = colorRows.map(c=>`
+  const rate = t.rate==null ? 0 : Math.max(0, Math.min(100, t.rate));
+  const rows = s.colors.map(c=>`
     <tr>
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
       <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
     </tr>`).join('');
-  return `<div class="card" data-style="${s.style}">
+  return `<div class="card${s.popup?' has-sub':''}" data-style="${s.style}">
     <div class="chead">
       <span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span>
       <span class="tags">
@@ -250,20 +245,14 @@ function card(s){
       <div><b>${won(s.real)}</b><span>실판가</span></div>
       <div class="r"><b>${s.discount==null?'-':pct(s.discount*100,0)}</b><span>할인율</span></div>
     </div>
-    <div class="stats${s.runStat?' s5':''}">
-      ${s.runStat ? `
-      <div><b>${n0(s.runStat.base)}</b><span>기초재고</span></div>
-      <div><b>${n0(s.runStat.addPlan)}</b><span>추가 기획량</span></div>
-      <div><b>${n0(s.runStat.newIn)}</b><span>입고량</span></div>
-      <div><b>${n0(s.runStat.stock)}</b><span>현재고</span></div>
-      <div class="hl"><b>${pct(s.runStat.rate)}</b><span>판매율</span></div>` : `
+    <div class="stats">
       <div><b>${n0(t.plan)}</b><span>기획량</span></div>
       <div><b>${n0(t.qtyIn)}</b><span>입고량</span></div>
       <div><b>${n0(t.total)}</b><span>누계판매</span></div>
-      <div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div>`}
+      <div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div>
     </div>
     <div class="prog">
-      <div class="lb"><span>판매 진행률</span><b>${pct(shownRate)}</b></div>
+      <div class="lb"><span>판매 진행률</span><b>${pct(t.rate)}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
     <table>
@@ -272,8 +261,8 @@ function card(s){
                  <th>2주전</th><th>누계</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
-          <td>${n0(tv.plan)}</td><td>${n0(tv.qtyIn)}</td><td>${n0(tv.w1)}</td>
-          <td>${n0(tv.w2)}</td><td>${n0(tv.total)}</td><td>${pct(tv.rate)}</td></tr>
+          <td>${n0(t.plan)}</td><td>${n0(t.qtyIn)}</td><td>${n0(t.w1)}</td>
+          <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td>${pct(t.rate)}</td></tr>
       </tbody>
     </table>
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
@@ -292,6 +281,7 @@ function card(s){
       <em>생산처 ${s.vendor||'-'}</em>
       <em class="n">${s.item||'-'}</em>
       ${(s.themes||[]).map(x=>`<em class="th">${x}</em>`).join('')}
+      ${s.popup?`<em class="n click">클릭 → 현재고 실적</em>`:''}
 
     </div>
   </div>`;
@@ -313,10 +303,7 @@ let SORT = '';
 /* 러닝(통합 카드)은 신규품번(CU열) 단독 판매율로 줄 세운다.
    카드에 보이는 값은 구품번+신규품번 통합이라 정렬 기준과 다르므로,
    판매율 정렬 중에는 카드 하단에 신규품번 판매율을 함께 띄운다. */
-const rateOf = s => {
-  if(s.runStat) return s.runStat.rate;      // 러닝 = 현재고 기준 판매율
-  return (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
-};
+const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
 function applySort(list){
   if(!SORT) return list;
   const key = SORT==='salesDesc' ? (s=>(s.ttl&&s.ttl.total)||0) : rateOf;
@@ -408,14 +395,54 @@ function render(){
 
 /* ---------- 카드 클릭 -> CU 품번 단독 카드 모달 ---------- */
 const modal = document.getElementById('modal');
+/* 러닝 팝업: 시점재고 + 신규품번 입고 기준 (현재고 실적).
+   컬러 표의 '기획' = 컬러별 기초재고 + 컬러별 신규입고 */
+function popupCard(s){
+  const st = s.popup.stat;
+  const rate = st.rate==null ? 0 : Math.max(0, Math.min(100, st.rate));
+  const rows = s.popup.colors.map(c=>`
+    <tr>
+      <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
+      <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
+      <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
+      <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
+    </tr>`).join('');
+  const w1t = s.popup.colors.reduce((a,c)=>a+(c.w1||0),0);
+  const w2t = s.popup.colors.reduce((a,c)=>a+(c.w2||0),0);
+  return `<div class="card">
+    <div class="chead"><span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span></div>
+    <div class="cname">${s.name||''}</div>
+    <div class="stats s5">
+      <div><b>${n0(st.base)}</b><span>기초재고</span></div>
+      <div><b>${n0(st.addPlan)}</b><span>추가 기획량</span></div>
+      <div><b>${n0(st.newIn)}</b><span>입고량</span></div>
+      <div><b>${n0(st.stock)}</b><span>현재고</span></div>
+      <div class="hl"><b>${pct(st.rate)}</b><span>판매율</span></div>
+    </div>
+    <div class="prog">
+      <div class="lb"><span>판매 진행률 (현재고 기준)</span><b>${pct(st.rate)}</b></div>
+      <div class="bar"><i style="width:${rate}%"></i></div>
+    </div>
+    <table>
+      <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
+      <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
+                 <th>2주전</th><th>누계</th><th>판매율</th></tr></thead>
+      <tbody>${rows}
+        <tr class="ttl"><td class="c">TTL</td>
+          <td>${n0(st.stock)}</td><td>${n0(st.newIn)}</td><td>${n0(w1t)}</td>
+          <td>${n0(w2t)}</td><td>${n0(st.sales)}</td><td>${pct(st.rate)}</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
 listEl.addEventListener('click', e=>{
   if(e.target.closest('summary')) return;              // 상세 토글은 그대로
   const el = e.target.closest('.card.has-sub');
   if(!el) return;
   const s = view.find(x=>x.style===el.dataset.style);
-  if(!s || !s.sub) return;
-  document.getElementById('mtitle').textContent = s.sub.style;
-  document.getElementById('mbody').innerHTML = card(s.sub);
+  if(!s || !s.popup) return;
+  document.getElementById('mtitle').textContent = s.altStyle ? `${s.style} + ${s.altStyle}` : s.style;
+  document.getElementById('mbody').innerHTML = popupCard(s);
   modal.classList.add('on');
 });
 const closeModal = ()=>modal.classList.remove('on');
