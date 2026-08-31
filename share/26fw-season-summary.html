@@ -254,6 +254,8 @@ const COLS = [
   {k:'salesTag', label:'누계판매TAG', f:'n'},
   {k:'salesAmt', label:'실판매금액',  f:'n'},
   {k:'disc',     label:'할인율',      f:'p1'},
+  {k:'wkQty',    label:'주간판매량',  f:'n'},
+  {k:'wkAmt',    label:'주간판매금액', f:'n'},
 ];
 
 const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
@@ -324,7 +326,7 @@ function panel(title, sub, body){
 /* 여러 행의 합계 — 수량·금액은 합, 비율은 합계값으로 재계산 */
 function sumRows(list){
   const t = {};
-  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku'].forEach(k=>{
+  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku','wkQty','wkAmt'].forEach(k=>{
     const vs = list.map(d=>d && d[k]).filter(v=>v!=null);
     t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
   });
