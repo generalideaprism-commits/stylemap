@@ -35,7 +35,7 @@
   /* 집계 표 */
   .tw{overflow-x:auto}
   table.sum{width:100%;border-collapse:collapse;font-size:12px;
-    table-layout:fixed;min-width:1560px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
+    table-layout:fixed;min-width:1360px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
   table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
@@ -253,11 +253,11 @@ const COLS = [
   {k:'qtyIn',    label:'입고량',      f:'n'},
   {k:'inRate',   label:'입고율',      f:'p0', donut:true},
   {k:'wkQty',    label:'주간판매량',  f:'n', sep:true},   // 왼쪽에 얇은 세로 구분선
-  {k:'wkAmt',    label:'주간판매금액', f:'n'},
+  {k:'wkAmt',    label:'주간판매금액', f:'m'},
   {k:'sales',    label:'누계판매량',  f:'n'},
   {k:'sellRate', label:'수량판매율',  f:'p1'},
-  {k:'salesTag', label:'누계판매TAG', f:'n'},
-  {k:'salesAmt', label:'실판매금액',  f:'n'},
+  {k:'salesTag', label:'누계판매TAG', f:'m'},
+  {k:'salesAmt', label:'실판매금액',  f:'m'},
   {k:'disc',     label:'할인율',      f:'p1'},
 ];
 
@@ -268,7 +268,10 @@ const fmtW = v => v==null ? '-'
 const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
 const fmtP1 = v => v==null ? '-' : (v*100).toFixed(1)+'%';
 const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';
-const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0};
+// 금액은 백만 단위 (8,400,000 -> 8.4백만). 백만 미만의 자잘한 값은 그대로 숫자로.
+const fmtM = v => v==null ? '-' : v===0 ? '0'
+  : Math.abs(v)>=1e5 ? (v/1e6).toFixed(1)+'백만' : fmtN(v);
+const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0, m:fmtM};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
@@ -284,6 +287,8 @@ function deltaHtml(v, was, col){
     const val = +(Math.abs(d)*100).toFixed(dec);
     if(!val) return '';
     txt = val.toFixed(dec)+'%';
+  }else if(col.f==='m' && Math.abs(d)>=1e5){
+    txt = (Math.abs(d)/1e6).toFixed(1)+'백만';
   }else{
     const val = Math.round(Math.abs(d));
     if(!val) return '';
@@ -320,7 +325,7 @@ function dataRow(name, o, cls, was){
 }
 function table(rows){
   // 열 폭 고정 배분 — 수량 8% · 비율 7% · 금액 11.5% (간격이 내용 길이에 따라 들쭉날쭉해지지 않게)
-  const colw = c => c.f[0]==='p' ? '7%' : ['wkAmt','salesTag','salesAmt'].includes(c.k) ? '11.5%' : '8%';
+  const colw = c => c.f[0]==='p' ? '7.5%' : c.f==='m' ? '10%' : '8.5%';
   const cols = `<colgroup><col style="width:11%">${COLS.map(c=>`<col style="width:${colw(c)}">`).join('')}</colgroup>`;
   return `<div class="tw"><table class="sum">${cols}
     <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
@@ -384,8 +389,8 @@ const CMP_META = {
   qtyIn   : {label:'입고량',      f:'n'},
   sales   : {label:'누계판매량',  f:'n'},
   sellRate: {label:'수량판매율',  f:'p1'},
-  salesTag: {label:'누계판매TAG', f:'w'},
-  salesAmt: {label:'실판매금액',  f:'w'},
+  salesTag: {label:'누계판매TAG', f:'m'},
+  salesAmt: {label:'실판매금액',  f:'m'},
   disc    : {label:'할인율',      f:'p1'},
 };
 const CSEASONS = [...new Set(SUM.block1.filter(d=>d.mode==='new' && d.season).map(d=>d.season))];
