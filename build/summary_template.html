@@ -209,6 +209,16 @@
   #modal .card{cursor:default}
 
   #sum{display:block}
+  /* 접이식 행 — 복종(prow) 클릭 시 하위 카테고리(srow) 펼침 */
+  table.sum tr.prow.has{cursor:pointer}
+  table.sum tr.prow.has:hover th.nm{color:var(--blue)}
+  table.sum tr.prow th.nm{font-weight:700;color:var(--ink)}
+  table.sum .tg{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+  table.sum tr.prow.open .tg{transform:rotate(90deg)}
+  table.sum .cnt{margin-left:6px;font-size:9.5px;font-weight:700;color:var(--muted);
+    background:var(--soft);border-radius:8px;padding:1px 6px}
+  table.sum tr.srow th.nm.sub{padding-left:30px;font-weight:400;color:var(--sub)}
+  table.sum tr.srow td,table.sum tr.srow th{background:#fafbfd}
 </style>
 </head>
 <body>
@@ -228,22 +238,17 @@
 <script>
 const SUM = /*__SUM__*/{};
 
-/* 화면 구성
-   위쪽 캡슐 = 집계표 선택(4종). 고른 표 하나를 넓게 펴서 지표를 전부 한 줄에 보여준다.
-   아래쪽 = 전년(25년) 동시점 비교. 비교 가능한 지표만 따로 고른다. */
-const VIEWS = [
-  {k:'season',  label:'26FW 시즌별 / 복종별',        sub:'신상품 기준 · 시즌 안에서 복종별'},
-  {k:'newItem', label:'26FW 신상품 복종별',          sub:'복종 TOTAL 기준'},
-  {k:'newCat',  label:'26FW 신상품 카테고리별',      sub:'값이 있는 카테고리만'},
-  {k:'run',     label:'26FW 러닝 복종 / 카테고리별', sub:'26FW 신규 러닝 품번 기준 (구품번 실적은 포함하지 않음)'},
-];
-let VIEW = 'season';
+/* 화면 구성 (캡슐 없음 — 위에서 아래로 한 번에 본다)
+   ① 시즌 요약: 가을 / 겨울 / 러닝 을 한 표에
+   ② 가을 카테고리  ③ 겨울 카테고리 — 복종 행을 클릭하면 하위 카테고리가 펼쳐진다
+   ④ 러닝 카테고리 — 같은 방식
+   ⑤ 합계: 신상품(가을+겨울) + 러닝
+   ⑥ 전년 동시점 비교 */
 
-/* 표의 열 = 기존 지표 전부. bar:true 인 열은 칸 안에 옅은 막대를 함께 그린다(0~100%). */
 const COLS = [
   {k:'plan',     label:'기획량',      f:'n'},
   {k:'qtyIn',    label:'입고량',      f:'n'},
-  {k:'inRate',   label:'입고율',      f:'p0', donut:true},   // 값 왼쪽에 도넛 게이지
+  {k:'inRate',   label:'입고율',      f:'p0', donut:true},
   {k:'sales',    label:'누계판매량',  f:'n'},
   {k:'sellRate', label:'수량판매율',  f:'p1'},
   {k:'salesTag', label:'누계판매TAG', f:'n'},
@@ -257,20 +262,19 @@ const fmtW = v => v==null ? '-'
   : Math.abs(v)>=1e4 ? Math.round(v/1e4).toLocaleString('ko-KR')+'만' : fmtN(v);
 const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
 const fmtP1 = v => v==null ? '-' : (v*100).toFixed(1)+'%';
-const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';   // 입고율: 소수점 없이
+const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';
 const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
 
-/* ---------- 집계 표 ---------- */
-/* 직전 스타일맵 대비 증감. 증가 = 빨강 ▲, 감소 = 파랑 ▼ (비율은 %p) */
+/* 직전 스타일맵 대비 증감. 증가 = 빨강 ▲, 감소 = 파랑 ▼ */
 function deltaHtml(v, was, col){
   if(v==null || was==null) return '';
   const d = v - was;
   if(!d) return '';
   let txt;
-  if(col.f[0]==='p'){                       // 비율은 %p, 표기 자릿수로 반올림해 0 이면 생략
+  if(col.f[0]==='p'){
     const dec = col.f==='p0' ? 0 : 1;
     const val = +(Math.abs(d)*100).toFixed(dec);
     if(!val) return '';
@@ -282,11 +286,12 @@ function deltaHtml(v, was, col){
   }
   return `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${txt}</span>`;
 }
+
 /* 입고율 도넛 — 20% 미만 빨강 / 20~60% 노랑 / 60% 초과 녹색 */
 function donut(v){
   const pct = Math.max(0, Math.min(100, v*100));
   const color = pct < 20 ? '#e0294a' : pct < 60 ? '#eab308' : '#16a34a';
-  const C = 2 * Math.PI * 6;                       // 반지름 6 원둘레
+  const C = 2 * Math.PI * 6;
   return `<svg class="dn" viewBox="0 0 16 16" width="16" height="16">
     <circle cx="8" cy="8" r="6" fill="none" stroke="#e6eaf1" stroke-width="3"/>
     <circle cx="8" cy="8" r="6" fill="none" stroke="${color}" stroke-width="3"
@@ -299,27 +304,28 @@ function cell(v, col, was){
     return `<td class="num dcell"><span class="dwrap">${donut(v)}<span class="v">${txt}</span></span></td>`;
   return `<td class="num${v==null?' dim':''}">${txt}</td>`;
 }
-function dataRow(name, o, cls, was){
-  const cells = COLS.map(c=>cell(
-      c.k==='inRate' ? inRateOf(o) : get(o,c.k), c,
-      c.k==='inRate' ? inRateOf(was) : get(was,c.k))).join('');
-  return `<tr class="${cls||''}"><th class="nm">${name}</th>${cells}</tr>`;
+function cellsOf(o, was){
+  return COLS.map(c=>cell(
+    c.k==='inRate' ? inRateOf(o) : get(o,c.k), c,
+    c.k==='inRate' ? inRateOf(was) : get(was,c.k))).join('');
 }
-function groupRow(label){
-  return `<tr class="grprow"><th colspan="${COLS.length+1}">${label}</th></tr>`;
+function dataRow(name, o, cls, was){
+  return `<tr class="${cls||''}"><th class="nm">${name}</th>${cellsOf(o,was)}</tr>`;
 }
 function table(rows){
   return `<div class="tw"><table class="sum">
     <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
+function panel(title, sub, body){
+  return `<div class="panel"><h3>${title}</h3><div class="sub">${sub}</div>${body}</div>`;
+}
 
-/* 여러 행을 더한 합계. 수량·금액은 단순 합, 비율은 합계로 다시 계산한다
-   (비율을 평균 내면 규모가 큰 항목이 묻히므로 쓰지 않는다) */
+/* 여러 행의 합계 — 수량·금액은 합, 비율은 합계값으로 재계산 */
 function sumRows(list){
   const t = {};
   ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku'].forEach(k=>{
-    const vs = list.map(d=>d[k]).filter(v=>v!=null);
+    const vs = list.map(d=>d && d[k]).filter(v=>v!=null);
     t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
   });
   t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
@@ -328,44 +334,53 @@ function sumRows(list){
   return t;
 }
 
-function rowsOf(view){
-  if(view==='season'){
-    const b1 = SUM.block1.filter(d=>d.mode==='new');
-    const seasons = [...new Set(b1.filter(d=>d.season).map(d=>d.season))];
-    return seasons.map(s2 => groupRow(s2) + b1.filter(d=>d.season===s2)
-        .map(d=>dataRow(d.item==='TTL' ? (s2+' TTL') : d.item, d.cur, d.item==='TTL'?'ttl':'', d.was))
-        .join('')).join('')
-      + b1.filter(d=>d.kind==='신상품 TTL').map(d=>dataRow('신상품 TTL', d.cur, 'ttl grand', d.was)).join('');
-  }
-  if(view==='newItem')
-    return SUM.newItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('');
-  if(view==='newCat')
-    return [...new Set(SUM.newCat.map(d=>d.item))].map(g => {
-      const list = SUM.newCat.filter(d=>d.item===g);
-      return groupRow(g) + list.map(d=>dataRow(d.cat, d, '', d.was)).join('')
-        + dataRow(g+' 합계', sumRows(list), 'ttl');
-    }).join('') + dataRow('TOTAL', sumRows(SUM.newCat), 'ttl grand');
-  return groupRow('복종') + SUM.runItem.map(d=>dataRow(d.item, d, d.item==='TOTAL'?'ttl grand':'', d.was)).join('')
-    + [...new Set(SUM.runCat.map(d=>d.item))].map(g => {
-        const list = SUM.runCat.filter(d=>d.item===g);
-        return groupRow(g+' 카테고리') + list.map(d=>dataRow(d.cat, d, '', d.was)).join('')
-          + dataRow(g+' 합계', sumRows(list), 'ttl');
-      }).join('')
-    + dataRow('카테고리 TOTAL', sumRows(SUM.runCat), 'ttl grand');
+/* ---------- 접이식 행 (복종 클릭 -> 하위 카테고리) ---------- */
+const matchItem = (a,b) => a===b || a.startsWith(b) || b.startsWith(a);   // ACC <-> ACCESSORY
+function parentRow(name, o, was, gid, subCount, cls){
+  const tg = subCount ? `<span class="tg">▸</span>` : `<span class="tg none"></span>`;
+  return `<tr class="prow${subCount?' has':''} ${cls||''}" data-g="${gid}">
+    <th class="nm">${tg}${name}${subCount?`<span class="cnt">${subCount}</span>`:''}</th>${cellsOf(o,was)}</tr>`;
+}
+function subRow(name, o, was, gid){
+  return `<tr class="srow" data-p="${gid}" style="display:none">
+    <th class="nm sub">${name}</th>${cellsOf(o,was)}</tr>`;
 }
 
-/* ---------- 전년 동시점 비교 ---------- */
+function seasonCatTable(season){
+  const parents = SUM.block1.filter(d=>d.mode==='new' && d.season===season && d.item!=='TTL');
+  const ttl = SUM.block1.find(d=>d.mode==='new' && d.season===season && d.item==='TTL');
+  const rows = parents.map(d=>{
+    const subs = SUM.seasonCat.filter(x=>x.season===season && matchItem(x.item, d.item));
+    const gid = season+'-'+d.item;
+    return parentRow(d.item, d.cur, d.was, gid, subs.length)
+      + subs.map(x=>subRow(x.cat, x, x.was, gid)).join('');
+  }).join('');
+  return rows + (ttl ? dataRow(season+' TTL', ttl.cur, 'ttl grand', ttl.was) : '');
+}
+
+function runCatTable(){
+  const parents = SUM.runItem.filter(d=>d.item!=='TOTAL');
+  const ttl = SUM.runItem.find(d=>d.item==='TOTAL');
+  const rows = parents.map(d=>{
+    const subs = SUM.runCat.filter(x=>matchItem(x.item, d.item));
+    const gid = 'run-'+d.item;
+    return parentRow(d.item, d, d.was, gid, subs.length)
+      + subs.map(x=>subRow(x.cat, x, x.was, gid)).join('');
+  }).join('');
+  return rows + (ttl ? dataRow('러닝 TTL', ttl, 'ttl grand', ttl.was) : '');
+}
+
+/* ---------- 전년 동시점 비교 (시즌별 · 복종별 세로 막대) ---------- */
 const CMP_META = {
   qtyIn   : {label:'입고량',      f:'n'},
   sales   : {label:'누계판매량',  f:'n'},
-  sellRate: {label:'수량판매율',  f:'p'},
+  sellRate: {label:'수량판매율',  f:'p1'},
   salesTag: {label:'누계판매TAG', f:'w'},
   salesAmt: {label:'실판매금액',  f:'w'},
-  disc    : {label:'할인율',      f:'p'},
+  disc    : {label:'할인율',      f:'p1'},
 };
 const CSEASONS = [...new Set(SUM.block1.filter(d=>d.mode==='new' && d.season).map(d=>d.season))];
 
-/* 시즌(가을·겨울)을 캡슐로 고르지 않고 한 화면에 이어서 보여준다 */
 function cmpBlocks(season){
   const rows = SUM.block1.filter(d=>d.mode==='new' && d.season===season);
   return rows.map(d=>{
@@ -404,19 +419,42 @@ function cmpPanel(){
 
 /* ---------- 렌더 ---------- */
 function renderSum(){
-  document.getElementById('metrics').innerHTML = '<span class="flabel">집계표</span>' +
-    VIEWS.map(v=>`<button class="chip${v.k===VIEW?' on':''}" data-v="${v.k}">${v.label}</button>`).join('');
-  document.querySelectorAll('#metrics .chip').forEach(b=>b.addEventListener('click',()=>{
-    VIEW = b.dataset.v; renderSum();
-  }));
+  const m = document.getElementById('metrics');
+  if(m){ m.innerHTML=''; m.style.display='none'; }
 
-  const v = VIEWS.find(x=>x.k===VIEW);
-  document.getElementById('panels').innerHTML =
-    `<div class="panel"><h3>${v.label}</h3>
-     <div class="sub">${v.sub} · 입고율 도넛 20%↓ 빨강 · 20~60% 노랑 · 60%↑ 녹색 · 값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감</div>
-     ${table(rowsOf(VIEW))}</div>`;
+  const fall = SUM.block1.find(d=>d.mode==='new' && d.season==='가을' && d.item==='TTL');
+  const wint = SUM.block1.find(d=>d.mode==='new' && d.season==='겨울' && d.item==='TTL');
+  const newTtl = SUM.block1.find(d=>d.kind==='신상품 TTL');
+  const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
+
+  const t1 = table(
+    (fall ? dataRow('가을', fall.cur, '', fall.was) : '') +
+    (wint ? dataRow('겨울', wint.cur, '', wint.was) : '') +
+    (runTtl ? dataRow('러닝', runTtl, '', runTtl.was) : '') +
+    dataRow('합계', sumRows([newTtl && newTtl.cur, runTtl]), 'ttl grand',
+            (newTtl && newTtl.was && runTtl && runTtl.was) ? sumRows([newTtl.was, runTtl.was]) : null));
+
+  const grand = table(
+    (newTtl ? dataRow('신상품 TTL (가을+겨울)', newTtl.cur, '', newTtl.was) : '') +
+    (runTtl ? dataRow('러닝 TTL', runTtl, '', runTtl.was) : '') +
+    dataRow('전체 합계', sumRows([newTtl && newTtl.cur, runTtl]), 'ttl grand',
+            (newTtl && newTtl.was && runTtl && runTtl.was) ? sumRows([newTtl.was, runTtl.was]) : null));
+
+  document.getElementById('panels').innerHTML = [
+    panel('① 시즌 요약', '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · 값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감', t1),
+    panel('② 가을 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다', table(seasonCatTable('가을'))),
+    panel('③ 겨울 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다', table(seasonCatTable('겨울'))),
+    panel('④ 러닝 카테고리', '26FW 신규 러닝 품번 기준 (구품번 실적은 포함하지 않음) · 복종 행을 클릭하면 하위 카테고리가 펼쳐집니다', table(runCatTable())),
+    panel('⑤ 합계', '신상품(가을+겨울) + 러닝', grand),
+  ].join('');
 
   document.getElementById('cmp').innerHTML = cmpPanel();
+
+  document.querySelectorAll('tr.prow.has').forEach(tr=>tr.addEventListener('click',()=>{
+    const open = tr.classList.toggle('open');
+    document.querySelectorAll(`tr.srow[data-p="${CSS.escape(tr.dataset.g)}"]`)
+      .forEach(x=>x.style.display = open ? '' : 'none');
+  }));
 }
 renderSum();
 </script>

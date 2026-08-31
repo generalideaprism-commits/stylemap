@@ -308,7 +308,7 @@ MET = dict(styles='G', sku='H', plan='I', inM='J', inSku='K', qtyIn='L', inRate=
            planCost='N', cost='O', tag='Q', mu='S', sales='T', sellRate='U',
            salesTag='V', salesAmt='W', salesCost='X', disc='Y', wkQty='Z', wkAmt='AA')
 PREV = dict(qtyIn='AD', sales='AE', sellRate='AF', salesTag='AG', salesAmt='AH', disc='AI')
-SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': []}
+SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': [], 'seasonCat': []}
 
 if '종합' in wb.sheetnames:
     rows = list(wb['종합'].iter_rows(min_row=1, max_row=150, values_only=True))
@@ -359,6 +359,23 @@ if '종합' in wb.sheetnames:
                 if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
                     SUM[key_cat].append({'item': gubun, 'cat': f, 'code': e, **v})
 
+    # 5) 시즌(가을/겨울)별 카테고리 상세 — 66행 아래, A열에 시즌이 적혀 있는 블록
+    cur_season, gubun = '', ''
+    for r in range(66, len(rows) + 1):      # 시트가 150행보다 짧을 수 있다
+        a = txt(cell(r, 'A'))
+        if a not in ('가을', '겨울'):
+            continue
+        if a != cur_season:
+            cur_season, gubun = a, ''
+        d = txt(cell(r, 'D'))
+        e, f = txt(cell(r, 'E')), txt(cell(r, 'F'))
+        if d and not d.endswith('TOTAL') and 'ACC제외' not in d:
+            gubun = d
+        if f:
+            v = vals(r, MET)
+            if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
+                SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e, **v})
+
 # ---- 직전 스타일맵 대비 증감 ----
 # 각 행에 고유 키를 달아 스냅샷과 대조한다. 날짜가 같은 파일을 다시 빌드하면
 # 스냅샷을 덮지 않으므로 증감 표기가 그대로 유지된다.
@@ -371,6 +388,8 @@ for name in ('newItem', 'runItem'):
 for name in ('newCat', 'runCat'):
     for d in SUM[name]:
         d['_k'] = '%s|%s|%s' % (name, d['item'], d['cat'])
+for d in SUM['seasonCat']:
+    d['_k'] = 'seasonCat|%s|%s|%s' % (d['season'], d['item'], d['cat'])
 
 MET_KEYS = list(MET.keys())
 
@@ -381,7 +400,7 @@ def row_vals(d):
 
 
 def all_rows():
-    for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat'):
+    for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat', 'seasonCat'):
         for d in SUM[name]:
             yield d
 
