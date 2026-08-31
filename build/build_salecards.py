@@ -152,8 +152,30 @@ for r in wb[CO_MAIN].iter_rows(min_row=4, values_only=True):
     if c and c != '스타일':
         main_codes.add(c)
 
+# 파일 연도 (8/1 이후 판매 합산 기준)
+_m = re.match(r'^(\d{2})(\d{2})(\d{2})_', os.path.basename(SRC))
+FILE_YEAR = 2000 + int(_m.group(1)) if _m else 2026
+
 for co_sheet in (CO_MAIN, CO_RUN):
     ws = wb[co_sheet]
+    # 주간 열은 매주 한 칸씩 밀리는 롤링 구조라 라벨(W1=최근 완료 주)로 찾는다
+    hdr = next(ws.iter_rows(min_row=2, max_row=2, values_only=True))
+    wk = {}
+    w1_start = None
+    for i, v in enumerate(hdr):
+        m = re.match(r'^W(\d+)\((\d{2})/(\d{2})', txt(v))
+        if m:
+            wk[int(m.group(1))] = i
+            if int(m.group(1)) == 1:
+                w1_start = datetime.date(FILE_YEAR, int(m.group(2)), int(m.group(3)))
+    w1i, w2i = wk.get(1, C('CE')), wk.get(2, C('CD'))
+    # 8/1 이후 판매 = 시작일이 8/1 이상인 주들의 합 (러닝 현재고 판매율용)
+    aug_cols = []
+    if w1_start:
+        aug1 = datetime.date(FILE_YEAR, 8, 1)
+        max_n = (w1_start - aug1).days // 7 + 1
+        aug_cols = [idx for n, idx in wk.items() if 1 <= n <= max_n]
+    print('%s: 전주 %s / 2주전 %s / 8월이후 주 %d개' % (co_sheet, txt(hdr[w1i]), txt(hdr[w2i]), len(aug_cols)))
     for r in ws.iter_rows(min_row=4, values_only=True):
         code = txt(r[CO['style']] if len(r) > CO['style'] else '')
         if not code or code == '스타일':
@@ -166,11 +188,13 @@ for co_sheet in (CO_MAIN, CO_RUN):
             'cname': txt(r[CO['cname']]),
             'plan': num(r[CO['plan']]),
             'qtyIn': num(r[CO['qty_in']]),
-            'w1': num(r[CO['w1']]),
-            'w2': num(r[CO['w2']]),
+            'w1': num(r[w1i]) if len(r) > w1i else None,
+            'w2': num(r[w2i]) if len(r) > w2i else None,
             'total': num(r[CO['total']]),
             'rate': num(r[CO['rate']]),
         })
+        s['augSales'] = (s.get('augSales') or 0) + sum(
+            (num(r[i]) or 0) for i in aug_cols if len(r) > i)
         # 입고일/출고일: 칼라별 날짜 중 가장 빠른 날짜
         for key, col in (('_in', 'in_date'), ('_out', 'out_date')):
             k = dkey(r[CO[col]])
@@ -257,10 +281,17 @@ if stock_sheet:
 for s in data:
     if s['line'] != '러닝':
         continue
-    # 신규품번 입고량 (통합 카드는 sub = 신규품번 단독, 짝 없는 GF7 단독 카드는 자기 자신)
-    new_in = ((s['sub']['ttl']['qtyIn'] if s.get('sub') else s['ttl']['qtyIn']) or 0)
+    # 신규품번 기준 값 (통합 카드는 sub = 신규품번 단독, 짝 없는 GF7 단독 카드는 자기 자신)
+    tt = (s['sub'] if s.get('sub') else s)['ttl']
+    new_in = tt['qtyIn'] or 0
     base = next((point_stock[c] for c in [s['style']] + s['imgCodes'] if c in point_stock), 0)
-    s['stock'] = base + new_in
+    stock = base + new_in
+    # 판매율 분자: 구품번의 8/1 이후 판매 + 신규품번 누계판매 (단독 GF7 카드는 자기 누계만)
+    run_sales = ((s.get('augSales') or 0) if s.get('sub') else 0) + (tt['total'] or 0)
+    s['stock'] = stock
+    s['runStat'] = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
+                    'stock': stock, 'sales': run_sales,
+                    'rate': (run_sales / stock * 100) if stock else None}
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
 
