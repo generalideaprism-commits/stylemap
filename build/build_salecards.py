@@ -45,7 +45,7 @@ def C(letter):
 
 
 # ST 시트 열
-ST = dict(season=C('D'), gender=C('E'), item=C('F'), theme=C('K'), style=C('M'), name=C('N'),
+ST = dict(season=C('D'), gender=C('E'), item=C('F'), item2=C('H'), theme=C('K'), style=C('M'), name=C('N'),
           vendor=C('P'), real=C('Y'), tag=C('Z'), cost=C('AA'),
           tag_amt=C('BH'), sale_amt=C('BI'), img_code=C('BR'))
 # CO 시트 열
@@ -123,6 +123,7 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'season': season,
             'gender': txt(r[ST['gender']]),
             'item': txt(r[ST['item']]),
+            'cat2': txt(r[ST['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
             # 테마 = 생판재 시트 K열(컨셉). '노르딕,패턴' 도 통째로 하나의 테마다
             'themes': [txt(r[ST['theme']])] if txt(r[ST['theme']]) else [],
             'vendor': txt(r[ST['vendor']]),
@@ -239,6 +240,27 @@ for s in styles.values():
         s.pop(k, None)
 
 data = [styles[c] for c in order if c not in subs]
+
+# ---- 러닝 현재고: 시점재고 시트(기존품번 M열 -> BO열 '전체') + 신규품번 입고량 ----
+point_stock = {}
+stock_sheet = next((n for n in wb.sheetnames if '시점재고' in n), None)
+if stock_sheet:
+    for r in wb[stock_sheet].iter_rows(min_row=4, values_only=True):
+        code = txt(r[C('M')] if len(r) > C('M') else '')
+        if not code or code == '스타일':
+            continue
+        v = num(r[C('BO')]) if len(r) > C('BO') else None
+        if v is not None:
+            point_stock[code] = point_stock.get(code, 0) + v
+    print('시점재고:', len(point_stock), '스타일')
+
+for s in data:
+    if s['line'] != '러닝':
+        continue
+    # 신규품번 입고량 (통합 카드는 sub = 신규품번 단독, 짝 없는 GF7 단독 카드는 자기 자신)
+    new_in = ((s['sub']['ttl']['qtyIn'] if s.get('sub') else s['ttl']['qtyIn']) or 0)
+    base = next((point_stock[c] for c in [s['style']] + s['imgCodes'] if c in point_stock), 0)
+    s['stock'] = base + new_in
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
 
@@ -391,7 +413,7 @@ for name in ('newCat', 'runCat'):
 for d in SUM['seasonCat']:
     d['_k'] = 'seasonCat|%s|%s|%s' % (d['season'], d['item'], d['cat'])
 
-MET_KEYS = list(MET.keys())
+MET_KEYS = list(MET.keys()) + ['stock']
 
 
 def row_vals(d):
@@ -407,6 +429,78 @@ def all_rows():
 
 SNAP = os.path.join(HERE, 'sum_prev.json')
 snap = json.load(open(SNAP, encoding='utf-8')) if os.path.exists(SNAP) else None
+# v2: SKU 정의가 컬러 수 기준으로 바뀜 — 구버전 스냅샷의 styles/sku 는 비교하지 않는다
+if snap and snap.get('ver') != 2:
+    for _rows in (snap.get('rows', {}), snap.get('carry', {})):
+        for _v in _rows.values():
+            _v.pop('styles', None)
+            _v.pop('sku', None)
+# ---- 스타일수 / SKU(스타일별 컬러 수 합) / 재고량을 카드 데이터에서 집계해 SUM 행에 주입 ----
+# 종합 시트의 SKU(H열)는 컬러×사이즈 합계라 쓰지 않고, 카드의 컬러 행 수로 다시 센다.
+from collections import defaultdict as _dd
+ITEM2BOK = {'OUTER': 'OUTER', 'KNIT': 'TOP', 'INNER (W/O KNIT)': 'TOP',
+            'BOTTOM': 'BOTTOM', 'ACC': 'ACC', '기타': 'ACC'}
+
+
+def _z():
+    return {'styles': 0, 'sku': 0, 'stock': 0}
+
+
+def _acc(t, sku, stock):
+    t['styles'] += 1
+    t['sku'] += sku
+    t['stock'] += stock
+
+
+mB, mC, rB, rC = _dd(_z), _dd(_z), _dd(_z), _dd(_z)
+for st in data:
+    sku = len(st['colors'])
+    bok = ITEM2BOK.get(st['item'], 'ACC')
+    if st['line'] == '메인':
+        stv = (st['ttl']['qtyIn'] or 0) - (st['ttl']['total'] or 0)   # 신상품 재고 = 입고 - 누계판매
+        _acc(mB[(st['season'], bok)], sku, stv)
+        _acc(mC[(st['season'], st['cat2'])], sku, stv)
+    else:
+        stv = st.get('stock', 0)                                       # 러닝 재고 = 시점재고 + 신규입고
+        _acc(rB[bok], sku, stv)
+        _acc(rC[st['cat2']], sku, stv)
+
+
+def _sum(ds):
+    out = _z()
+    for d in ds:
+        for k in out:
+            out[k] += d[k]
+    return out
+
+
+def _put(row, agg):
+    for k in ('styles', 'sku', 'stock'):
+        row[k] = agg[k]
+
+
+for d in SUM['block1']:
+    tgt = d['cur']
+    if d['mode'] == 'run':
+        continue
+    if d.get('kind') == '신상품 TTL':
+        _put(tgt, _sum(mB.values()))
+    elif d['item'] == 'TTL':
+        _put(tgt, _sum(v for k, v in mB.items() if k[0] == d['season']))
+    else:
+        _put(tgt, mB[(d['season'], d['item'])])
+for d in SUM['seasonCat']:
+    _put(d, mC[(d['season'], d['cat'])])
+for d in SUM['newItem']:
+    _put(d, _sum(mB.values()) if d['item'] == 'TOTAL'
+         else _sum(v for k, v in mB.items() if k[1] == d['item']))
+for d in SUM['newCat']:
+    _put(d, _sum(v for k, v in mC.items() if k[1] == d['cat']))
+for d in SUM['runItem']:
+    _put(d, _sum(rB.values()) if d['item'] == 'TOTAL' else rB[d['item']])
+for d in SUM['runCat']:
+    _put(d, rC[d['cat']])
+
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
 
@@ -436,13 +530,17 @@ elif snap:
 else:
     print('증감 비교: 직전 스냅샷 없음 (이번 빌드부터 기록)')
 
+# 스냅샷은 매 빌드 다시 쓴다 (지표 정의가 바뀌어도 다음 비교가 새 정의로 이뤄지도록).
+# 같은 날짜를 다시 빌드하면 carry(직전 날짜 값)는 그대로 두어 증감 기준이 유지된다.
 if not snap or snap.get('date') != updated:
-    json.dump({'date': updated,
-               'rows': {d['_k']: row_vals(d) for d in all_rows()},
-               'carry': (snap or {}).get('rows', {}),
-               'carryDate': (snap or {}).get('date')},
-              open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
-    print('스냅샷 저장:', os.path.basename(SNAP), updated)
+    carry, carry_date = (snap or {}).get('rows', {}), (snap or {}).get('date')
+else:
+    carry, carry_date = snap.get('carry', {}), snap.get('carryDate')
+json.dump({'ver': 2, 'date': updated,
+           'rows': {d['_k']: row_vals(d) for d in all_rows()},
+           'carry': carry, 'carryDate': carry_date},
+          open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
+print('스냅샷 저장:', os.path.basename(SNAP), updated)
 
 def render(tpl_name, out_path, **repl):
     tpl = open(os.path.join(HERE, tpl_name), encoding='utf-8').read()

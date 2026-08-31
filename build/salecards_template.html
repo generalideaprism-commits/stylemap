@@ -115,6 +115,8 @@
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:9px 4px 7px}
+  /* 러닝 카드는 현재고(시점재고+신규입고)까지 5칸 */
+  .stats.s5{grid-template-columns:repeat(5,1fr)}
   .stats div{text-align:center}
   .stats b{display:block;font-size:15px;font-weight:800;letter-spacing:-.5px}
   .stats span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
@@ -242,10 +244,11 @@ function card(s){
       <div><b>${won(s.real)}</b><span>실판가</span></div>
       <div class="r"><b>${s.discount==null?'-':pct(s.discount*100,0)}</b><span>할인율</span></div>
     </div>
-    <div class="stats">
+    <div class="stats${s.stock!=null?' s5':''}">
       <div><b>${n0(t.plan)}</b><span>기획량</span></div>
       <div><b>${n0(t.qtyIn)}</b><span>입고량</span></div>
       <div><b>${n0(t.total)}</b><span>누계판매</span></div>
+      ${s.stock!=null?`<div><b>${n0(s.stock)}</b><span>현재고</span></div>`:''}
       <div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div>
     </div>
     <div class="prog">

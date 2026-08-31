@@ -35,7 +35,7 @@
   /* 집계 표 */
   .tw{overflow-x:auto}
   table.sum{width:100%;border-collapse:collapse;font-size:12px;
-    table-layout:fixed;min-width:1360px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
+    table-layout:fixed;min-width:1700px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
   table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
@@ -249,7 +249,9 @@ const SUM = /*__SUM__*/{};
    ⑥ 전년 동시점 비교 */
 
 const COLS = [
-  {k:'plan',     label:'기획량',      f:'n'},
+  {k:'styles',   label:'스타일수',    f:'n'},
+  {k:'sku',      label:'SKU',        f:'n'},
+  {k:'plan',     label:'기획량',      f:'n', sep:true},
   {k:'qtyIn',    label:'입고량',      f:'n'},
   {k:'inRate',   label:'입고율',      f:'p0', donut:true},
   {k:'wkQty',    label:'주간판매량',  f:'n', sep:true},   // 왼쪽에 얇은 세로 구분선
@@ -259,6 +261,7 @@ const COLS = [
   {k:'salesTag', label:'누계판매TAG', f:'m'},
   {k:'salesAmt', label:'실판매금액',  f:'m'},
   {k:'disc',     label:'할인율',      f:'p1'},
+  {k:'stock',    label:'재고량',      f:'n', sep:true},   // 신상품 = 입고-누계판매, 러닝 = 시점재고+신규입고
 ];
 
 const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
@@ -325,7 +328,8 @@ function dataRow(name, o, cls, was){
 }
 function table(rows){
   // 열 폭 고정 배분 — 수량 8% · 비율 7% · 금액 11.5% (간격이 내용 길이에 따라 들쭉날쭉해지지 않게)
-  const colw = c => c.f[0]==='p' ? '7.5%' : c.f==='m' ? '10%' : '8.5%';
+  const colw = c => ['styles','sku'].includes(c.k) ? '4.5%'
+    : c.f[0]==='p' ? '7%' : c.f==='m' ? '11%' : '8.5%';
   const cols = `<colgroup><col style="width:11%">${COLS.map(c=>`<col style="width:${colw(c)}">`).join('')}</colgroup>`;
   return `<div class="tw"><table class="sum">${cols}
     <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
@@ -338,7 +342,7 @@ function panel(title, sub, body){
 /* 여러 행의 합계 — 수량·금액은 합, 비율은 합계값으로 재계산 */
 function sumRows(list){
   const t = {};
-  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku','wkQty','wkAmt'].forEach(k=>{
+  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku','wkQty','wkAmt','stock'].forEach(k=>{
     const vs = list.map(d=>d && d[k]).filter(v=>v!=null);
     t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
   });
