@@ -475,77 +475,113 @@ def all_rows():
 
 SNAP = os.path.join(HERE, 'sum_prev.json')
 snap = json.load(open(SNAP, encoding='utf-8')) if os.path.exists(SNAP) else None
-# v2: SKU 정의가 컬러 수 기준으로 바뀜 — 구버전 스냅샷의 styles/sku 는 비교하지 않는다
-if snap and snap.get('ver') != 2:
+# v3: 스타일수/SKU/기획량 정의가 MDP 기준으로 바뀜 — 구버전 값은 비교하지 않는다
+if snap and snap.get('ver') != 3:
     for _rows in (snap.get('rows', {}), snap.get('carry', {})):
         for _v in _rows.values():
-            _v.pop('styles', None)
-            _v.pop('sku', None)
-# ---- 스타일수 / SKU(스타일별 컬러 수 합) / 재고량을 카드 데이터에서 집계해 SUM 행에 주입 ----
-# 종합 시트의 SKU(H열)는 컬러×사이즈 합계라 쓰지 않고, 카드의 컬러 행 수로 다시 센다.
+            for _k in ('styles', 'sku', 'plan', 'inRate'):
+                _v.pop(_k, None)
+# ---- 스타일수/SKU/기획량은 MDP(수량 기획서)에서, 재고량은 카드 데이터에서 집계해 SUM 행에 주입 ----
 from collections import defaultdict as _dd
+
+# 재고: 신상품 = 입고-누계판매(카드), 러닝 = 시점재고+신규입고(카드 stock)
 ITEM2BOK = {'OUTER': 'OUTER', 'KNIT': 'TOP', 'INNER (W/O KNIT)': 'TOP',
             'BOTTOM': 'BOTTOM', 'ACC': 'ACC', '기타': 'ACC'}
-
-
-def _z():
-    return {'styles': 0, 'sku': 0, 'stock': 0}
-
-
-def _acc(t, sku, stock):
-    t['styles'] += 1
-    t['sku'] += sku
-    t['stock'] += stock
-
-
-mB, mC, rB, rC = _dd(_z), _dd(_z), _dd(_z), _dd(_z)
+stkB, stkC = _dd(float), _dd(float)
 for st in data:
-    sku = len(st['colors'])
     bok = ITEM2BOK.get(st['item'], 'ACC')
     if st['line'] == '메인':
-        stv = (st['ttl']['qtyIn'] or 0) - (st['ttl']['total'] or 0)   # 신상품 재고 = 입고 - 누계판매
-        _acc(mB[(st['season'], bok)], sku, stv)
-        _acc(mC[(st['season'], st['cat2'])], sku, stv)
+        v = (st['ttl']['qtyIn'] or 0) - (st['ttl']['total'] or 0)
+        stkB[(st['season'], bok)] += v
+        stkC[(st['season'], st['cat2'])] += v
     else:
-        stv = st.get('stock', 0)                                       # 러닝 재고 = 시점재고 + 신규입고
-        _acc(rB[bok], sku, stv)
-        _acc(rC[st['cat2']], sku, stv)
+        v = st.get('stock', 0)
+        stkB[('러닝', bok)] += v
+        stkC[('러닝', st['cat2'])] += v
+
+# MDP: data/26FW_MDP.xlsb — 메인품번(AB) 행 기준 스타일수/SKU(AJ)/기획량(AN 컬러별수량 합)
+MDP_PATH = os.path.join(DATA_DIR, '26FW_MDP.xlsb')
+MDP_BOK = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC'}
+mdpB, mdpC = _dd(lambda: {'styles': 0, 'sku': 0, 'plan': 0}), _dd(lambda: {'styles': 0, 'sku': 0, 'plan': 0})
+mdp_loaded = False
+if os.path.exists(MDP_PATH):
+    from pyxlsb import open_workbook as _oxb
+    _iE, _iF, _iH, _iAB, _iAJ, _iAM, _iAN = (C('E'), C('F'), C('H'), C('AB'), C('AJ'), C('AM'), C('AN'))
+    _styles = {}
+    with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
+        for _row in _ws.rows():
+            _d = {c.c: c.v for c in _row}
+            _code = _d.get(_iAB)
+            if not isinstance(_code, str) or len(_code.strip()) < 6:
+                continue
+            _st = _styles.setdefault(_code.strip().upper(), {
+                'season': txt(_d.get(_iE)), 'bok': MDP_BOK.get(txt(_d.get(_iF)), 'ACC'),
+                'code': txt(_d.get(_iH)), 'sku': 0, 'plan': 0})
+            if _d.get(_iAM):
+                _st['sku'] += 1
+            if isinstance(_d.get(_iAN), (int, float)):
+                _st['plan'] += _d[_iAN]
+    for _st in _styles.values():
+        _season = '러닝' if '(러닝)' in _st['season'] else _st['season']
+        for tgt in (mdpB[(_season, _st['bok'])], mdpC[(_season, _st['code'])]):
+            tgt['styles'] += 1
+            tgt['sku'] += _st['sku']
+            tgt['plan'] += _st['plan']
+    mdp_loaded = True
+    print('MDP:', len(_styles), '품번 / 기획량 합', sum(x['plan'] for x in _styles.values()))
+else:
+    print('경고: %s 없음 — 스타일수/SKU/기획량을 MDP 로 대체하지 못함' % MDP_PATH)
 
 
-def _sum(ds):
-    out = _z()
+def _sumv(ds):
+    out = {'styles': 0, 'sku': 0, 'plan': 0}
     for d in ds:
         for k in out:
             out[k] += d[k]
     return out
 
 
-def _put(row, agg):
-    for k in ('styles', 'sku', 'stock'):
-        row[k] = agg[k]
+def _put(row, agg, stock):
+    if mdp_loaded:
+        for k in ('styles', 'sku', 'plan'):
+            row[k] = agg[k]
+        row.pop('inRate', None)          # 기획량이 MDP 기준으로 바뀌었으니 입고율은 다시 계산
+    row['stock'] = stock
 
 
+_seasons = ('가을', '겨울')
 for d in SUM['block1']:
-    tgt = d['cur']
     if d['mode'] == 'run':
         continue
+    tgt = d['cur']
     if d.get('kind') == '신상품 TTL':
-        _put(tgt, _sum(mB.values()))
+        _put(tgt, _sumv(v for k, v in mdpB.items() if k[0] in _seasons),
+             sum(v for k, v in stkB.items() if k[0] in _seasons))
     elif d['item'] == 'TTL':
-        _put(tgt, _sum(v for k, v in mB.items() if k[0] == d['season']))
+        _put(tgt, _sumv(v for k, v in mdpB.items() if k[0] == d['season']),
+             sum(v for k, v in stkB.items() if k[0] == d['season']))
     else:
-        _put(tgt, mB[(d['season'], d['item'])])
+        _put(tgt, mdpB[(d['season'], d['item'])], stkB[(d['season'], d['item'])])
 for d in SUM['seasonCat']:
-    _put(d, mC[(d['season'], d['cat'])])
+    _put(d, mdpC[(d['season'], d['code'])], stkC[(d['season'], d['cat'])])
 for d in SUM['newItem']:
-    _put(d, _sum(mB.values()) if d['item'] == 'TOTAL'
-         else _sum(v for k, v in mB.items() if k[1] == d['item']))
+    if d['item'] == 'TOTAL':
+        _put(d, _sumv(v for k, v in mdpB.items() if k[0] in _seasons),
+             sum(v for k, v in stkB.items() if k[0] in _seasons))
+    else:
+        _put(d, _sumv(v for k, v in mdpB.items() if k[0] in _seasons and k[1] == d['item']),
+             sum(v for k, v in stkB.items() if k[0] in _seasons and k[1] == d['item']))
 for d in SUM['newCat']:
-    _put(d, _sum(v for k, v in mC.items() if k[1] == d['cat']))
+    _put(d, _sumv(v for k, v in mdpC.items() if k[0] in _seasons and k[1] == d['code']),
+         sum(v for k, v in stkC.items() if k[0] in _seasons and k[1] == d['cat']))
 for d in SUM['runItem']:
-    _put(d, _sum(rB.values()) if d['item'] == 'TOTAL' else rB[d['item']])
+    if d['item'] == 'TOTAL':
+        _put(d, _sumv(v for k, v in mdpB.items() if k[0] == '러닝'),
+             sum(v for k, v in stkB.items() if k[0] == '러닝'))
+    else:
+        _put(d, mdpB[('러닝', d['item'])], stkB[('러닝', d['item'])])
 for d in SUM['runCat']:
-    _put(d, rC[d['cat']])
+    _put(d, mdpC[('러닝', d['code'])], stkC[('러닝', d['cat'])])
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
@@ -582,7 +618,7 @@ if not snap or snap.get('date') != updated:
     carry, carry_date = (snap or {}).get('rows', {}), (snap or {}).get('date')
 else:
     carry, carry_date = snap.get('carry', {}), snap.get('carryDate')
-json.dump({'ver': 2, 'date': updated,
+json.dump({'ver': 3, 'date': updated,
            'rows': {d['_k']: row_vals(d) for d in all_rows()},
            'carry': carry, 'carryDate': carry_date},
           open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)

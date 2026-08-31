@@ -35,7 +35,7 @@
   /* 집계 표 */
   .tw{overflow-x:auto}
   table.sum{width:100%;border-collapse:collapse;font-size:12px;
-    table-layout:fixed;min-width:1700px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
+    table-layout:fixed;min-width:1600px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
   table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
@@ -251,8 +251,8 @@ const SUM = /*__SUM__*/{};
 const COLS = [
   {k:'styles',   label:'스타일수',    f:'n'},
   {k:'sku',      label:'SKU',        f:'n'},
-  {k:'plan',     label:'기획량',      f:'n', sep:true},
-  {k:'qtyIn',    label:'입고량',      f:'n'},
+  {k:'plan',     label:'기획량',      f:'n'},
+  {k:'qtyIn',    label:'입고량',      f:'n', sep:true},
   {k:'inRate',   label:'입고율',      f:'p0', donut:true},
   {k:'wkQty',    label:'주간판매량',  f:'n', sep:true},   // 왼쪽에 얇은 세로 구분선
   {k:'wkAmt',    label:'주간판매금액', f:'m'},
@@ -261,7 +261,6 @@ const COLS = [
   {k:'salesTag', label:'누계판매TAG', f:'m'},
   {k:'salesAmt', label:'실판매금액',  f:'m'},
   {k:'disc',     label:'할인율',      f:'p1'},
-  {k:'stock',    label:'재고량',      f:'n', sep:true},   // 신상품 = 입고-누계판매, 러닝 = 시점재고+신규입고
 ];
 
 const fmtN = v => (v==null ? '-' : Math.round(v).toLocaleString('ko-KR'));
@@ -388,7 +387,9 @@ function runCatTable(){
   return rows + (ttl ? dataRow('러닝 TTL', ttl, 'ttl grand', ttl.was) : '');
 }
 
-/* ---------- 전년 동시점 비교 (시즌별 · 복종별 세로 막대) ---------- */
+/* ---------- 전년 동시점 비교 ----------
+   시즌 구분 없이 26FW 신상품 토탈(가을+겨울) 대 전년 동시점 토탈.
+   복종별 블록(OUTER/TOP/BOTTOM/ACC/TTL) x 지표 6종 세로 막대. */
 const CMP_META = {
   qtyIn   : {label:'입고량',      f:'n'},
   sales   : {label:'누계판매량',  f:'n'},
@@ -397,15 +398,32 @@ const CMP_META = {
   salesAmt: {label:'실판매금액',  f:'m'},
   disc    : {label:'할인율',      f:'p1'},
 };
-const CSEASONS = [...new Set(SUM.block1.filter(d=>d.mode==='new' && d.season).map(d=>d.season))];
 
-function cmpBlocks(season){
-  const rows = SUM.block1.filter(d=>d.mode==='new' && d.season===season);
-  return rows.map(d=>{
-    const isTtl = d.item==='TTL';
+function cmpCombine(rows, side){
+  const t = {};
+  ['qtyIn','sales','salesTag','salesAmt'].forEach(k=>{
+    const vs = rows.map(d=>get(d[side],k)).filter(v=>v!=null);
+    t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
+  });
+  t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
+  t.disc = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
+  return t;
+}
+
+function cmpPanel(){
+  const newRows = SUM.block1.filter(d=>d.mode==='new' && d.season && d.item!=='TTL');
+  const items = [...new Set(newRows.map(d=>d.item))];
+  const ttl = SUM.block1.find(d=>d.kind==='신상품 TTL');
+  const blocks = items.map(it=>{
+    const rs = newRows.filter(d=>d.item===it);
+    return {name: it, cur: cmpCombine(rs,'cur'), prev: cmpCombine(rs,'prev'), ttl: false};
+  });
+  if(ttl) blocks.push({name:'신상품 TTL', cur: ttl.cur, prev: ttl.prev||{}, ttl: true});
+
+  const body = blocks.map(b=>{
     const mets = Object.keys(CMP_META).map(k=>{
       const meta = CMP_META[k], fm = FMT[meta.f];
-      const c = get(d.cur,k), p = get(d.prev,k);
+      const c = get(b.cur,k), p = get(b.prev,k);
       const max = Math.max(Math.abs(c||0), Math.abs(p||0)) || 1;
       const h = v => (v==null ? 0 : Math.max(v ? 3 : 0, Math.min(100, Math.abs(v)/max*100)));
       let dl='', cls='flat';
@@ -419,20 +437,16 @@ function cmpBlocks(season){
         <div class="cdl ${cls}">${dl||'&nbsp;'}</div>
       </div>`;
     }).join('');
-    return `<div class="cgrp${isTtl?' ttl':''}">
-      <div class="cnm">${isTtl ? (season+' TTL') : d.item}</div>
+    return `<div class="cgrp${b.ttl?' ttl':''}">
+      <div class="cnm">${b.name}</div>
       <div class="cmets">${mets}</div></div>`;
   }).join('');
-}
 
-function cmpPanel(){
-  const seasons = CSEASONS.map(x=>
-    `<div class="cseason"><div class="grp">${x}</div>${cmpBlocks(x)}</div>`).join('');
   return `<div class="panel">
     <h3>26FW vs 전년(25년) 동시점 비교</h3>
-    <div class="sub">시즌별 · 복종별로 지표를 나란히 비교 · 막대는 지표마다 두 값 중 큰 쪽을 100% 로 잡는다
+    <div class="sub">신상품 토탈(가을+겨울 합산) 기준 · 막대는 지표마다 두 값 중 큰 쪽을 100% 로 잡는다
       <span class="lg"><i class="cur"></i>26FW</span><span class="lg"><i class="prv"></i>전년</span></div>
-    ${seasons}</div>`;
+    ${body}</div>`;
 }
 
 /* ---------- 렌더 ---------- */
