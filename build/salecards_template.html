@@ -86,22 +86,22 @@
   #reset:hover{background:#eceff4}
 
   /* ---------- 카드 ---------- */
-  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:14px;
+  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(276px,1fr));gap:14px;
        align-items:start}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
         box-shadow:0 1px 3px rgba(16,24,40,.06);
         /* 화면 밖 카드는 렌더링을 건너뛰고, 레이아웃 영향도 카드 안으로 가둠 */
-        content-visibility:auto;contain-intrinsic-size:auto 520px;contain:layout paint style}
+        content-visibility:auto;contain-intrinsic-size:auto 580px;contain:layout paint style}
   .chead{display:flex;align-items:center;gap:4px;padding:7px 10px 0}
   .chead .code{font-size:11px;color:var(--muted);letter-spacing:.4px}
   .tags{margin-left:auto;display:flex;gap:4px}
   .tag{font-size:9.5px;border-radius:5px;padding:1px 5px;font-weight:700}
   .tag.b{background:var(--blue);color:#fff}
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
-  .cname{font-size:13px;font-weight:800;letter-spacing:-.3px;padding:2px 10px 7px;
+  .cname{font-size:14px;font-weight:800;letter-spacing:-.3px;padding:2px 11px 7px;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  .thumb{position:relative;background:var(--soft);height:186px;display:flex;
+  .thumb{position:relative;background:var(--soft);height:224px;display:flex;
          align-items:center;justify-content:center}
   .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--soft)}
   .thumb .noimg{font-size:11px;color:#c3c9d2;letter-spacing:1px}
@@ -110,13 +110,13 @@
           border-bottom:1px solid var(--line);background:#fff}
   .prices div{padding:6px 3px;text-align:center;border-right:1px solid var(--line)}
   .prices div:last-child{border-right:0}
-  .prices b{display:block;font-size:12px;font-weight:800}
+  .prices b{display:block;font-size:13px;font-weight:800}
   .prices span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:9px 4px 7px}
   .stats div{text-align:center}
-  .stats b{display:block;font-size:14px;font-weight:800;letter-spacing:-.5px}
+  .stats b{display:block;font-size:15px;font-weight:800;letter-spacing:-.5px}
   .stats span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
   .stats .hl b{color:var(--blue)}
 
@@ -128,7 +128,7 @@
   .bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
 
   table{width:100%;border-collapse:collapse;table-layout:fixed}
-  th,td{font-size:10.5px;padding:2px 4px;text-align:right;white-space:nowrap;
+  th,td{font-size:11px;padding:2px 5px;text-align:right;white-space:nowrap;
         overflow:hidden;text-overflow:ellipsis;line-height:1.25}
   th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:#fff}
   td.c{text-align:left}
