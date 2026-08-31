@@ -330,9 +330,9 @@ function dataRow(name, o, cls, was){
 function table(rows){
   // 열 폭 고정 배분 — 수량 8% · 비율 7% · 금액 11.5% (간격이 내용 길이에 따라 들쭉날쭉해지지 않게)
   const colw = c => ['styles','sku'].includes(c.k) ? '4.5%'
-    : ['inM','inSku'].includes(c.k) ? '5.5%'
+    : c.k==='inM' ? '7%' : c.k==='inSku' ? '6%'
     : c.f[0]==='p' ? '7%' : c.f==='m' ? '11%' : '8.5%';
-  const cols = `<colgroup><col style="width:11%">${COLS.map(c=>`<col style="width:${colw(c)}">`).join('')}</colgroup>`;
+  const cols = `<colgroup><col style="width:7.5%">${COLS.map(c=>`<col style="width:${colw(c)}">`).join('')}</colgroup>`;
   return `<div class="tw"><table class="sum">${cols}
     <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -470,7 +470,7 @@ function renderSum(){
             (newTtl && newTtl.was && runTtl && runTtl.was) ? sumRows([newTtl.was, runTtl.was]) : null));
 
   const grand = table(
-    (newTtl ? dataRow('신상품 TTL (가을+겨울)', newTtl.cur, '', newTtl.was) : '') +
+    (newTtl ? dataRow('신상품 TTL', newTtl.cur, '', newTtl.was) : '') +
     (runTtl ? dataRow('러닝 TTL', runTtl, '', runTtl.was) : '') +
     dataRow('전체 합계', sumRows([newTtl && newTtl.cur, runTtl]), 'ttl grand',
             (newTtl && newTtl.was && runTtl && runTtl.was) ? sumRows([newTtl.was, runTtl.was]) : null));
