@@ -412,6 +412,11 @@ function popupCard(s){
   return `<div class="card">
     <div class="chead"><span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span></div>
     <div class="cname">${s.name||''}</div>
+    <div class="thumb">
+      <img src="${s.img || IMG_BASE+encodeURIComponent((s.imgCodes||[s.style])[0])+'/cut_0.jpg'}" alt="${s.style}"
+           data-c="${s.img ? '' : (s.imgCodes||[s.style]).join(',')}" data-i="0" onerror="nextImg(this)">
+      <span class="noimg">NO IMAGE</span>
+    </div>
     <div class="stats s5">
       <div><b>${n0(st.base)}</b><span>기초재고</span></div>
       <div><b>${n0(st.addPlan)}</b><span>추가 기획량</span></div>
