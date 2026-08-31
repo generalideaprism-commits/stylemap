@@ -499,9 +499,9 @@ for st in data:
         stkB[('러닝', bok)] += v
         stkC[('러닝', st['cat2'])] += v
 
-# MDP: data/26FW_MDP.xlsb 의 "집계표" 시트에서 시즌/복종별 스타일수·SKU·기획량을 읽는다.
-# (MDP 시트를 품번 기준으로 합치면 품번 미부여 스타일이 빠져 공식 집계와 어긋난다)
-# 구분 매핑: INNER -> TOP, SHOES -> ACC 에 합산. 하위 카테고리 단위는 MDP 에 없어 비워 둔다.
+# MDP: data/26FW_MDP.xlsb 의 "집계표" 시트, 오른쪽 "수정사업계획(시즌/복종)" 블록에서
+# 시즌/복종별 스타일수·SKU·기획량을 읽는다. (왼쪽 블록은 25FW 실적이므로 쓰면 안 된다)
+# 구분 매핑: INNER -> TOP, SHOES -> ACC. 하위 카테고리 단위는 MDP 에 없어 비워 둔다.
 MDP_PATH = os.path.join(DATA_DIR, '26FW_MDP.xlsb')
 mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
@@ -511,40 +511,34 @@ if os.path.exists(MDP_PATH):
     with _oxb(MDP_PATH) as _wb, _wb.get_sheet('집계표') as _ws:
         for _ri, _row in enumerate(_ws.rows(), 1):
             grid[_ri] = {c.c: c.v for c in _row if c.v not in (None, '')}
-    _B, _C, _D, _E, _F = C('B'), C('C'), C('D'), C('E'), C('F')
+    _X, _Y, _Z, _AA, _AB, _AC = C('X'), C('Y'), C('Z'), C('AA'), C('AB'), C('AC')
 
     def _g(r, c):
         return grid.get(r, {}).get(c)
 
-    # *시즌 블록: 헤더(B=시즌, C=ST) 다음 행부터 가을/겨울/러닝/TTL
-    hdr_r = next(r for r in sorted(grid) if _g(r, _B) == '시즌' and _g(r, _C) == 'ST')
-    for r in range(hdr_r + 1, hdr_r + 8):
-        nm = txt(_g(r, _B))
-        if nm in ('가을', '겨울', '러닝', 'TTL'):
-            mdpSeason[nm] = {'styles': _g(r, _C) or 0, 'sku': _g(r, _D) or 0, 'plan': _g(r, _E) or 0}
-        if nm == 'TTL':
-            break
-
-    # *시즌/복종 블록: 마커 행 찾고 그 아래 헤더(D=ST) 다음부터
-    mark_r = next(r for r in sorted(grid) if txt(_g(r, _B)).startswith('*시즌/복종'))
-    hdr_r = next(r for r in sorted(grid) if r > mark_r and _g(r, _D) == 'ST')
+    mark_r = next(r for r in sorted(grid) if txt(_g(r, _X)).startswith('수정사업계획(시즌/복종)'))
     BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
     cur = ''
-    for r in range(hdr_r + 1, hdr_r + 40):
-        b, c = txt(_g(r, _B)), txt(_g(r, _C))
-        if b in ('가을', '겨울', '러닝'):
-            cur = b
-        elif b == 'FW. TTL' or b == 'TTL':
+    for r in range(mark_r + 1, mark_r + 40):
+        y, z = txt(_g(r, _Y)), txt(_g(r, _Z))
+        if y in ('가을', '겨울', '러닝'):
+            cur = y
+        vals = {'styles': _g(r, _AA) or 0, 'sku': _g(r, _AB) or 0, 'plan': _g(r, _AC) or 0}
+        if y == 'FW. TTL':
+            cur = ''
+        if y == 'TTL' and z == 'TTL':
+            mdpSeason['TTL'] = vals
             break
-        if c in BOKMAP and cur:
-            key = (cur, BOKMAP[c])
-            t = mdpBok.setdefault(key, {'styles': 0, 'sku': 0, 'plan': 0})
-            t['styles'] += _g(r, _D) or 0
-            t['sku'] += _g(r, _E) or 0
-            t['plan'] += _g(r, _F) or 0
+        if not cur:
+            continue
+        if z in BOKMAP:
+            t = mdpBok.setdefault((cur, BOKMAP[z]), {'styles': 0, 'sku': 0, 'plan': 0})
+            for k in t:
+                t[k] += vals[k]
+        elif z == '소계':
+            mdpSeason[cur] = vals
     mdp_loaded = True
-    _chk = {k: (v['styles'], v['plan']) for k, v in mdpSeason.items()}
-    print('MDP 집계표:', _chk)
+    print('MDP 수정사업계획:', {k: (v['styles'], v['sku'], v['plan']) for k, v in mdpSeason.items()})
 else:
     print('경고: %s 없음 — 스타일수/SKU/기획량을 MDP 로 대체하지 못함' % MDP_PATH)
 
