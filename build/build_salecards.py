@@ -499,36 +499,52 @@ for st in data:
         stkB[('러닝', bok)] += v
         stkC[('러닝', st['cat2'])] += v
 
-# MDP: data/26FW_MDP.xlsb — 메인품번(AB) 행 기준 스타일수/SKU(AJ)/기획량(AN 컬러별수량 합)
+# MDP: data/26FW_MDP.xlsb 의 "집계표" 시트에서 시즌/복종별 스타일수·SKU·기획량을 읽는다.
+# (MDP 시트를 품번 기준으로 합치면 품번 미부여 스타일이 빠져 공식 집계와 어긋난다)
+# 구분 매핑: INNER -> TOP, SHOES -> ACC 에 합산. 하위 카테고리 단위는 MDP 에 없어 비워 둔다.
 MDP_PATH = os.path.join(DATA_DIR, '26FW_MDP.xlsb')
-MDP_BOK = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC'}
-mdpB, mdpC = _dd(lambda: {'styles': 0, 'sku': 0, 'plan': 0}), _dd(lambda: {'styles': 0, 'sku': 0, 'plan': 0})
+mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
-    _iE, _iF, _iH, _iAB, _iAJ, _iAM, _iAN = (C('E'), C('F'), C('H'), C('AB'), C('AJ'), C('AM'), C('AN'))
-    _styles = {}
-    with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
-        for _row in _ws.rows():
-            _d = {c.c: c.v for c in _row}
-            _code = _d.get(_iAB)
-            if not isinstance(_code, str) or len(_code.strip()) < 6:
-                continue
-            _st = _styles.setdefault(_code.strip().upper(), {
-                'season': txt(_d.get(_iE)), 'bok': MDP_BOK.get(txt(_d.get(_iF)), 'ACC'),
-                'code': txt(_d.get(_iH)), 'sku': 0, 'plan': 0})
-            if _d.get(_iAM):
-                _st['sku'] += 1
-            if isinstance(_d.get(_iAN), (int, float)):
-                _st['plan'] += _d[_iAN]
-    for _st in _styles.values():
-        _season = '러닝' if '(러닝)' in _st['season'] else _st['season']
-        for tgt in (mdpB[(_season, _st['bok'])], mdpC[(_season, _st['code'])]):
-            tgt['styles'] += 1
-            tgt['sku'] += _st['sku']
-            tgt['plan'] += _st['plan']
+    grid = {}
+    with _oxb(MDP_PATH) as _wb, _wb.get_sheet('집계표') as _ws:
+        for _ri, _row in enumerate(_ws.rows(), 1):
+            grid[_ri] = {c.c: c.v for c in _row if c.v not in (None, '')}
+    _B, _C, _D, _E, _F = C('B'), C('C'), C('D'), C('E'), C('F')
+
+    def _g(r, c):
+        return grid.get(r, {}).get(c)
+
+    # *시즌 블록: 헤더(B=시즌, C=ST) 다음 행부터 가을/겨울/러닝/TTL
+    hdr_r = next(r for r in sorted(grid) if _g(r, _B) == '시즌' and _g(r, _C) == 'ST')
+    for r in range(hdr_r + 1, hdr_r + 8):
+        nm = txt(_g(r, _B))
+        if nm in ('가을', '겨울', '러닝', 'TTL'):
+            mdpSeason[nm] = {'styles': _g(r, _C) or 0, 'sku': _g(r, _D) or 0, 'plan': _g(r, _E) or 0}
+        if nm == 'TTL':
+            break
+
+    # *시즌/복종 블록: 마커 행 찾고 그 아래 헤더(D=ST) 다음부터
+    mark_r = next(r for r in sorted(grid) if txt(_g(r, _B)).startswith('*시즌/복종'))
+    hdr_r = next(r for r in sorted(grid) if r > mark_r and _g(r, _D) == 'ST')
+    BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
+    cur = ''
+    for r in range(hdr_r + 1, hdr_r + 40):
+        b, c = txt(_g(r, _B)), txt(_g(r, _C))
+        if b in ('가을', '겨울', '러닝'):
+            cur = b
+        elif b == 'FW. TTL' or b == 'TTL':
+            break
+        if c in BOKMAP and cur:
+            key = (cur, BOKMAP[c])
+            t = mdpBok.setdefault(key, {'styles': 0, 'sku': 0, 'plan': 0})
+            t['styles'] += _g(r, _D) or 0
+            t['sku'] += _g(r, _E) or 0
+            t['plan'] += _g(r, _F) or 0
     mdp_loaded = True
-    print('MDP:', len(_styles), '품번 / 기획량 합', sum(x['plan'] for x in _styles.values()))
+    _chk = {k: (v['styles'], v['plan']) for k, v in mdpSeason.items()}
+    print('MDP 집계표:', _chk)
 else:
     print('경고: %s 없음 — 스타일수/SKU/기획량을 MDP 로 대체하지 못함' % MDP_PATH)
 
@@ -544,44 +560,41 @@ def _sumv(ds):
 def _put(row, agg, stock):
     if mdp_loaded:
         for k in ('styles', 'sku', 'plan'):
-            row[k] = agg[k]
+            row[k] = agg[k] if agg else None
         row.pop('inRate', None)          # 기획량이 MDP 기준으로 바뀌었으니 입고율은 다시 계산
     row['stock'] = stock
 
 
+_Z = {'styles': 0, 'sku': 0, 'plan': 0}
 _seasons = ('가을', '겨울')
+_newTtl = _sumv(mdpSeason.get(k, _Z) for k in _seasons) if mdp_loaded else None
 for d in SUM['block1']:
     if d['mode'] == 'run':
         continue
     tgt = d['cur']
     if d.get('kind') == '신상품 TTL':
-        _put(tgt, _sumv(v for k, v in mdpB.items() if k[0] in _seasons),
-             sum(v for k, v in stkB.items() if k[0] in _seasons))
+        _put(tgt, _newTtl, sum(v for k, v in stkB.items() if k[0] in _seasons))
     elif d['item'] == 'TTL':
-        _put(tgt, _sumv(v for k, v in mdpB.items() if k[0] == d['season']),
-             sum(v for k, v in stkB.items() if k[0] == d['season']))
+        _put(tgt, mdpSeason.get(d['season']), sum(v for k, v in stkB.items() if k[0] == d['season']))
     else:
-        _put(tgt, mdpB[(d['season'], d['item'])], stkB[(d['season'], d['item'])])
-for d in SUM['seasonCat']:
-    _put(d, mdpC[(d['season'], d['code'])], stkC[(d['season'], d['cat'])])
+        _put(tgt, mdpBok.get((d['season'], d['item'])), stkB[(d['season'], d['item'])])
 for d in SUM['newItem']:
     if d['item'] == 'TOTAL':
-        _put(d, _sumv(v for k, v in mdpB.items() if k[0] in _seasons),
-             sum(v for k, v in stkB.items() if k[0] in _seasons))
+        _put(d, _newTtl, sum(v for k, v in stkB.items() if k[0] in _seasons))
     else:
-        _put(d, _sumv(v for k, v in mdpB.items() if k[0] in _seasons and k[1] == d['item']),
+        _put(d, _sumv(mdpBok.get((se, d['item']), _Z) for se in _seasons),
              sum(v for k, v in stkB.items() if k[0] in _seasons and k[1] == d['item']))
-for d in SUM['newCat']:
-    _put(d, _sumv(v for k, v in mdpC.items() if k[0] in _seasons and k[1] == d['code']),
-         sum(v for k, v in stkC.items() if k[0] in _seasons and k[1] == d['cat']))
 for d in SUM['runItem']:
     if d['item'] == 'TOTAL':
-        _put(d, _sumv(v for k, v in mdpB.items() if k[0] == '러닝'),
-             sum(v for k, v in stkB.items() if k[0] == '러닝'))
+        _put(d, mdpSeason.get('러닝'), sum(v for k, v in stkB.items() if k[0] == '러닝'))
     else:
-        _put(d, mdpB[('러닝', d['item'])], stkB[('러닝', d['item'])])
-for d in SUM['runCat']:
-    _put(d, mdpC[('러닝', d['code'])], stkC[('러닝', d['cat'])])
+        _put(d, mdpBok.get(('러닝', d['item'])), stkB[('러닝', d['item'])])
+# 하위 카테고리 단위는 MDP 에 없다 — 스타일수/SKU/기획량을 비워 두고 나머지 지표만 유지
+if mdp_loaded:
+    for name in ('seasonCat', 'newCat', 'runCat'):
+        for d in SUM[name]:
+            for k in ('styles', 'sku', 'plan'):
+                d[k] = None
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
