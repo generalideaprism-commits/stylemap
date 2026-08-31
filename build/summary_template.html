@@ -34,7 +34,8 @@
   .panels{margin:0}
   /* 집계 표 */
   .tw{overflow-x:auto}
-  table.sum{width:100%;border-collapse:collapse;font-size:12px}
+  table.sum{width:100%;border-collapse:collapse;font-size:12px;
+    table-layout:fixed;min-width:1560px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
   table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
@@ -318,7 +319,10 @@ function dataRow(name, o, cls, was){
   return `<tr class="${cls||''}"><th class="nm">${name}</th>${cellsOf(o,was)}</tr>`;
 }
 function table(rows){
-  return `<div class="tw"><table class="sum">
+  // 열 폭 고정 배분 — 수량 8% · 비율 7% · 금액 11.5% (간격이 내용 길이에 따라 들쭉날쭉해지지 않게)
+  const colw = c => c.f[0]==='p' ? '7%' : ['wkAmt','salesTag','salesAmt'].includes(c.k) ? '11.5%' : '8%';
+  const cols = `<colgroup><col style="width:11%">${COLS.map(c=>`<col style="width:${colw(c)}">`).join('')}</colgroup>`;
+  return `<div class="tw"><table class="sum">${cols}
     <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
