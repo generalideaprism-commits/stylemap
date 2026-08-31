@@ -499,46 +499,49 @@ for st in data:
         stkB[('러닝', bok)] += v
         stkC[('러닝', st['cat2'])] += v
 
-# MDP: data/26FW_MDP.xlsb 의 "집계표" 시트, 오른쪽 "수정사업계획(시즌/복종)" 블록에서
-# 시즌/복종별 스타일수·SKU·기획량을 읽는다. (왼쪽 블록은 25FW 실적이므로 쓰면 안 된다)
-# 구분 매핑: INNER -> TOP, SHOES -> ACC. 하위 카테고리 단위는 MDP 에 없어 비워 둔다.
+# MDP: data/26FW_MDP.xlsb 의 MDP 시트를 스타일 블록(AI열 STY=1 이 시작) 단위로 읽어
+# ED열(컨펌여부)이 '확정' 인 스타일만 집계한다. SKU = 블록 안 컬러명(AM) 행 수,
+# 기획량 = 컬러별수량(AN) 합. 구분 매핑: INNER -> TOP, SHOES -> ACC.
 MDP_PATH = os.path.join(DATA_DIR, '26FW_MDP.xlsb')
 mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
-    grid = {}
-    with _oxb(MDP_PATH) as _wb, _wb.get_sheet('집계표') as _ws:
-        for _ri, _row in enumerate(_ws.rows(), 1):
-            grid[_ri] = {c.c: c.v for c in _row if c.v not in (None, '')}
-    _X, _Y, _Z, _AA, _AB, _AC = C('X'), C('Y'), C('Z'), C('AA'), C('AB'), C('AC')
-
-    def _g(r, c):
-        return grid.get(r, {}).get(c)
-
-    mark_r = next(r for r in sorted(grid) if txt(_g(r, _X)).startswith('수정사업계획(시즌/복종)'))
+    _iE, _iF, _iAI, _iAM, _iAN, _iED = (C('E'), C('F'), C('AI'), C('AM'), C('AN'), C('ED'))
     BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
-    cur = ''
-    for r in range(mark_r + 1, mark_r + 40):
-        y, z = txt(_g(r, _Y)), txt(_g(r, _Z))
-        if y in ('가을', '겨울', '러닝'):
-            cur = y
-        vals = {'styles': _g(r, _AA) or 0, 'sku': _g(r, _AB) or 0, 'plan': _g(r, _AC) or 0}
-        if y == 'FW. TTL':
-            cur = ''
-        if y == 'TTL' and z == 'TTL':
-            mdpSeason['TTL'] = vals
-            break
-        if not cur:
+    blocks, cur = [], None
+    with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
+        for _row in _ws.rows():
+            _d = {c.c: c.v for c in _row}
+            if _d.get(_iAI) == 1:                      # 스타일 시작
+                if cur:
+                    blocks.append(cur)
+                _season = txt(_d.get(_iE))
+                cur = {'season': '러닝' if '(러닝)' in _season else _season,
+                       'bok': BOKMAP.get(txt(_d.get(_iF)), 'ACC'),
+                       'ok': False, 'sku': 0, 'plan': 0.0}
+            if cur is None:
+                continue
+            if txt(_d.get(_iED)) == '확정':
+                cur['ok'] = True
+            if _d.get(_iAM):
+                cur['sku'] += 1
+            if isinstance(_d.get(_iAN), (int, float)):
+                cur['plan'] += _d[_iAN]
+    if cur:
+        blocks.append(cur)
+    for b in blocks:
+        if not b['ok'] or b['season'] not in ('가을', '겨울', '러닝'):
             continue
-        if z in BOKMAP:
-            t = mdpBok.setdefault((cur, BOKMAP[z]), {'styles': 0, 'sku': 0, 'plan': 0})
-            for k in t:
-                t[k] += vals[k]
-        elif z == '소계':
-            mdpSeason[cur] = vals
+        for tgt in (mdpSeason.setdefault(b['season'], {'styles': 0, 'sku': 0, 'plan': 0}),
+                    mdpBok.setdefault((b['season'], b['bok']), {'styles': 0, 'sku': 0, 'plan': 0})):
+            tgt['styles'] += 1
+            tgt['sku'] += b['sku']
+            tgt['plan'] += b['plan']
+    mdpSeason['TTL'] = {k: sum(v[k] for v in mdpSeason.values()) for k in ('styles', 'sku', 'plan')}
     mdp_loaded = True
-    print('MDP 수정사업계획:', {k: (v['styles'], v['sku'], v['plan']) for k, v in mdpSeason.items()})
+    print('MDP 확정 기준:', {k: (v['styles'], v['sku'], round(v['plan'])) for k, v in mdpSeason.items()},
+          '| 미확정 제외', sum(1 for b in blocks if not b['ok']), '스타일')
 else:
     print('경고: %s 없음 — 스타일수/SKU/기획량을 MDP 로 대체하지 못함' % MDP_PATH)
 
