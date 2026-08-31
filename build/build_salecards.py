@@ -172,8 +172,9 @@ for co_sheet in (CO_MAIN, CO_RUN):
     # 8/1 이후 판매 = 시작일이 8/1 이상인 주들의 합 (러닝 현재고 판매율용)
     aug_cols = []
     if w1_start:
+        # 8/1 이 포함된 주(W5, 07/27~08/02)까지 포함 — 주 끝날짜가 8/1 이상인 주
         aug1 = datetime.date(FILE_YEAR, 8, 1)
-        max_n = (w1_start - aug1).days // 7 + 1
+        max_n = (w1_start - (aug1 - datetime.timedelta(days=6))).days // 7 + 1
         aug_cols = [idx for n, idx in wk.items() if 1 <= n <= max_n]
     print('%s: 전주 %s / 2주전 %s / 8월이후 주 %d개' % (co_sheet, txt(hdr[w1i]), txt(hdr[w2i]), len(aug_cols)))
     for r in ws.iter_rows(min_row=4, values_only=True):
@@ -192,6 +193,7 @@ for co_sheet in (CO_MAIN, CO_RUN):
             'w2': num(r[w2i]) if len(r) > w2i else None,
             'total': num(r[CO['total']]),
             'rate': num(r[CO['rate']]),
+            'aug': sum((num(r[i]) or 0) for i in aug_cols if len(r) > i),
         })
         s['augSales'] = (s.get('augSales') or 0) + sum(
             (num(r[i]) or 0) for i in aug_cols if len(r) > i)
@@ -238,9 +240,9 @@ for g, members in groups.items():
     merged = {}
     for c in p['colors'] + sub['colors']:
         m = merged.setdefault(c['color'], {'color': c['color'], 'cname': c['cname'],
-                                           'plan': 0, 'qtyIn': 0, 'w1': 0, 'w2': 0, 'total': 0})
-        for f in ('plan', 'qtyIn', 'w1', 'w2', 'total'):
-            m[f] += c[f] or 0
+                                           'plan': 0, 'qtyIn': 0, 'w1': 0, 'w2': 0, 'total': 0, 'aug': 0})
+        for f in ('plan', 'qtyIn', 'w1', 'w2', 'total', 'aug'):
+            m[f] += c.get(f) or 0
     for m in merged.values():
         m['rate'] = (m['total'] / m['qtyIn'] * 100) if m['qtyIn'] else None
     p['colors'] = list(merged.values())
@@ -292,6 +294,19 @@ for s in data:
     s['runStat'] = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
                     'stock': stock, 'sales': run_sales,
                     'rate': (run_sales / stock * 100) if stock else None}
+    # 컬러 표: 신규품번에 기획된 컬러만. 기획·입고 = 신규품번 값,
+    # 전주·2주전 = 구+신 합산, 누계 = 8/1 이후 판매(구 W5~ + 신).
+    # 색상별 기초재고가 없어 색상별 판매율은 계산하지 않는다.
+    sub_colors = (s['sub'] if s.get('sub') else s)['colors']
+    rows = []
+    for sc in sub_colors:
+        mc = next((c for c in s['colors'] if c['color'] == sc['color']), None)
+        src = mc or sc
+        rows.append({'color': sc['color'], 'cname': sc['cname'],
+                     'plan': sc['plan'], 'qtyIn': sc['qtyIn'],
+                     'w1': src.get('w1'), 'w2': src.get('w2'),
+                     'total': src.get('aug') or 0, 'rate': None})
+    s['colorsRun'] = rows
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
 

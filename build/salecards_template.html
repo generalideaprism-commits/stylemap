@@ -219,7 +219,11 @@ function card(s){
   const t = s.ttl, codes = s.imgCodes || [s.style];
   const shownRate = s.runStat ? s.runStat.rate : t.rate;
   const rate = shownRate==null ? 0 : Math.max(0, Math.min(100, shownRate));
-  const rows = s.colors.map(c=>`
+  const colorRows = s.runStat ? (s.colorsRun||[]) : s.colors;
+  // 러닝 TTL 행은 신규품번 기준 값 + 현재고 기준 판매율
+  const tv = s.runStat ? {plan:s.runStat.addPlan, qtyIn:s.runStat.newIn, w1:t.w1, w2:t.w2,
+                          total:s.runStat.sales, rate:s.runStat.rate} : t;
+  const rows = colorRows.map(c=>`
     <tr>
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
@@ -263,12 +267,13 @@ function card(s){
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
     <table>
+      <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
       <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
                  <th>2주전</th><th>누계</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
-          <td>${n0(t.plan)}</td><td>${n0(t.qtyIn)}</td><td>${n0(t.w1)}</td>
-          <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td>${pct(t.rate)}</td></tr>
+          <td>${n0(tv.plan)}</td><td>${n0(tv.qtyIn)}</td><td>${n0(tv.w1)}</td>
+          <td>${n0(tv.w2)}</td><td>${n0(tv.total)}</td><td>${pct(tv.rate)}</td></tr>
       </tbody>
     </table>
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
