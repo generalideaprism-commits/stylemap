@@ -522,8 +522,8 @@ mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
-    _iE, _iF, _iAI, _iAJ, _iAK, _iAM, _iAN, _iED = (
-        C('E'), C('F'), C('AI'), C('AJ'), C('AK'), C('AM'), C('AN'), C('ED'))
+    _iE, _iF, _iH, _iAI, _iAJ, _iAK, _iAM, _iAN, _iED = (
+        C('E'), C('F'), C('H'), C('AI'), C('AJ'), C('AK'), C('AM'), C('AN'), C('ED'))
     BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
     blocks, cur = [], None
     with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
@@ -537,6 +537,7 @@ if os.path.exists(MDP_PATH):
                 # 미입력분이 있어 합계가 모자랄 수 있다 (예: 컬러명 없는 SKU, 수량 미배분)
                 cur = {'season': '러닝' if '(러닝)' in _season else _season,
                        'bok': BOKMAP.get(txt(_d.get(_iF)), 'ACC'),
+                       'code': txt(_d.get(_iH)),                     # 아이템코드 (집계표 카테고리 코드와 대응)
                        'ok': False,
                        'sku': _d.get(_iAJ) if isinstance(_d.get(_iAJ), (int, float)) else 0,
                        'plan': _d.get(_iAK) if isinstance(_d.get(_iAK), (int, float)) else 0.0}
@@ -546,11 +547,13 @@ if os.path.exists(MDP_PATH):
                 cur['ok'] = True
     if cur:
         blocks.append(cur)
+    mdpCat = {}
     for b in blocks:
         if not b['ok'] or b['season'] not in ('가을', '겨울', '러닝'):
             continue
         for tgt in (mdpSeason.setdefault(b['season'], {'styles': 0, 'sku': 0, 'plan': 0}),
-                    mdpBok.setdefault((b['season'], b['bok']), {'styles': 0, 'sku': 0, 'plan': 0})):
+                    mdpBok.setdefault((b['season'], b['bok']), {'styles': 0, 'sku': 0, 'plan': 0}),
+                    mdpCat.setdefault((b['season'], b['code']), {'styles': 0, 'sku': 0, 'plan': 0})):
             tgt['styles'] += 1
             tgt['sku'] += b['sku']
             tgt['plan'] += b['plan']
@@ -602,12 +605,15 @@ for d in SUM['runItem']:
         _put(d, mdpSeason.get('러닝'), sum(v for k, v in stkB.items() if k[0] == '러닝'))
     else:
         _put(d, mdpBok.get(('러닝', d['item'])), stkB[('러닝', d['item'])])
-# 하위 카테고리 단위는 MDP 에 없다 — 스타일수/SKU/기획량을 비워 두고 나머지 지표만 유지
+# 하위 카테고리: MDP 확정 스타일을 아이템코드별로 집계해 채운다
 if mdp_loaded:
-    for name in ('seasonCat', 'newCat', 'runCat'):
-        for d in SUM[name]:
-            for k in ('styles', 'sku', 'plan'):
-                d[k] = None
+    _Zc = {'styles': 0, 'sku': 0, 'plan': 0}
+    for d in SUM['seasonCat']:
+        _put(d, mdpCat.get((d['season'], d['code']), _Zc), d.get('stock', 0))
+    for d in SUM['newCat']:
+        _put(d, _sumv(mdpCat.get((se, d['code']), _Zc) for se in _seasons), d.get('stock', 0))
+    for d in SUM['runCat']:
+        _put(d, mdpCat.get(('러닝', d['code']), _Zc), d.get('stock', 0))
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
