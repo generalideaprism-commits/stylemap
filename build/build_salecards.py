@@ -547,16 +547,29 @@ if os.path.exists(MDP_PATH):
                 cur['ok'] = True
     if cur:
         blocks.append(cur)
-    mdpCat = {}
+    mdpCat, _code_fbok = {}, {}
     for b in blocks:
         if not b['ok'] or b['season'] not in ('가을', '겨울', '러닝'):
             continue
+        _code_fbok.setdefault(b['code'], b['bok'])
         for tgt in (mdpSeason.setdefault(b['season'], {'styles': 0, 'sku': 0, 'plan': 0}),
-                    mdpBok.setdefault((b['season'], b['bok']), {'styles': 0, 'sku': 0, 'plan': 0}),
                     mdpCat.setdefault((b['season'], b['code']), {'styles': 0, 'sku': 0, 'plan': 0})):
             tgt['styles'] += 1
             tgt['sku'] += b['sku']
             tgt['plan'] += b['plan']
+    # 복종 합계는 화면(종합 시트) 그룹 기준으로 아이템코드를 다시 묶는다.
+    # MDP F열과 그룹이 다른 코드(예: 니트베스트 KV — MDP는 INNER, 화면은 OUTER)가 있어
+    # F열로 합치면 부모 행과 하위 카테고리 합이 어긋난다.
+    code2grp = {}
+    for _name in ('seasonCat', 'newCat', 'runCat'):
+        for _d in SUM[_name]:
+            g = _d['item']
+            code2grp.setdefault(_d['code'], 'ACC' if g.startswith('ACC') else g)
+    for (season, code), v in mdpCat.items():
+        g = code2grp.get(code) or _code_fbok.get(code, 'ACC')
+        t = mdpBok.setdefault((season, g), {'styles': 0, 'sku': 0, 'plan': 0})
+        for k in t:
+            t[k] += v[k]
     mdpSeason['TTL'] = {k: sum(v[k] for v in mdpSeason.values()) for k in ('styles', 'sku', 'plan')}
     mdp_loaded = True
     print('MDP 확정 기준:', {k: (v['styles'], v['sku'], round(v['plan'])) for k, v in mdpSeason.items()},
