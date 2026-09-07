@@ -92,4 +92,4 @@ if a.commit:
     else:
         print('변경 사항이 없어 커밋하지 않았습니다')
 
-print('\n다음 단계 — 허브는 수동 배포입니다. 저장소 루트에서:\n  cd "%s" && npx vercel --prod' % a.hub)
+print('\n허브는 push 하면 Vercel 이 자동 배포합니다. 반영까지 1~2분 걸릴 수 있습니다.')
