@@ -27,6 +27,7 @@ else:
 print('원본:', os.path.basename(SRC))
 OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html')
 OUT_SUM = os.path.join(SHARE_DIR, '26fw-season-summary.html')
+OUT_CMP = os.path.join(SHARE_DIR, '26fw-season-compare.html')
 
 # 시트명은 파일마다 '생판재주간-' / '생판재-' 로 다를 수 있어 앞부분만 매칭
 def sheet(*keys):
@@ -269,8 +270,13 @@ data = [styles[c] for c in order if c not in subs]
 
 # ---- 러닝 현재고: 시점재고 시트(기존품번 M열 -> BO열 '전체') + 신규품번 입고량 ----
 point_stock, point_stock_color = {}, {}
-stock_sheet = next((n for n in wb.sheetnames if '시점재고' in n), None)
+# 26.07.31 시점을 콕 집는다 — 25FW 시점재고 시트가 함께 들어 있어 '시점재고' 만으로 고르면
+# 시트 순서에 따라 전년 재고를 집어 러닝 현재고가 통째로 어긋난다
+stock_sheet = next((n for n in wb.sheetnames if '시점재고' in n and '26.07' in n), None)
+if not stock_sheet:
+    raise SystemExit('시점재고(~26.07.31) 시트를 찾지 못했습니다: %s' % wb.sheetnames)
 if stock_sheet:
+    print('시점재고 시트:', stock_sheet)
     for r in wb[stock_sheet].iter_rows(min_row=4, values_only=True):
         code = txt(r[C('M')] if len(r) > C('M') else '')
         if not code or code == '스타일':
@@ -390,11 +396,14 @@ print('images: supabase 링크 %d / 파일 %d장 (share/img) / 카드 %d' % (lin
 MET = dict(styles='G', sku='H', plan='I', inM='J', inSku='K', qtyIn='L', inRate='M',
            planCost='N', cost='O', tag='Q', mu='S', sales='T', sellRate='U',
            salesTag='V', salesAmt='W', salesCost='X', disc='Y', wkQty='Z', wkAmt='AA')
-PREV = dict(qtyIn='AD', sales='AE', sellRate='AF', salesTag='AG', salesAmt='AH', disc='AI')
+# 전년비교 25년 블록(BD~BI) — 신상품은 '전년도 메인', 러닝 행은 '전년도 러닝'
+PREV = dict(qtyIn='BD', sales='BE', sellRate='BF', salesTag='BG', salesAmt='BH', disc='BI')
+# 25FW 시즌 판매 현황 블록은 26FW 블록을 26칸 오른쪽으로 그대로 옮겨 놓은 구조다
+PY_OFF = 26
 SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': [], 'seasonCat': []}
 
 if '종합' in wb.sheetnames:
-    rows = list(wb['종합'].iter_rows(min_row=1, max_row=150, values_only=True))
+    rows = list(wb['종합'].iter_rows(min_row=1, max_row=200, values_only=True))
 
     def cell(r, col, off=0):
         row = rows[r - 1]
@@ -413,7 +422,8 @@ if '종합' in wb.sheetnames:
         if c == '러닝':
             mode = 'run'
         rec = {'season': '' if mode == 'run' else season, 'item': e, 'mode': mode,
-               'cur': vals(r, MET), 'prev': vals(r, PREV)}
+               'cur': vals(r, MET), 'prev': vals(r, PREV),
+               'py': vals(r, MET, PY_OFF)}
         if c == 'TTL':
             rec.update(item='TTL', season='', kind='신상품 TTL' if mode == 'new' else '전체 TTL')
             mode = 'run' if mode == 'new' else mode
@@ -425,22 +435,34 @@ if '종합' in wb.sheetnames:
             continue
         SUM['block1'].append(rec)
 
-    # 2~4) 신상품/러닝 복종·카테고리별 (30~64행), 러닝은 오른쪽으로 27칸
-    for key_item, key_cat, off, cols in (('newItem', 'newCat', 0, ('D', 'E', 'F')),
-                                         ('runItem', 'runCat', 27, ('D', 'E', 'F'))):
+    # 2~4) 신상품/러닝 복종·카테고리별 (30~66행)
+    # 신상품 블록은 26FW(오프셋 0) 옆에 25FW(+26) 가 나란히 있고, 러닝 블록은 +53,
+    # 러닝 시점재고(26.07.31) 블록은 +79 에 같은 행 배치로 붙어 있다.
+    STK_OFF = 79
+    for key_item, key_cat, off, py_off in (('newItem', 'newCat', 0, PY_OFF),
+                                           ('runItem', 'runCat', 53, None)):
         gubun = ''
-        for r in range(30, 65):
-            d, e, f = (txt(cell(r, cols[0], off)), txt(cell(r, cols[1], off)),
-                       txt(cell(r, cols[2], off)))
+        for r in range(30, 67):
+            d, e, f = (txt(cell(r, 'D', off)), txt(cell(r, 'E', off)),
+                       txt(cell(r, 'F', off)))
             v = vals(r, MET, off)
+            py = vals(r, MET, py_off) if py_off is not None else None
+            if key_item == 'runItem':
+                # 러닝 입고량 = 신규 입고량 + 시점재고. 입고율·판매율의 분모는 신규 입고량
+                # 그대로 두려고 원래 값을 qtyInBase 에 남긴다.
+                stk = num(cell(r, 'I', STK_OFF))         # 시점재고 블록의 '기획량'(=재고 수량)
+                if stk:
+                    v['qtyInBase'] = v.get('qtyIn') or 0
+                    v['qtyIn'] = v['qtyInBase'] + stk
+                    v['stkQty'] = stk
             if d.endswith('TOTAL') and 'ACC제외' not in d:
-                SUM[key_item].append({'item': d.replace(' TOTAL', '').strip(), **v})
+                SUM[key_item].append({'item': d.replace(' TOTAL', '').strip(), 'py': py, **v})
                 continue
             if d and not d.endswith('TOTAL'):
                 gubun = d
             if f:                                   # 카테고리명이 있는 행만 카테고리 집계
                 if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
-                    SUM[key_cat].append({'item': gubun, 'cat': f, 'code': e, **v})
+                    SUM[key_cat].append({'item': gubun, 'cat': f, 'code': e, 'py': py, **v})
 
     # 5) 시즌(가을/겨울)별 카테고리 상세 — 66행 아래, A열에 시즌이 적혀 있는 블록
     cur_season, gubun = '', ''
@@ -457,7 +479,21 @@ if '종합' in wb.sheetnames:
         if f:
             v = vals(r, MET)
             if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
-                SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e, **v})
+                SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e,
+                                         'py': vals(r, MET, PY_OFF), **v})
+
+# 러닝 카테고리 블록에는 25FW 짝이 없다 — 시즌/복종 블록(18~22행)의 25FW 값을 복종별로 붙여 준다
+_runPy = {}
+for _d in SUM['block1']:
+    if _d['mode'] != 'run':
+        continue
+    if _d.get('kind') == '러닝 TTL':
+        _runPy['TOTAL'] = _d['py']
+    elif _d.get('kind') == '항목':
+        _runPy[_d['item']] = _d['py']
+for _d in SUM['runItem']:
+    _d['py'] = _runPy.get(_d['item'])
+
 
 # ---- 직전 스타일맵 대비 증감 ----
 # 각 행에 고유 키를 달아 스냅샷과 대조한다. 날짜가 같은 파일을 다시 빌드하면
@@ -474,7 +510,7 @@ for name in ('newCat', 'runCat'):
 for d in SUM['seasonCat']:
     d['_k'] = 'seasonCat|%s|%s|%s' % (d['season'], d['item'], d['cat'])
 
-MET_KEYS = list(MET.keys()) + ['stock']
+MET_KEYS = list(MET.keys()) + ['stock', 'qtyInBase']
 
 
 def row_vals(d):
@@ -522,8 +558,8 @@ mdpSeason, mdpBok = {}, {}
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
-    _iE, _iF, _iH, _iAI, _iAJ, _iAK, _iAM, _iAN, _iED = (
-        C('E'), C('F'), C('H'), C('AI'), C('AJ'), C('AK'), C('AM'), C('AN'), C('ED'))
+    _iE, _iF, _iH, _iP, _iAI, _iAJ, _iAK, _iAM, _iAN, _iED = (
+        C('E'), C('F'), C('H'), C('P'), C('AI'), C('AJ'), C('AK'), C('AM'), C('AN'), C('ED'))
     BOKMAP = {'OUTER': 'OUTER', 'INNER': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC', 'SHOES': 'ACC'}
     blocks, cur = [], None
     with _oxb(MDP_PATH) as _wb, _wb.get_sheet('MDP') as _ws:
@@ -533,9 +569,12 @@ if os.path.exists(MDP_PATH):
                 if cur:
                     blocks.append(cur)
                 _season = txt(_d.get(_iE))
+                # 러닝 여부는 P열(러닝 구분)이 정본이다 — 시즌명에 '(러닝)' 표기가 빠진
+                # 스타일이 있어(예: GF7UJP006 은 E열이 '겨울') 시즌명만 보면 러닝이 덜 잡힌다
+                _run = txt(_d.get(_iP)) == '러닝' or '(러닝)' in _season
                 # SKU/기획량은 스타일 행의 공식 열(AJ/AK)을 쓴다 — 컬러 행(AM/AN)은
                 # 미입력분이 있어 합계가 모자랄 수 있다 (예: 컬러명 없는 SKU, 수량 미배분)
-                cur = {'season': '러닝' if '(러닝)' in _season else _season,
+                cur = {'season': '러닝' if _run else _season,
                        'bok': BOKMAP.get(txt(_d.get(_iF)), 'ACC'),
                        'code': txt(_d.get(_iH)),                     # 아이템코드 (집계표 카테고리 코드와 대응)
                        'ok': False,
@@ -680,5 +719,9 @@ def render(tpl_name, out_path, **repl):
 
 render('salecards_template.html', OUT_CARD,
        **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False)})
+# 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False)})
+if os.path.exists(OUT_CMP):
+    os.remove(OUT_CMP)
+    print('removed:', OUT_CMP)
