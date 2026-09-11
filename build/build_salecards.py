@@ -436,9 +436,17 @@ if '종합' in wb.sheetnames:
         SUM['block1'].append(rec)
 
     # 2~4) 신상품/러닝 복종·카테고리별 (30~66행)
-    # 신상품 블록은 26FW(오프셋 0) 옆에 25FW(+26) 가 나란히 있고, 러닝 블록은 +53,
-    # 러닝 시점재고(26.07.31) 블록은 +79 에 같은 행 배치로 붙어 있다.
-    STK_OFF = 79
+    # 신상품 블록은 26FW(오프셋 0) 옆에 25FW(+26) 가 나란히 있고, 러닝 블록은 +53 이다.
+    # 러닝 시점재고(26.07.31) 블록은 CE~CR 에 같은 행 배치로 붙어 있는데, 입고·원가 구간이
+    # 없는 축약 레이아웃이라 오프셋으로 못 맞춘다 — 열을 직접 지정한다.
+    STK = dict(qtyIn='CJ', sales='CK', salesTag='CM', salesAmt='CN',
+               disc='CP', wkQty='CQ', wkAmt='CR')
+
+    def stk_vals(r):
+        """러닝 구재고(시점재고) 실적. 값이 하나도 없으면 None."""
+        d = {k: num(cell(r, c)) for k, c in STK.items()}
+        return d if any(v for v in d.values()) else None
+
     for key_item, key_cat, off, py_off in (('newItem', 'newCat', 0, PY_OFF),
                                            ('runItem', 'runCat', 53, None)):
         gubun = ''
@@ -448,13 +456,9 @@ if '종합' in wb.sheetnames:
             v = vals(r, MET, off)
             py = vals(r, MET, py_off) if py_off is not None else None
             if key_item == 'runItem':
-                # 러닝 입고량 = 신규 입고량 + 시점재고. 입고율·판매율의 분모는 신규 입고량
-                # 그대로 두려고 원래 값을 qtyInBase 에 남긴다.
-                stk = num(cell(r, 'I', STK_OFF))         # 시점재고 블록의 '기획량'(=재고 수량)
-                if stk:
-                    v['qtyInBase'] = v.get('qtyIn') or 0
-                    v['qtyIn'] = v['qtyInBase'] + stk
-                    v['stkQty'] = stk
+                # 기본 표시는 26FW 기획분 그대로. 시점재고는 따로 실어 두고
+                # 화면에서 '기획+시점재고' 로 켰을 때만 합친다.
+                v['stk'] = stk_vals(r)
             if d.endswith('TOTAL') and 'ACC제외' not in d:
                 SUM[key_item].append({'item': d.replace(' TOTAL', '').strip(), 'py': py, **v})
                 continue
@@ -510,7 +514,7 @@ for name in ('newCat', 'runCat'):
 for d in SUM['seasonCat']:
     d['_k'] = 'seasonCat|%s|%s|%s' % (d['season'], d['item'], d['cat'])
 
-MET_KEYS = list(MET.keys()) + ['stock', 'qtyInBase']
+MET_KEYS = list(MET.keys()) + ['stock']
 
 
 def row_vals(d):

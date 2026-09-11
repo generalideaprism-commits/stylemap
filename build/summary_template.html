@@ -52,6 +52,15 @@
   table.sum tr.ttl td,table.sum tr.ttl th{background:#fbfcfe;font-weight:800;color:var(--ink)}
   table.sum tr.grand td,table.sum tr.grand th{background:#f4f6fb;border-top:1px solid var(--line)}
   table.sum tbody tr:hover td{background:#fafbfd}
+  /* 러닝 행 — 누르면 시점재고 합산 보기로 전환 */
+  table.sum tr.runrow{cursor:pointer}
+  table.sum tr.runrow th.nm::after{content:'＋';margin-left:6px;font-size:10px;color:var(--muted)}
+  table.sum tr.runrow:hover th.nm::after{color:var(--blue)}
+  .stkbtn{border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:999px;
+    padding:2px 9px;font-size:10.5px;font-weight:700;cursor:pointer;margin:0 2px;
+    vertical-align:middle;white-space:nowrap}
+  .stkbtn:hover{border-color:#c9d2e0;color:var(--ink)}
+  .stkbtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
   .mrow.sm{margin:2px 0 10px;position:static;padding:0;background:none}
   .chip.sm{padding:3px 10px;font-size:11px}
   .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;
@@ -276,10 +285,29 @@ const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0, m:fmtM};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 // 현재 모드에서 이 행이 대조할 상대 — 전주 스냅샷(was) 또는 25FW(py)
 const cmpOf = d => !d ? null : (MODE==='wk' ? d.was : d.py);
-// 러닝 입고량에는 시점재고가 얹혀 있다 — 비율의 분모는 신규 입고량(qtyInBase)을 쓴다
-const baseOf = o => o==null ? null : (o.qtyInBase!=null ? o.qtyInBase : o.qtyIn);
+/* 시점재고를 합치면 전주 스냅샷(기획 기준)과 정의가 달라져 증감이 성립하지 않는다 —
+   전주 대비 모드에서만 숨긴다. 전년 대비의 25FW 러닝은 이미 기획량+이월재고가
+   합쳐진 값이라, 오히려 합산 모드일 때 기준이 맞으므로 항상 그대로 보여준다. */
+const cmpRun = d => (RUNSTK && MODE==='wk') ? null : cmpOf(d);
 const inRateOf = o => o==null ? null
-  : (o.inRate!=null ? o.inRate : (o.plan ? (baseOf(o)||0)/o.plan : null));
+  : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
+
+/* 러닝 보기 기준.
+   기본(false) = 26FW 기획분만. 켜면(true) 26.07.31 시점재고의 물량·실적을 얹는다.
+   스타일수·SKU·기획량은 기획 항목이라 그대로 두고, 물량과 실적만 합친다.
+   입고율도 기획 대비 입고라 건드리지 않는다. */
+let RUNSTK = false;
+function withStk(o){
+  if(!RUNSTK || !o || !o.stk) return o;
+  const s = o.stk, t = Object.assign({}, o);
+  ['qtyIn','sales','salesTag','salesAmt','wkQty','wkAmt'].forEach(k=>{
+    if(s[k]!=null) t[k] = (o[k]||0) + s[k];
+  });
+  t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
+  t.disc     = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
+  t.inRate   = inRateOf(o);          // 입고율은 기획분 기준 유지
+  return t;
+}
 
 /* 직전 스타일맵 대비 증감. 증가 = 빨강 ▲, 감소 = 파랑 ▼ */
 function deltaHtml(v, was, col){
@@ -371,11 +399,8 @@ function sumRows(list){
     const vs = list.map(d=>d && d[k]).filter(v=>v!=null);
     t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
   });
-  // 분모는 시점재고를 뺀 신규 입고량 합 — 표시되는 입고량(t.qtyIn)과는 다르다
-  const bs = list.map(baseOf).filter(v=>v!=null);
-  t.qtyInBase = bs.length ? bs.reduce((a,b)=>a+b,0) : null;
-  t.inRate   = t.plan ? (t.qtyInBase||0)/t.plan : null;
-  t.sellRate = t.qtyInBase ? (t.sales||0)/t.qtyInBase : null;
+  t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
+  t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
   t.disc     = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
   return t;
 }
@@ -410,10 +435,10 @@ function runCatTable(){
   const rows = parents.map(d=>{
     const subs = SUM.runCat.filter(x=>matchItem(x.item, d.item));
     const gid = 'run-'+d.item;
-    return parentRow(d.item, d, cmpOf(d), gid, subs.length)
-      + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid)).join('');
+    return parentRow(d.item, withStk(d), cmpRun(d), gid, subs.length)
+      + subs.map(x=>subRow(x.cat, withStk(x), cmpRun(x), gid)).join('');
   }).join('');
-  return rows + (ttl ? dataRow('러닝 TTL', ttl, 'ttl grand', cmpOf(ttl)) : '');
+  return rows + (ttl ? dataRow('러닝 TTL', withStk(ttl), 'ttl grand runrow', cmpRun(ttl)) : '');
 }
 
 /* ---------- 렌더 ---------- */
@@ -424,16 +449,19 @@ function cmpSum(rows){
   const cs = rows.map(cmpOf);
   if(!cs.every(c=>c)) return null;
   const t = sumRows(cs);
-  // 어느 한쪽에 값이 없으면 합계도 비운다. 단 qtyInBase 는 화면에 나오지 않는
-  // 비율 분모용 값이라 여기서 지우면 입고율이 시점재고까지 포함해 계산돼 버린다.
+  // 어느 한쪽에 값이 없으면 합계도 비운다
   Object.keys(t).forEach(k=>{
-    if(k!=='qtyInBase' && cs.some(c=>c[k]==null)) t[k] = null;
+    if(cs.some(c=>c[k]==null)) t[k] = null;
   });
   if(t.plan==null || t.qtyIn==null) t.inRate = null;
   if(t.qtyIn==null || t.sales==null) t.sellRate = null;
   if(t.salesTag==null || t.salesAmt==null) t.disc = null;
   return t;
 }
+
+/* 러닝 보기 전환 — 설명줄의 칩과 러닝 행 클릭, 둘 다 같은 토글이다 */
+const runChip = () =>
+  `<button class="stkbtn${RUNSTK?' on':''}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`;
 
 function renderSum(){
   const yr = MODE==='yr';
@@ -446,36 +474,46 @@ function renderSum(){
   const newTtl = SUM.block1.find(d=>d.kind==='신상품 TTL');
   const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
 
+  const run1 = withStk(runTtl);
   const t1 = table(
     (fall ? dataRow('가을', fall.cur, '', cmpOf(fall)) : '') +
     (wint ? dataRow('겨울', wint.cur, '', cmpOf(wint)) : '') +
-    (runTtl ? dataRow('러닝', runTtl, '', cmpOf(runTtl)) : '') +
-    dataRow('합계', sumRows([newTtl && newTtl.cur, runTtl]), 'ttl grand',
-            cmpSum([newTtl, runTtl])));
+    (runTtl ? dataRow('러닝', run1, 'runrow', cmpRun(runTtl)) : '') +
+    dataRow('합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
+            (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
   const grand = table(
     (newTtl ? dataRow('신상품 TTL', newTtl.cur, '', cmpOf(newTtl)) : '') +
-    (runTtl ? dataRow('러닝 TTL', runTtl, '', cmpOf(runTtl)) : '') +
-    dataRow('전체 합계', sumRows([newTtl && newTtl.cur, runTtl]), 'ttl grand',
-            cmpSum([newTtl, runTtl])));
+    (runTtl ? dataRow('러닝 TTL', run1, 'runrow', cmpRun(runTtl)) : '') +
+    dataRow('전체 합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
+            (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
-  // 러닝 입고량은 신규 입고분만으로는 실제 판매 가능 물량이 안 잡혀 시점재고를 얹는다
-  const runQty = ' · <b>입고량 = 러닝 기획 입고량 + 시점재고(26.07.31 기준)</b>'
-    + ' · 입고율·판매율의 분모는 시점재고를 뺀 기획 입고량이다';
-  const runNote = '26FW 신규 러닝 품번 기준 · 복종 행을 클릭하면 하위 카테고리가 펼쳐집니다' + runQty
-    + (yr ? ' · 25FW 러닝은 복종 단위까지만 있어 하위 카테고리의 전년 칸은 비어 있다' : '');
+  const runNote = '26FW 신규 러닝 품번 기준 · 복종 행을 클릭하면 하위 카테고리가 펼쳐집니다'
+    + ' · 오른쪽 ' + runChip() + ' 를 누르면 26.07.31 시점재고의 물량·실적을 합쳐서 봅니다'
+    + (RUNSTK ? ' — 지금은 <b>기획 + 시점재고</b> 기준 (스타일수·SKU·기획량·입고율은 기획분 그대로)' : '')
+    + (yr ? ' · 25FW 러닝은 이미 기획량+이월재고가 합쳐진 값이라 그대로 둔다'
+           + ' — <b>기획 + 시점재고</b> 로 켜야 26FW 와 기준이 맞는다'
+           + ' · 25FW 러닝은 복종 단위까지만 있어 하위 카테고리의 전년 칸은 비어 있다' : '');
   const planNote = yr
     ? ' · 26FW 기획 ST수·기획량은 MDP 확정 기준, 25FW 는 종합 시트 기준이라 집계 정의가 다르다'
     : '';
 
   document.getElementById('panels').innerHTML = [
     panel('① 시즌 요약', '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote
-      + ' · 러닝 입고량에는 시점재고(26.07.31)가 포함된다', t1),
+      + ' · 러닝 행의 ' + runChip() + ' 를 누르면 시점재고까지 합산됩니다', t1),
     panel('② 가을 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다 · ' + note, table(seasonCatTable('가을'))),
     panel('③ 겨울 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다 · ' + note, table(seasonCatTable('겨울'))),
     panel('④ 러닝 카테고리', runNote, table(runCatTable())),
     panel('⑤ 합계', '신상품(가을+겨울) + 러닝 · ' + note, grand),
   ].join('');
+
+  const toggleRun = e => { e.stopPropagation(); RUNSTK = !RUNSTK; renderSum(); };
+  document.querySelectorAll('.stkbtn').forEach(b=>b.addEventListener('click', toggleRun));
+  document.querySelectorAll('tr.runrow').forEach(tr=>{
+    tr.title = RUNSTK ? '누르면 26FW 기획분만 봅니다'
+                      : '누르면 26.07.31 시점재고까지 합산해 봅니다';
+    tr.addEventListener('click', toggleRun);
+  });
 
   // 2단 헤더의 아랫줄은 윗줄 높이만큼 내려서 고정해야 스크롤 때 틈이 안 생긴다
   document.querySelectorAll('table.sum.yr thead').forEach(th=>{
