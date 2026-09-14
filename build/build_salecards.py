@@ -497,6 +497,65 @@ if '종합' in wb.sheetnames:
                 SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e,
                                          'py': vals(r, MET, PY_OFF), **v})
 
+# ---- 종합 시트 중복 행 보정 (2026-09-14) ----
+# 종합 시트 62행처럼 카테고리 코드(E)가 비어 있는데 카테고리명(F)이 위의 코드 행과 같은 행은
+# 이름으로 합산하는 수식 행이라 같은 값을 한 번 더 싣는다(260914: 기타액세서리 ET 와 동일 —
+# 입고 973·판매 13·전년 999/41). 시트의 ACC TOTAL· TOTAL·시즌 요약(7~23행) TTL·전년 블록까지
+# 그 값이 들어가므로, 카테고리 행을 빼고 상위 합계에서도 같은 값을 뺀다.
+# 스타일수/SKU/기획량은 뒤에서 MDP 로 다시 채우므로 여기서는 시트에서 온 수량·금액만 다룬다.
+DUP_KEYS = [k for k in MET if k not in ('styles', 'sku', 'plan', 'inRate', 'mu', 'sellRate', 'disc')]
+
+
+def _dup_sub(dst, src):
+    """dst 에서 src 의 수량·금액을 빼고 파생 지표(판매율·할인율·배수)를 다시 계산"""
+    if not dst or not src:
+        return
+    for k in DUP_KEYS:
+        if dst.get(k) is not None and src.get(k):
+            dst[k] = dst[k] - src[k]
+    if dst.get('qtyIn'):
+        dst['sellRate'] = (dst.get('sales') or 0) / dst['qtyIn']
+    if dst.get('salesTag'):
+        dst['disc'] = 1 - (dst.get('salesAmt') or 0) / dst['salesTag']
+    if dst.get('cost'):
+        dst['mu'] = (dst.get('tag') or 0) / dst['cost'] / 1.1
+
+
+def _grp(item):
+    return 'ACC' if str(item).startswith('ACC') else item
+
+
+DUPS = []                                   # (블록, 시즌, 복종, 카테고리명, 값, 전년값)
+for _name in ('newCat', 'runCat', 'seasonCat'):
+    _seen, _keep = {}, []
+    for _d in SUM[_name]:
+        _key = (_d.get('season', ''), _d['item'], _d['cat'])
+        if not _d['code'] and _key in _seen and _seen[_key]:
+            DUPS.append((_name, _d.get('season', ''), _d['item'], _d['cat'],
+                         {k: _d.get(k) for k in DUP_KEYS}, dict(_d.get('py') or {})))
+            continue
+        _seen[_key] = _seen.get(_key) or bool(_d['code'])
+        _keep.append(_d)
+    SUM[_name] = _keep
+for _name, _season, _item, _cat, _v, _py in DUPS:
+    if _name == 'seasonCat':
+        continue                            # 시즌 블록은 아래 시즌 요약 보정으로 같이 맞는다
+    _mode = 'new' if _name == 'newCat' else 'run'
+    _itemKey = 'newItem' if _mode == 'new' else 'runItem'
+    # 시즌은 시즌 카테고리 블록에서 같은 중복이 값이 있는 곳
+    _dupSeasons = [d2[1] for d2 in DUPS if d2[0] == 'seasonCat' and d2[3] == _cat and any(d2[4].get(k) for k in ('qtyIn', 'sales'))] or ['가을']
+    for _d in SUM[_itemKey]:
+        if _grp(_d['item']) == _grp(_item) or _d['item'] == 'TOTAL':
+            _dup_sub(_d, _v); _dup_sub(_d.get('py'), _py)
+    for _d in SUM['block1']:
+        hit = (_d['mode'] == _mode and _d.get('kind') == '항목' and _grp(_d['item']) == _grp(_item) and _d['season'] in _dupSeasons) \
+            or (_d.get('kind') in ('%s TTL' % se for se in _dupSeasons)) \
+            or _d.get('kind') in (('신상품 TTL' if _mode == 'new' else '러닝 TTL'), '전체 TTL')
+        if hit:
+            _dup_sub(_d['cur'], _v); _dup_sub(_d.get('py'), _py)
+    print('종합 시트 중복 행 보정: %s %s "%s" — 입고 %s·판매 %s 를 상위 합계에서 뺌 (시즌 %s)' % (
+        _name, _item, _cat, _v.get('qtyIn'), _v.get('sales'), ','.join(_dupSeasons)))
+
 # 러닝 카테고리 블록에는 25FW 짝이 없다 — 시즌/복종 블록(18~22행)의 25FW 값을 복종별로 붙여 준다
 _runPy = {}
 for _d in SUM['block1']:
