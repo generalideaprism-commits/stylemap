@@ -277,18 +277,29 @@ if not stock_sheet:
     raise SystemExit('시점재고(~26.07.31) 시트를 찾지 못했습니다: %s' % wb.sheetnames)
 if stock_sheet:
     print('시점재고 시트:', stock_sheet)
+    # 열 위치는 2행 라벨로 찾는다. 이 시트는 칼라·칼라명 열이 빠지면서 '전체' 가 BO -> BM 으로
+    # 밀린 적이 있고, 고정 열로 읽으면 옆의 '원가금액' 을 재고 수량으로 집어 버린다.
+    _hdr = [txt(v) for v in next(wb[stock_sheet].iter_rows(min_row=2, max_row=2, values_only=True))]
+    _col = lambda name: next((i for i, v in enumerate(_hdr) if v == name), None)
+    i_style, i_total, i_color = _col('스타일'), _col('전체'), _col('칼라')
+    if i_style is None or i_total is None:
+        raise SystemExit('시점재고 시트 2행에서 스타일/전체 열을 찾지 못했습니다: %s' % _hdr)
     for r in wb[stock_sheet].iter_rows(min_row=4, values_only=True):
-        code = txt(r[C('M')] if len(r) > C('M') else '')
+        code = txt(r[i_style] if len(r) > i_style else '')
         if not code or code == '스타일':
             continue
-        v = num(r[C('BO')]) if len(r) > C('BO') else None
+        v = num(r[i_total]) if len(r) > i_total else None
         if v is not None:
             point_stock[code] = point_stock.get(code, 0) + v
-            col = txt(r[C('O')] if len(r) > C('O') else '')
+            # 칼라 열이 없는 판(스타일당 1행)이면 컬러별 기초재고는 만들 수 없다
+            col = txt(r[i_color]) if i_color is not None and len(r) > i_color else ''
             if col:
                 k = (code, col)
                 point_stock_color[k] = point_stock_color.get(k, 0) + v
-    print('시점재고:', len(point_stock), '스타일 /', len(point_stock_color), '컬러')
+    print('시점재고: %d 스타일 / %d 컬러 (스타일=%s열, 전체=%s열, 칼라=%s)' % (
+        len(point_stock), len(point_stock_color),
+        openpyxl.utils.get_column_letter(i_style + 1), openpyxl.utils.get_column_letter(i_total + 1),
+        openpyxl.utils.get_column_letter(i_color + 1) + '열' if i_color is not None else '없음'))
 
 for s in data:
     if s['line'] != '러닝':
