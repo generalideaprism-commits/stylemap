@@ -707,6 +707,12 @@ def _put(row, agg, stock):
     row['stock'] = stock
 
 
+# MDP 로 덮기 전에 종합 시트의 기획 스타일수를 남겨 둔다 (ACC 는 아래에서 이 값으로 되돌린다)
+for _name in ('block1', 'newItem', 'newCat', 'seasonCat'):
+    for _d in SUM[_name]:
+        _t = _d['cur'] if 'cur' in _d else _d
+        _t['_sheetStyles'] = _t.get('styles')
+
 _Z = {'styles': 0, 'sku': 0, 'plan': 0}
 _seasons = ('가을', '겨울')
 _newTtl = _sumv(mdpSeason.get(k, _Z) for k in _seasons) if mdp_loaded else None
@@ -740,6 +746,39 @@ if mdp_loaded:
         _put(d, _sumv(mdpCat.get((se, d['code']), _Zc) for se in _seasons), d.get('stock', 0))
     for d in SUM['runCat']:
         _put(d, mdpCat.get(('러닝', d['code']), _Zc), d.get('stock', 0))
+
+# 신상품 ACC 의 기획 스타일수만 임시로 종합 시트 값을 쓴다 — MDP 에 ACC 확정이 반영되기 전까지.
+# 복종 행을 바꾼 만큼 시즌 TTL·신상품 TTL 도 같이 옮겨 합계가 어긋나지 않게 한다.
+# MDP 가 갱신되면 False 로 돌리면 된다.
+ACC_STYLES_FROM_SHEET = True
+_isacc = lambda it: (it or '').upper().startswith('ACC')
+if mdp_loaded and ACC_STYLES_FROM_SHEET:
+    _dlt = _dd(float)
+    for d in SUM['block1']:
+        if d['mode'] == 'new' and d['season'] and _isacc(d['item']):
+            t = d['cur']
+            _dlt[d['season']] += (t['_sheetStyles'] or 0) - (t.get('styles') or 0)
+            t['styles'] = t['_sheetStyles']
+    for d in SUM['block1']:
+        if d['mode'] != 'new':
+            continue
+        if d.get('kind') == '신상품 TTL':
+            d['cur']['styles'] = (d['cur'].get('styles') or 0) + sum(_dlt.values())
+        elif d['item'] == 'TTL' and d['season']:
+            d['cur']['styles'] = (d['cur'].get('styles') or 0) + _dlt[d['season']]
+    for d in SUM['newItem']:
+        if _isacc(d['item']):
+            d['styles'] = d['_sheetStyles']
+        elif d['item'] == 'TOTAL':
+            d['styles'] = (d.get('styles') or 0) + sum(_dlt.values())
+    for name in ('newCat', 'seasonCat'):
+        for d in SUM[name]:
+            if _isacc(d['item']):
+                d['styles'] = d['_sheetStyles']
+    print('ACC 기획 스타일수: 종합 시트 값 사용 (MDP 대비 증감 %s)' % dict(_dlt))
+for _name in ('block1', 'newItem', 'newCat', 'seasonCat'):
+    for _d in SUM[_name]:
+        (_d['cur'] if 'cur' in _d else _d).pop('_sheetStyles', None)
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
