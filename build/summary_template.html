@@ -88,6 +88,14 @@
   /* 블록 머리 — 26FW / 25FW 를 통째로 덮는 줄 (채도를 낮춘 청색·회색) */
   table.sum.yr thead th.gh{text-align:center;font-size:12px;font-weight:800;letter-spacing:.3px;
     border-bottom:0;padding:8px 4px}
+  /* 블록 머리 오른쪽 끝의 데이터 기준 기간 */
+  table.sum.yr thead th.gh .rng{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    font-size:10.5px;font-weight:600;letter-spacing:0;opacity:.92}
+  /* 상단 캡슐 줄 오른쪽의 데이터 검증 근거 */
+  .mrow .basis{flex:1;min-width:280px;margin-left:12px;padding:6px 12px;border-radius:10px;
+    background:#fff;border:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted)}
+  .mrow .basis b{color:var(--sub)}
+  .panel h3 .stkbtn{margin-left:8px;vertical-align:1px}
   table.sum.yr thead th.gh.cur{color:#fff;background:#5b73a6}
   table.sum.yr thead th.gh.prv{color:#fff;background:#9aa2ae}
   /* 아래 줄(지표명)의 sticky top 은 윗줄 실제 높이에 맞춰 렌더 후 JS 가 채운다 */
@@ -236,11 +244,21 @@
     <span class="flabel">비교</span>
     <button class="chip on" data-mode="wk">전주 대비 비교 DATA</button>
     <button class="chip" data-mode="yr">전년 대비 비교 DATA</button>
+    <span class="basis" id="basis"></span>
   </div>
   <div class="panels" id="panels"></div>
 </section>
 <script>
 const SUM = /*__SUM__*/{};
+
+/* 데이터 기준 기간 — 스타일맵 파일 날짜(월요일)의 전날 일요일까지가 26FW,
+   25FW 는 같은 요일로 맞춘 작년 동시점(364일 전)까지, 러닝 판매 집계 시작일인 8/1 부터 */
+const UPDATED = '__UPDATED__';
+const _ymd = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+const _end26 = (()=>{ const d = new Date(UPDATED + 'T00:00:00'); d.setDate(d.getDate()-1); return d; })();
+const _end25 = new Date(_end26.getTime() - 364*86400000);
+const RNG_CUR  = isNaN(_end26) ? '' : `~ ${_ymd(_end26)}`;
+const RNG_PREV = isNaN(_end25) ? '' : `${_end25.getFullYear()}.08.01 ~ ${_ymd(_end25)}`;
 
 /* 화면 구성 — 표 5종은 그대로 두고, 상단 캡슐로 '무엇과 비교할지' 만 바꾼다
    ① 시즌 요약: 가을 / 겨울 / 러닝 을 한 표에
@@ -365,8 +383,9 @@ const colwWk = c => c.k==='styles' ? '5.9%' : c.k==='sku' ? '5.7%'
   : c.k==='inM' ? '6.4%' : c.k==='inSku' ? '5.9%'
   : c.f[0]==='p' ? '7.8%' : c.f==='m' ? '10.8%' : '8.5%';
 // 지표 하나가 차지하는 폭 — 26FW 블록과 25FW 블록에 같은 값을 쓴다
-const YRW = {styles:3.9, plan:4.7, inM:3.9, qtyIn:4.7, inRate:3.4,
-             wkQty:4.2, wkAmt:5.2, sales:4.7, sellRate:4.2, salesAmt:5.2, disc:3.6};
+// 실판매금액은 시점재고 합산 시 10억을 넘어('1172.6백만▲') 가장 넓게 둔다
+const YRW = {styles:3.9, plan:4.5, inM:3.9, qtyIn:4.5, inRate:3.4,
+             wkQty:4.2, wkAmt:5.2, sales:4.7, sellRate:4.2, salesAmt:5.6, disc:3.6};
 
 function table(rows){
   if(MODE!=='yr'){
@@ -382,14 +401,14 @@ function table(rows){
     <colgroup><col style="width:6.6%">${block()}${block()}</colgroup>
     <thead>
       <tr><th class="nm" rowspan="2">구분</th>
-        <th class="gh cur" colspan="${COLS.length}">26FW</th>
-        <th class="gh prv bsep" colspan="${COLS.length}">25FW</th></tr>
+        <th class="gh cur" colspan="${COLS.length}">26FW<span class="rng">${RNG_CUR}</span></th>
+        <th class="gh prv bsep" colspan="${COLS.length}">25FW<span class="rng">${RNG_PREV}</span></th></tr>
       <tr>${labels(false)}${labels(true)}</tr>
     </thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 function panel(title, sub, body){
-  return `<div class="panel"><h3>${title}</h3><div class="sub">${sub}</div>${body}</div>`;
+  return `<div class="panel"><h3>${title}</h3>${sub ? `<div class="sub">${sub}</div>` : ''}${body}</div>`;
 }
 
 /* 여러 행의 합계 — 수량·금액은 합, 비율은 합계값으로 재계산 */
@@ -488,23 +507,19 @@ function renderSum(){
     dataRow('전체 합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
             (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
-  const runNote = '26FW 신규 러닝 품번 기준 · 복종 행을 클릭하면 하위 카테고리가 펼쳐집니다'
-    + ' · 오른쪽 ' + runChip() + ' 를 누르면 26.07.31 시점재고의 물량·실적을 합쳐서 봅니다'
-    + (RUNSTK ? ' — 지금은 <b>기획 + 시점재고</b> 기준 (스타일수·SKU·기획량·입고율은 기획분 그대로)' : '')
-    + (yr ? ' · 25FW 러닝은 이미 기획량+이월재고가 합쳐진 값이라 그대로 둔다'
-           + ' — <b>기획 + 시점재고</b> 로 켜야 26FW 와 기준이 맞는다'
-           + ' · 25FW 러닝은 복종 단위까지만 있어 하위 카테고리의 전년 칸은 비어 있다' : '');
   const planNote = yr
-    ? ' · 26FW 기획 ST수·기획량은 MDP 확정 기준, 25FW 는 종합 시트 기준이라 집계 정의가 다르다'
+    ? ' · 26FW 기획 ST수·기획량은 MDP 확정 기준'
     : '';
+  // 데이터 검증 근거 — 상단 캡슐 줄 오른쪽에 둔다 (모드에 따라 문구가 바뀐다)
+  document.getElementById('basis').innerHTML =
+    '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote;
 
   document.getElementById('panels').innerHTML = [
-    panel('① 시즌 요약', '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote
-      + ' · 러닝 행의 ' + runChip() + ' 를 누르면 시점재고까지 합산됩니다', t1),
-    panel('② 가을 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다 · ' + note, table(seasonCatTable('가을'))),
-    panel('③ 겨울 카테고리', '복종 행을 클릭하면 하위 카테고리가 펼쳐집니다 · ' + note, table(seasonCatTable('겨울'))),
-    panel('④ 러닝 카테고리', runNote, table(runCatTable())),
-    panel('⑤ 합계', '신상품(가을+겨울) + 러닝 · ' + note, grand),
+    panel('① 시즌 요약' + runChip(), '', t1),
+    panel('② 가을 카테고리', '', table(seasonCatTable('가을'))),
+    panel('③ 겨울 카테고리', '', table(seasonCatTable('겨울'))),
+    panel('④ 러닝 카테고리' + runChip(), '', table(runCatTable())),
+    panel('⑤ 합계', '', grand),
   ].join('');
 
   const toggleRun = e => { e.stopPropagation(); RUNSTK = !RUNSTK; renderSum(); };
