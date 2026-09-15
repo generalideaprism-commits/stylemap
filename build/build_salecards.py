@@ -169,12 +169,16 @@ for co_sheet in (CO_MAIN, CO_RUN):
             wk[int(m.group(1))] = i
             if int(m.group(1)) == 1:
                 w1_start = datetime.date(FILE_YEAR, int(m.group(2)), int(m.group(3)))
+                # 라벨에는 연도가 없다 — 1월 파일에 12월 주가 오면 파일 연도를 붙인 날짜가 미래가 되므로 한 해 뺀다
+                if _m and w1_start > datetime.date(FILE_YEAR, int(_m.group(2)), int(_m.group(3))) + datetime.timedelta(days=7):
+                    w1_start = w1_start.replace(year=FILE_YEAR - 1)
     w1i, w2i = wk.get(1, C('CE')), wk.get(2, C('CD'))
     # 8/1 이후 판매 = 시작일이 8/1 이상인 주들의 합 (러닝 현재고 판매율용)
     aug_cols = []
     if w1_start:
         # 8/1 이 포함된 주(W5, 07/27~08/02)까지 포함 — 주 끝날짜가 8/1 이상인 주
-        aug1 = datetime.date(FILE_YEAR, 8, 1)
+        # 시즌 시작 8/1 — FW 는 이듬해 1~2월까지 이어지므로 그때는 전년도 8/1 이다
+        aug1 = datetime.date(w1_start.year - 1 if w1_start.month < 3 else w1_start.year, 8, 1)
         max_n = (w1_start - (aug1 - datetime.timedelta(days=6))).days // 7 + 1
         aug_cols = [idx for n, idx in wk.items() if 1 <= n <= max_n]
     print('%s: 전주 %s / 2주전 %s / 8월이후 주 %d개' % (co_sheet, txt(hdr[w1i]), txt(hdr[w2i]), len(aug_cols)))
@@ -209,6 +213,19 @@ for co_sheet in (CO_MAIN, CO_RUN):
             g = txt(r[CO['grp']]) if len(r) > CO['grp'] else ''
             if g:
                 s['grp'] = g
+
+
+# 데이터 기준일 = 주간판매(CO) 시트 W1 주의 마지막 날 — 집계표 전년 모드 머리의 '~ YYYY.MM.DD' 에 쓴다.
+# 파일명 날짜로 추정하면 주차를 자르는 요일이 바뀐 판(예: 260907 PT2 는 W1 이 09/04~10)에서 틀린다.
+DATA_END = ''
+if w1_start:
+    _end = w1_start + datetime.timedelta(days=6)
+    _fdate = datetime.date(FILE_YEAR, int(_m.group(2)), int(_m.group(3))) if _m else None
+    # 라벨에는 연도가 없어 파일 연도를 붙인다 — 1월 파일에 12월 주가 오면 한 해를 뺀다
+    if _fdate and _end > _fdate + datetime.timedelta(days=7):
+        _end = _end.replace(year=_end.year - 1)
+    DATA_END = _end.isoformat()
+print('데이터 기준일(W1 마지막 날):', DATA_END or '(W1 라벨 없음 — 파일 날짜 전날로 표기)')
 
 
 def calc_ttl(colors):
@@ -834,7 +851,7 @@ render('salecards_template.html', OUT_CARD,
        **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False)})
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
-       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False)})
+       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
     print('removed:', OUT_CMP)

@@ -248,11 +248,18 @@ const SUM = /*__SUM__*/{};
 /* 데이터 기준 기간 — 스타일맵 파일 날짜(월요일)의 전날 일요일까지가 26FW,
    25FW 는 같은 요일로 맞춘 작년 동시점(364일 전)까지, 러닝 판매 집계 시작일인 8/1 부터 */
 const UPDATED = '__UPDATED__';
+// 빌드가 주간판매 시트 W1 라벨에서 읽은 실제 마지막 날. 못 읽었으면 비어 있고, 그때는 파일 날짜 전날로 잡는다
+const DATAEND = '__DATAEND__';
 const _ymd = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-const _end26 = (()=>{ const d = new Date(UPDATED + 'T00:00:00'); d.setDate(d.getDate()-1); return d; })();
+const _end26 = (()=>{
+  if(/^\d{4}-\d{2}-\d{2}$/.test(DATAEND)) return new Date(DATAEND + 'T00:00:00');
+  const d = new Date(UPDATED + 'T00:00:00'); d.setDate(d.getDate()-1); return d;
+})();
 const _end25 = new Date(_end26.getTime() - 364*86400000);
 const RNG_CUR  = isNaN(_end26) ? '' : `~ ${_ymd(_end26)}`;
-const RNG_PREV = isNaN(_end25) ? '' : `${_end25.getFullYear()}.08.01 ~ ${_ymd(_end25)}`;
+// 시작은 끝날짜 직전의 8/1 — 해를 넘긴 1~2월 판이면 전년도 8월이다
+const RNG_PREV = isNaN(_end25) ? ''
+  : `${_end25.getMonth() < 7 ? _end25.getFullYear()-1 : _end25.getFullYear()}.08.01 ~ ${_ymd(_end25)}`;
 
 /* 화면 구성 — 표 5종은 그대로 두고, 상단 캡슐로 '무엇과 비교할지' 만 바꾼다
    ① 시즌 요약: 가을 / 겨울 / 러닝 을 한 표에
