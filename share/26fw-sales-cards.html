@@ -20,7 +20,10 @@
          /* 왼쪽 필터 묶음 · 오른쪽 검색 — 한 줄에 나란히, 바탕 높이는 필터 줄 수에 맞춘다 */
          display:flex;align-items:flex-start;gap:18px}
   #filters{flex:1;min-width:0}
-  .top{display:flex;align-items:center;gap:12px;flex:none;padding-top:1px}
+  /* 오른쪽 묶음: 검색은 위, 정렬은 헤더 아래쪽 변에 붙인다 — 필터 줄 높이만큼 늘어나 둘 사이를 벌린다 */
+  .top{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;
+       align-self:stretch;gap:8px;flex:none;padding-top:1px}
+  #sortbox .fgroup.sortg{margin-left:0}
   .top h1{font-size:16px;margin:0;letter-spacing:-.2px}
   .tabs{display:flex;gap:4px;background:var(--soft);border-radius:999px;padding:3px}
   .tab{border:0;background:transparent;color:var(--sub);border-radius:999px;
@@ -191,6 +194,7 @@
         <div id="count"></div>
       </div>
     </div>
+    <div id="sortbox"></div>
   </div>
 </header>
 <main id="list"></main>
@@ -351,7 +355,8 @@ function buildFilters(){
     SORTS.map(o=>`<button class="chip${o.k===SORT?' on':''}" data-s="${o.k}">${o.label}</button>`).join('') +
     `</div>`;
   document.getElementById('filters').innerHTML =
-    ROWS.map((r,i)=>`<div class="frow">${r.map(group).join('')}${i===ROWS.length-1?sortGroup:''}</div>`).join('');
+    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('');
+  document.getElementById('sortbox').innerHTML = sortGroup;
   document.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{
     SORT = b.dataset.s;
     document.querySelectorAll('.chip[data-s]').forEach(x=>x.classList.toggle('on', x===b));
