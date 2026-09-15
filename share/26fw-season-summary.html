@@ -29,7 +29,7 @@
   #sum .note{background:#fff;border:1px dashed var(--line);border-radius:12px;
              padding:40px 20px;text-align:center;color:var(--muted);line-height:1.8}
   .mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 14px;
-        position:sticky;top:54px;z-index:8;background:var(--bg);padding:10px 0 8px}
+        position:sticky;top:0;z-index:8;background:var(--bg);padding:10px 0 8px}
   .mrow .flabel{margin-right:4px}
   .panels{margin:0}
   /* 집계 표 */
@@ -96,6 +96,8 @@
     background:#fff;border:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted)}
   .mrow .basis b{color:var(--sub)}
   .panel h3 .stkbtn{margin-left:8px;vertical-align:1px}
+  /* 시점재고 버튼 오른쪽 — 지금 보고 있는 러닝 데이터 기준 */
+  .panel h3 .stknote{margin-left:8px;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0}
   table.sum.yr thead th.gh.cur{color:#fff;background:#5b73a6}
   table.sum.yr thead th.gh.prv{color:#fff;background:#9aa2ae}
   /* 아래 줄(지표명)의 sticky top 은 윗줄 실제 높이에 맞춰 렌더 후 JS 가 채운다 */
@@ -231,13 +233,6 @@
 </style>
 </head>
 <body>
-<header>
-  <div class="top">
-    <div class="search">
-      <div class="meta-right"><div class="upd">업데이트 날짜 <b>2026-09-14</b></div></div>
-    </div>
-  </div>
-</header>
 <section id="sum">
   <div class="mrow" id="metrics">
     <span class="flabel">비교</span>
@@ -479,7 +474,9 @@ function cmpSum(rows){
 
 /* 러닝 보기 전환 — 설명줄의 칩과 러닝 행 클릭, 둘 다 같은 토글이다 */
 const runChip = () =>
-  `<button class="stkbtn${RUNSTK?' on':''}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`;
+  `<button class="stkbtn${RUNSTK?' on':''}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`
+  + `<span class="stknote">${RUNSTK ? '26FW 러닝 신품번 + 구품번 이월(26.07.31 시점재고) 데이터 포함'
+                                    : '러닝 신품번 기준 데이터'}</span>`;
 
 function renderSum(){
   const yr = MODE==='yr';

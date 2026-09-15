@@ -16,8 +16,11 @@
 
   /* ---------- 상단 필터 ---------- */
   header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
-         padding:12px 18px 10px;box-shadow:0 2px 10px rgba(16,24,40,.05)}
-  .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+         padding:10px 18px;box-shadow:0 2px 10px rgba(16,24,40,.05);
+         /* 왼쪽 필터 묶음 · 오른쪽 검색 — 한 줄에 나란히, 바탕 높이는 필터 줄 수에 맞춘다 */
+         display:flex;align-items:flex-start;gap:18px}
+  #filters{flex:1;min-width:0}
+  .top{display:flex;align-items:center;gap:12px;flex:none;padding-top:1px}
   .top h1{font-size:16px;margin:0;letter-spacing:-.2px}
   .tabs{display:flex;gap:4px;background:var(--soft);border-radius:999px;padding:3px}
   .tab{border:0;background:transparent;color:var(--sub);border-radius:999px;
@@ -178,6 +181,7 @@
 </head>
 <body>
 <header>
+  <div id="filters"></div>
   <div class="top">
     <div class="search">
       <input id="q" placeholder="품번 검색  (예: GF1LJK502)">
@@ -188,7 +192,6 @@
       </div>
     </div>
   </div>
-  <div id="filters"></div>
 </header>
 <main id="list"></main>
 <div id="modal"><div class="box">
