@@ -55,6 +55,20 @@ CO = dict(style=C('K'), color=C('M'), cname=C('N'), plan=C('R'),
           w1=C('CE'), w2=C('CD'), total=C('CG'), rate=C('CH'), grp=C('CU'))
 
 
+def cols_by_label(ws, base):
+    """ST/CO 시트 열 위치. 판에 따라 왼쪽에 열이 끼어 통째로 밀리므로(260914 PT2 러닝: 스타일 K -> N)
+    2행의 '스타일' 라벨 위치로 오프셋을 잡는다."""
+    hdr = [txt(v) for v in next(ws.iter_rows(min_row=2, max_row=2, values_only=True))]
+    if '스타일' not in hdr:
+        raise SystemExit('%s 2행에서 스타일 열을 찾지 못했습니다' % ws.title)
+    off = hdr.index('스타일') - base['style']
+    return {k: v + off for k, v in base.items()}
+
+
+co_cols = lambda ws: cols_by_label(ws, CO)
+st_cols = lambda ws: cols_by_label(ws, ST)
+
+
 def num(v):
     if v is None or v == '':
         return None
@@ -92,27 +106,34 @@ CO_MAIN, CO_RUN = sheet('주간판매', '26FW'), sheet('주간판매', '러닝')
 
 # '26FW 러닝스타일 리스트' 시트: 기존품번 <-> 신규러닝품번 상호 매핑 (이미지 폴더 후보용)
 pair = {}
+run_group = {}        # 기존품번 -> 신규러닝품번 (통합 카드 짝). 신규품번은 자기 자신
 if '26FW 러닝스타일 리스트' in wb.sheetnames:
     for r in wb['26FW 러닝스타일 리스트'].iter_rows(min_row=2, values_only=True):
         old, new = txt(r[0]), txt(r[1])
         if old and new:
             pair.setdefault(old, []).append(new)
             pair.setdefault(new, []).append(old)
+            run_group[old], run_group[new] = new, new
+# 러닝 시트는 판에 따라 전 브랜드 덤프(260914 PT2: 1,594 스타일)로 오기도 하므로 리스트 품번으로 한정한다
+run_codes = set(run_group)
 
 styles = {}
 order = []
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
     ws = wb[st_sheet]
+    ST_ = st_cols(ws)
     for r in ws.iter_rows(min_row=4, values_only=True):
-        code = txt(r[ST['style']] if len(r) > ST['style'] else '')
+        code = txt(r[ST_['style']] if len(r) > ST_['style'] else '')
         if not code or code == '스타일':
             continue
-        season = txt(r[ST['season']]).replace('(러닝)', '').strip()
-        tag, cost = num(r[ST['tag']]), num(r[ST['cost']])
-        tag_amt, sale_amt = num(r[ST['tag_amt']]), num(r[ST['sale_amt']])
+        if not is_main and run_codes and code not in run_codes:
+            continue
+        season = txt(r[ST_['season']]).replace('(러닝)', '').strip()
+        tag, cost = num(r[ST_['tag']]), num(r[ST_['cost']])
+        tag_amt, sale_amt = num(r[ST_['tag_amt']]), num(r[ST_['sale_amt']])
         # 이미지 폴더 후보: 품번 -> 러닝 시트 BR열 품번 -> 러닝 매핑표의 짝 품번 순으로 시도
-        img_code = txt(r[ST['img_code']]) if len(r) > ST['img_code'] else ''
+        img_code = txt(r[ST_['img_code']]) if len(r) > ST_['img_code'] else ''
         cands = []
         for c in [code, img_code] + pair.get(code, []) + pair.get(img_code, []):
             if c and c not in cands:
@@ -120,16 +141,17 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         styles.setdefault(code, {
             'style': code,
             'imgCodes': cands,
-            'name': txt(r[ST['name']]),
+            'name': txt(r[ST_['name']]),
             'season': season,
-            'gender': txt(r[ST['gender']]),
-            'item': txt(r[ST['item']]),
-            'cat2': txt(r[ST['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
+            'gender': txt(r[ST_['gender']]),
+            'item': txt(r[ST_['item']]),
+            'cat2': txt(r[ST_['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
             # 테마 = 생판재 시트 K열(컨셉). '노르딕,패턴' 도 통째로 하나의 테마다
-            'themes': [txt(r[ST['theme']])] if txt(r[ST['theme']]) else [],
-            'vendor': txt(r[ST['vendor']]),
+            # '컨셉1' 은 ERP 덤프의 자리표시 값 — 테마가 아니다
+            'themes': [txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [],
+            'vendor': txt(r[ST_['vendor']]),
             'tag': tag,
-            'real': num(r[ST['real']]),
+            'real': num(r[ST_['real']]),
             'cost': cost,
             'mult': round(tag / cost / 1.1, 2) if tag and cost else None,
             'tagAmt': tag_amt,
@@ -144,12 +166,14 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
 # 메인/러닝: 26FW 시트(ST/CO)에 존재하면 메인
 main_codes = set()
 for st_sheet in (ST_MAIN,):
+    _st = st_cols(wb[st_sheet])
     for r in wb[st_sheet].iter_rows(min_row=4, values_only=True):
-        c = txt(r[ST['style']])
+        c = txt(r[_st['style']] if len(r) > _st['style'] else '')
         if c and c != '스타일':
             main_codes.add(c)
+_co = co_cols(wb[CO_MAIN])
 for r in wb[CO_MAIN].iter_rows(min_row=4, values_only=True):
-    c = txt(r[CO['style']])
+    c = txt(r[_co['style']] if len(r) > _co['style'] else '')
     if c and c != '스타일':
         main_codes.add(c)
 
@@ -159,6 +183,7 @@ FILE_YEAR = 2000 + int(_m.group(1)) if _m else 2026
 
 for co_sheet in (CO_MAIN, CO_RUN):
     ws = wb[co_sheet]
+    co = co_cols(ws)                 # 판마다 열이 밀릴 수 있어 시트별로 잡는다
     # 주간 열은 매주 한 칸씩 밀리는 롤링 구조라 라벨(W1=최근 완료 주)로 찾는다
     hdr = next(ws.iter_rows(min_row=2, max_row=2, values_only=True))
     wk = {}
@@ -172,7 +197,7 @@ for co_sheet in (CO_MAIN, CO_RUN):
                 # 라벨에는 연도가 없다 — 1월 파일에 12월 주가 오면 파일 연도를 붙인 날짜가 미래가 되므로 한 해 뺀다
                 if _m and w1_start > datetime.date(FILE_YEAR, int(_m.group(2)), int(_m.group(3))) + datetime.timedelta(days=7):
                     w1_start = w1_start.replace(year=FILE_YEAR - 1)
-    w1i, w2i = wk.get(1, C('CE')), wk.get(2, C('CD'))
+    w1i, w2i = wk.get(1, co['w1']), wk.get(2, co['w2'])
     # 8/1 이후 판매 = 시작일이 8/1 이상인 주들의 합 (러닝 현재고 판매율용)
     aug_cols = []
     if w1_start:
@@ -183,34 +208,35 @@ for co_sheet in (CO_MAIN, CO_RUN):
         aug_cols = [idx for n, idx in wk.items() if 1 <= n <= max_n]
     print('%s: 전주 %s / 2주전 %s / 8월이후 주 %d개' % (co_sheet, txt(hdr[w1i]), txt(hdr[w2i]), len(aug_cols)))
     for r in ws.iter_rows(min_row=4, values_only=True):
-        code = txt(r[CO['style']] if len(r) > CO['style'] else '')
+        code = txt(r[co['style']] if len(r) > co['style'] else '')
         if not code or code == '스타일':
             continue
         s = styles.get(code)
-        if s is None:
+        if s is None or (co_sheet == CO_RUN and run_codes and code not in run_codes):
             continue
         s['colors'].append({
-            'color': txt(r[CO['color']]),
-            'cname': txt(r[CO['cname']]),
-            'plan': num(r[CO['plan']]),
-            'qtyIn': num(r[CO['qty_in']]),
+            'color': txt(r[co['color']]),
+            'cname': txt(r[co['cname']]),
+            'plan': num(r[co['plan']]),
+            'qtyIn': num(r[co['qty_in']]),
             'w1': num(r[w1i]) if len(r) > w1i else None,
             'w2': num(r[w2i]) if len(r) > w2i else None,
-            'total': num(r[CO['total']]),
-            'rate': num(r[CO['rate']]),
+            'total': num(r[co['total']]),
+            'rate': num(r[co['rate']]),
             'aug': sum((num(r[i]) or 0) for i in aug_cols if len(r) > i),
         })
         s['augSales'] = (s.get('augSales') or 0) + sum(
             (num(r[i]) or 0) for i in aug_cols if len(r) > i)
         # 입고일/출고일: 칼라별 날짜 중 가장 빠른 날짜
         for key, col in (('_in', 'in_date'), ('_out', 'out_date')):
-            k = dkey(r[CO[col]])
+            k = dkey(r[co[col]])
             if k and (s.get(key) is None or k < s[key]):
                 s[key] = k
-                s['inDate' if key == '_in' else 'outDate'] = date(r[CO[col]])
-        # 러닝 시트 CU열: 품번 통합용 그룹 품번
+                s['inDate' if key == '_in' else 'outDate'] = date(r[co[col]])
+        # 품번 통합용 그룹 품번: 러닝 리스트(기존->신규) 우선. 리스트가 없을 때만 시트 CU열
+        # (PT2 판은 CU열이 밀려 엉뚱한 품번을 가리킨다)
         if co_sheet == CO_RUN:
-            g = txt(r[CO['grp']]) if len(r) > CO['grp'] else ''
+            g = run_group.get(code) or ('' if run_group else (txt(r[co['grp']]) if len(r) > co['grp'] else ''))
             if g:
                 s['grp'] = g
 
@@ -334,20 +360,35 @@ for s in data:
     stat = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
             'stock': stock, 'sales': run_sales,
             'rate': (run_sales / stock * 100) if stock else None}
-    # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규입고,
-    # 전주/2주전·누계(8/1 이후)는 구+신 합산, 판매율 = 누계 ÷ (기초+입고)
+    # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규 기획량,
+    # 입고 = 컬러별 기초재고 + 컬러별 신규 입고량(=현재고), 전주/2주전·누계(8/1 이후)는 구+신 합산,
+    # 판매율 = 누계 ÷ 현재고(기초+입고)
+    # 시점재고 시트에 칼라 열이 없으면 컬러별 기초재고는 0 → 기획 열이 신규 기획량만 남는다
     merged_colors = s['colors']                    # CU 통합본 (w1/w2/aug 포함)
     prows = []
     for sc in sub['colors']:
         mc = next((c for c in merged_colors if c['color'] == sc['color']), None) or sc
         base_c = point_stock_color.get((base_code, sc['color']), 0) if base_code else 0
         in_c = sc['qtyIn'] or 0
-        plan_c = base_c + in_c
+        stock_c = base_c + in_c
         tot = mc.get('aug') or 0
         prows.append({'color': sc['color'], 'cname': sc['cname'],
-                      'plan': plan_c, 'qtyIn': in_c,
+                      'plan': base_c + (sc['plan'] or 0), 'qtyIn': stock_c,
                       'w1': mc.get('w1'), 'w2': mc.get('w2'),
-                      'total': tot, 'rate': (tot / plan_c * 100) if plan_c else None})
+                      'total': tot, 'rate': (tot / stock_c * 100) if stock_c else None})
+    # 26FW 미진행 컬러(구품번에서만 진행, 시점재고만 있음): 기획 = 입고 = 시점재고, 판매는 구품번 8/1 이후
+    new_cols = {sc['color'] for sc in sub['colors']}
+    for (bc, col), base_c in sorted(point_stock_color.items()):
+        if bc != base_code or col in new_cols or not base_c:
+            continue
+        mc = next((c for c in merged_colors if c['color'] == col), None) or {}
+        tot = mc.get('aug') or 0
+        prows.append({'color': col, 'cname': mc.get('cname', ''), 'old': True,
+                      'plan': base_c, 'qtyIn': base_c,
+                      'w1': mc.get('w1'), 'w2': mc.get('w2'),
+                      'total': tot, 'rate': (tot / base_c * 100) if base_c else None})
+    stat['plan'] = base + (tt['plan'] or 0)          # 컬러 표 TTL 기획 = 기초재고 + 추가 기획량
+    stat['colorBase'] = bool(base_code) and any(k[0] == base_code for k in point_stock_color)
     s['popup'] = {'stat': stat, 'colors': prows}
     # 본 카드는 신규품번 내용으로 표시 (메인 카드와 동일 레이아웃)
     if s.get('sub'):
