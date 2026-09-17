@@ -466,7 +466,15 @@ listEl.addEventListener('click', e=>{
 });
 const closeModal = ()=>modal.classList.remove('on');
 modal.addEventListener('click', e=>{ if(e.target===modal || e.target.id==='mclose') closeModal(); });
-addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+  // Ctrl/Cmd+F: 브라우저 검색 대신 품번 검색창으로
+  if((e.ctrlKey||e.metaKey) && !e.altKey && !e.shiftKey && (e.key==='f'||e.key==='F')){
+    e.preventDefault();
+    const q = document.getElementById('q');
+    q.focus(); q.select();
+  }
+});
 
 addEventListener('scroll', ()=>{
   if(innerHeight + scrollY > document.body.scrollHeight - 900) more();
