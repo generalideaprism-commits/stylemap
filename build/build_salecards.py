@@ -52,7 +52,8 @@ ST = dict(season=C('D'), gender=C('E'), item=C('F'), item2=C('H'), theme=C('K'),
 # CO 시트 열
 CO = dict(style=C('K'), color=C('M'), cname=C('N'), plan=C('R'),
           in_date=C('U'), qty_in=C('V'), out_date=C('Y'),
-          w1=C('CE'), w2=C('CD'), total=C('CG'), rate=C('CH'), grp=C('CU'))
+          w1=C('CE'), w2=C('CD'), total=C('CG'), rate=C('CH'), grp=C('CU'),
+          plan0=C('S'), plan_re=C('T'), in_re=C('X'))   # 최초기획 / 리오더기획 / 리오더입고
 
 
 def cols_by_label(ws, base):
@@ -218,6 +219,7 @@ for co_sheet in (CO_MAIN, CO_RUN):
             'color': txt(r[co['color']]),
             'cname': txt(r[co['cname']]),
             'plan': num(r[co['plan']]),
+            'plan0': num(r[co['plan0']]), 'planRe': num(r[co['plan_re']]), 'inRe': num(r[co['in_re']]),
             'qtyIn': num(r[co['qty_in']]),
             'w1': num(r[w1i]) if len(r) > w1i else None,
             'w2': num(r[w2i]) if len(r) > w2i else None,
@@ -267,6 +269,32 @@ for code, s in styles.items():
     s['line'] = '메인' if code in main_codes else '러닝'
     s['arrived'] = '입고' if sum(c['qtyIn'] or 0 for c in s['colors']) > 0 else '미입고'
     s['ttl'] = calc_ttl(s['colors'])
+
+# ---- 리오더 (26FW 신상) ----
+# 리오더 기획 수량은 주간판매-26FW(CO) T열(컬러별 리오더기획)의 합. 26FW 신상만 본다 — 러닝은 항상 X.
+# CO 시트의 작지(R) = 최초기획(S) + 리오더기획(T) 이다. 러닝 카드와 같은 방식으로
+# 본 카드는 최초 기획만 보여 주고, 클릭하면 리오더 기획을 합산한 팝업을 띄운다.
+for code, s in styles.items():
+    re_qty = sum(c.get('planRe') or 0 for c in s['colors']) if code in main_codes else 0
+    s['reorder'] = 'O' if re_qty > 0 else 'X'
+    for c in s['colors']:
+        c['_p0'], c['_pr'], c['_ir'] = c.pop('plan0', None), c.pop('planRe', None), c.pop('inRe', None)
+    if re_qty > 0:
+        full = s['ttl']
+        s['re'] = {'stat': {'plan0': sum(c['_p0'] or 0 for c in s['colors']), 'planRe': re_qty,
+                            'plan': full['plan'], 'qtyIn': full['qtyIn'],
+                            'inRe': sum(c['_ir'] or 0 for c in s['colors']),
+                            'w1': full['w1'], 'w2': full['w2'], 'total': full['total'], 'rate': full['rate']},
+                   'colors': [{'color': c['color'], 'cname': c['cname'], 'plan0': c['_p0'] or 0,
+                               'planRe': c['_pr'] or 0, 'plan': c['plan'], 'qtyIn': c['qtyIn'],
+                               'w1': c['w1'], 'w2': c['w2'], 'total': c['total'], 'rate': c['rate']}
+                              for c in s['colors']]}
+        for c in s['colors']:
+            c['plan'] = c['_p0'] if c['_p0'] is not None else c['plan']
+        s['ttl'] = calc_ttl(s['colors'])
+    for c in s['colors']:
+        for k in ('_p0', '_pr', '_ir'):
+            c.pop(k, None)
 
 # ---- CU열 기준 품번 통합 (기존품번 + 러닝 신규품번) ----
 groups = {}

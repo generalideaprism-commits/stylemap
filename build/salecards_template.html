@@ -104,6 +104,8 @@
   .tag{font-size:9.5px;border-radius:5px;padding:1px 5px;font-weight:700}
   .tag.b{background:var(--blue);color:#fff}
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
+  .tag.ro{background:#fff1e6;color:#c2560c;border:1px solid #f6d3b5}
+  td.re{color:#c2560c}
   .cname{font-size:14px;font-weight:800;letter-spacing:-.3px;padding:4px 11px 9px;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -203,7 +205,7 @@
 </header>
 <main id="list"></main>
 <div id="modal"><div class="box">
-  <div class="mhead"><b id="mtitle"></b><span>시점재고 + 신규품번 · 현재고 기준</span>
+  <div class="mhead"><b id="mtitle"></b><span id="msub">시점재고 + 신규품번 · 현재고 기준</span>
     <button class="x" id="mclose">×</button></div>
   <div id="mbody"></div>
 </div></div>
@@ -235,13 +237,14 @@ function card(s){
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
       <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
     </tr>`).join('');
-  return `<div class="card${s.popup?' has-sub':''}" data-style="${s.style}">
+  return `<div class="card${(s.popup||s.re)?' has-sub':''}" data-style="${s.style}">
     <div class="chead">
       <span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span>
       <span class="tags">
         <em class="tag b">${s.gender||'-'}</em>
         <em class="tag g">${s.season||'-'}</em>
         <em class="tag g">${s.line}</em>
+        ${s.re?'<em class="tag ro">리오더</em>':''}
       </span>
     </div>
     <div class="cname">${s.name||''}</div>
@@ -292,16 +295,17 @@ function card(s){
       <em class="n">${s.item||'-'}</em>
       ${(s.themes||[]).map(x=>`<em class="th">${x}</em>`).join('')}
       ${s.popup?`<em class="n click">클릭 → 현재고 실적</em>`:''}
+      ${s.re?`<em class="n click">클릭 → 리오더 합산</em>`:''}
 
     </div>
   </div>`;
 }
 
 /* ---------- 필터 (버튼형) ---------- */
-const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여부'],
+const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여부'],['reorder','리오더 여부'],
               ['gender','성별'],['item','품목'],['themes','테마']];
 // 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목, 3줄 = 테마(+정렬)
-const ROWS = [['season','line','arrived'], ['gender','item'], ['themes']];
+const ROWS = [['season','line','arrived','reorder'], ['gender','item'], ['themes']];
 // 정렬 (판매율 = 누계판매 ÷ 입고량. 값이 없는 스타일은 항상 뒤로)
 const SORTS = [
   {k:'',          label:'기본순'},
@@ -332,6 +336,7 @@ const ORDER = {
   season : ['봄','여름','가을','겨울'],
   line   : ['메인','러닝'],
   arrived: ['입고','미입고'],
+  reorder: ['O','X'],
   gender : ['여성','공용','남성'],
   item   : ['OUTER','KNIT','INNER (W/O KNIT)','BOTTOM','ACC','기타'],
 };
@@ -454,14 +459,59 @@ function popupCard(s){
       ? ' · 시점재고 시트에 칼라 구분이 없어 컬러별 기획에는 시점재고가 빠져 있음 (TTL만 합산)' : ''}</div>
   </div>`;
 }
+/* 리오더 팝업 (26FW 신상): 본 카드는 최초 기획만, 팝업은 최초 + 리오더 기획 합산.
+   판매율은 본 카드와 같은 입고량 기준 */
+function rePopupCard(s){
+  const st = s.re.stat;
+  const rate = st.rate==null ? 0 : Math.max(0, Math.min(100, st.rate));
+  const rows = s.re.colors.map(c=>`
+    <tr>
+      <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
+      <td>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td><b>${n0(c.plan)}</b></td>
+      <td>${n0(c.qtyIn)}</td><td>${n0(c.w1)}</td>
+      <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
+    </tr>`).join('');
+  return `<div class="card">
+    <div class="chead"><span class="code">${s.style}</span></div>
+    <div class="cname">${s.name||''}</div>
+    <div class="thumb">
+      <img src="${s.img || IMG_BASE+encodeURIComponent((s.imgCodes||[s.style])[0])+'/cut_0.jpg'}" alt="${s.style}"
+           data-c="${s.img ? '' : (s.imgCodes||[s.style]).join(',')}" data-i="0" onerror="nextImg(this)">
+      <span class="noimg">NO IMAGE</span>
+    </div>
+    <div class="stats s5">
+      <div><b>${n0(st.plan0)}</b><span>최초 기획량</span></div>
+      <div><b>${n0(st.planRe)}</b><span>리오더 기획량</span></div>
+      <div><b>${n0(st.plan)}</b><span>총 기획량</span></div>
+      <div><b>${n0(st.qtyIn)}</b><span>입고량</span></div>
+      <div class="hl"><b>${pct(st.rate)}</b><span>판매율</span></div>
+    </div>
+    <div class="prog">
+      <div class="lb"><span>판매 진행률 (입고량 기준)</span><b>${pct(st.rate)}</b></div>
+      <div class="bar"><i style="width:${rate}%"></i></div>
+    </div>
+    <table>
+      <colgroup><col style="width:13%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:13%"><col style="width:12.5%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:13.5%"></colgroup>
+      <thead><tr><th class="c">컬러</th><th>최초</th><th>리오더</th><th>기획</th><th>입고</th>
+                 <th>전주</th><th>누계</th><th>판매율</th></tr></thead>
+      <tbody>${rows}
+        <tr class="ttl"><td class="c">TTL</td>
+          <td>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td>${n0(st.plan)}</td>
+          <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td>${pct(st.rate)}</td></tr>
+      </tbody>
+    </table>
+    <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 입고 중 리오더 입고 ${n0(st.inRe)}장</div>
+  </div>`;
+}
 listEl.addEventListener('click', e=>{
   if(e.target.closest('summary')) return;              // 상세 토글은 그대로
   const el = e.target.closest('.card.has-sub');
   if(!el) return;
   const s = view.find(x=>x.style===el.dataset.style);
-  if(!s || !s.popup) return;
-  document.getElementById('mtitle').textContent = s.altStyle ? `${s.style} + ${s.altStyle}` : s.style;
-  document.getElementById('mbody').innerHTML = popupCard(s);
+  if(!s || !(s.popup || s.re)) return;
+  document.getElementById('mtitle').textContent = s.re ? `${s.style} · 리오더 합산` : s.altStyle ? `${s.style} + ${s.altStyle}` : s.style;
+  document.getElementById('msub').textContent = s.re ? '최초 기획 + 리오더 기획 · 입고량 기준' : '시점재고 + 신규품번 · 현재고 기준';
+  document.getElementById('mbody').innerHTML = s.re ? rePopupCard(s) : popupCard(s);
   modal.classList.add('on');
 });
 const closeModal = ()=>modal.classList.remove('on');
