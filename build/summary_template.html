@@ -35,7 +35,7 @@
   /* 집계 표 */
   .tw{overflow-x:auto}
   table.sum{width:100%;border-collapse:collapse;font-size:12px;
-    table-layout:fixed;min-width:1400px}   /* 좁은 화면에선 표 영역만 가로 스크롤 */
+    table-layout:fixed;min-width:1840px}   /* 좁은 화면에선 표 영역만 가로 스크롤 (원가·택가·마크업 4열 추가분 포함) */
   table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
@@ -284,9 +284,17 @@ const COLS_ALL = [
   {k:'sellRate', label:'누계판매율',  f:'p1'},
   {k:'salesAmt', label:'실판매금액',  f:'m'},
   {k:'disc',     label:'할인율',      f:'p1'},
+  // 원가(원천 O열)는 VAT 미포함 — 표시는 costV(x1.1) · 마크업은 택가 / 원가(VAT 포함) 직접 계산
+  {k:'costV',    label:'원가(VAT 포함)', f:'m', sep:true},
+  {k:'tag',      label:'택가금액',     f:'m'},
+  {k:'mu',       label:'마크업(택가)',  f:'x2'},
+  {k:'muReal',   label:'마크업(실판)',  f:'x2'},
 ];
 // 25FW 블록에는 SKU 집계가 없어 전년 대비에서는 두 열을 뺀다
-const COLS_YR = COLS_ALL.filter(c => c.k!=='sku' && c.k!=='inSku');
+// 원가·택가·마크업은 전년 대비 모드에서는 뺀다 — 26FW/25FW 두 블록이 나란히 깔려 30열이 된다.
+// (25FW 블록(+26)에도 원가·TAG 는 들어 있으니, 보여줘야 하면 아래 PRICE_COLS 조건만 지우면 된다)
+const PRICE_COLS = ['costV','tag','mu','muReal'];
+const COLS_YR = COLS_ALL.filter(c => c.k!=='sku' && c.k!=='inSku' && !PRICE_COLS.includes(c.k));
 let MODE = 'wk';            // 'wk' = 전주 대비 · 'yr' = 전년 대비
 let COLS = COLS_ALL;
 
@@ -300,7 +308,9 @@ const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';
 // 금액은 백만 단위 (8,400,000 -> 8.4백만). 백만 미만의 자잘한 값은 그대로 숫자로.
 const fmtM = v => v==null ? '-' : v===0 ? '0'
   : Math.abs(v)>=1e5 ? (v/1e6).toFixed(1)+'백만' : fmtN(v);
-const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0, m:fmtM};
+// 마크업(배수)은 소수 둘째 자리까지
+const fmtX2 = v => v==null ? '-' : v.toFixed(2);
+const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0, m:fmtM, x2:fmtX2};
 const get = (o,k) => (o && o[k]!=null) ? o[k] : null;
 // 현재 모드에서 이 행이 대조할 상대 — 전주 스냅샷(was) 또는 25FW(py)
 const cmpOf = d => !d ? null : (MODE==='wk' ? d.was : d.py);
@@ -382,11 +392,13 @@ function dataRow(name, o, cls, cmp){
 
 const colwWk = c => c.k==='styles' ? '5.9%' : c.k==='sku' ? '5.7%'
   : c.k==='inM' ? '6.4%' : c.k==='inSku' ? '5.9%'
+  : c.f==='x2' ? '6.4%'
   : c.f[0]==='p' ? '7.8%' : c.f==='m' ? '10.8%' : '8.5%';
 // 지표 하나가 차지하는 폭 — 26FW 블록과 25FW 블록에 같은 값을 쓴다
 // 실판매금액은 시점재고 합산 시 10억을 넘어('1172.6백만▲') 가장 넓게 둔다
 const YRW = {styles:3.9, plan:4.5, inM:3.9, qtyIn:4.5, inRate:3.4,
-             wkQty:4.2, wkAmt:5.2, sales:4.7, sellRate:4.2, salesAmt:5.6, disc:3.6};
+             wkQty:4.2, wkAmt:5.2, sales:4.7, sellRate:4.2, salesAmt:5.6, disc:3.6,
+             costV:5.6, tag:5.6, mu:3.4, muReal:3.4};
 
 function table(rows){
   if(MODE!=='yr'){
@@ -415,13 +427,19 @@ function panel(title, sub, body){
 /* 여러 행의 합계 — 수량·금액은 합, 비율은 합계값으로 재계산 */
 function sumRows(list){
   const t = {};
-  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku','inM','inSku','wkQty','wkAmt','stock'].forEach(k=>{
+  ['plan','qtyIn','sales','salesTag','salesAmt','salesCost','styles','sku','inM','inSku','wkQty','wkAmt','stock',
+   'cost','planCost','tag'].forEach(k=>{
     const vs = list.map(d=>d && d[k]).filter(v=>v!=null);
     t[k] = vs.length ? vs.reduce((a,b)=>a+b,0) : null;
   });
   t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
   t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
   t.disc     = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
+  // 원가(원천)는 VAT 미포함 — 표시용 costV 만 x1.1, 마크업 = 택가 / 원가(VAT 포함)
+  t.costV    = t.cost!=null ? Math.round(t.cost*1.1) : null;
+  t.mu       = t.cost ? (t.tag||0)/t.cost/1.1 : null;
+  t.muPlan   = t.planCost ? (t.tag||0)/t.planCost/1.1 : null;
+  t.muReal   = t.salesCost ? (t.salesAmt||0)/t.salesCost/1.1 : null;
   return t;
 }
 
@@ -476,6 +494,10 @@ function cmpSum(rows){
   if(t.plan==null || t.qtyIn==null) t.inRate = null;
   if(t.qtyIn==null || t.sales==null) t.sellRate = null;
   if(t.salesTag==null || t.salesAmt==null) t.disc = null;
+  if(t.cost==null) t.costV = null;
+  if(t.cost==null || t.tag==null) t.mu = null;
+  if(t.planCost==null || t.tag==null) t.muPlan = null;
+  if(t.salesCost==null || t.salesAmt==null) t.muReal = null;
   return t;
 }
 

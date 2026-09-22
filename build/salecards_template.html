@@ -280,15 +280,17 @@ function card(s){
     </table>
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
     <div class="meta">
-      <div><span>원가(-)</span><b>${won(s.cost)}</b></div>
-      <div><span>배수</span><b>${s.mult ?? '-'}</b></div>
+      <div><span>원가(VAT 포함)</span><b>${won(s.costV)}</b></div>
+      <div><span title="마크업 = 택가 ÷ 원가(VAT 포함)">배수(택가)</span><b>${s.mult ?? '-'}</b></div>
       <div><span>입고</span><b>${s.inDate||'-'}</b></div>
       <div><span>출고</span><b>${s.outDate||'-'}</b></div>
       <div><span>TAG판매금액</span><b>${n0(s.tagAmt)}</b></div>
       <div><span>실판매금액</span><b>${n0(s.saleAmt)}</b></div>
-      <div><span>차순</span><b>-</b></div>
+      <div><span title="실판 마크업 = 실판가 ÷ 원가(VAT 포함)">배수(실판)</span><b>${s.multReal ?? '-'}</b></div>
       <div><span>입고여부</span><b>${s.arrived}</b></div>
     </div>
+    <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
+      s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}</div>
     </details>
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>

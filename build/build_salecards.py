@@ -131,7 +131,7 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         if not is_main and run_codes and code not in run_codes:
             continue
         season = txt(r[ST_['season']]).replace('(러닝)', '').strip()
-        tag, cost = num(r[ST_['tag']]), num(r[ST_['cost']])
+        tag, cost, real = num(r[ST_['tag']]), num(r[ST_['cost']]), num(r[ST_['real']])
         tag_amt, sale_amt = num(r[ST_['tag_amt']]), num(r[ST_['sale_amt']])
         # 이미지 폴더 후보: 품번 -> 러닝 시트 BR열 품번 -> 러닝 매핑표의 짝 품번 순으로 시도
         img_code = txt(r[ST_['img_code']]) if len(r) > ST_['img_code'] else ''
@@ -152,9 +152,13 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'themes': [txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [],
             'vendor': txt(r[ST_['vendor']]),
             'tag': tag,
-            'real': num(r[ST_['real']]),
+            'real': real,
             'cost': cost,
+            # 원가(AA열)는 VAT 미포함 — 표시용 costV 만 x1.1 (원천 cost 는 그대로 둔다)
+            'costV': round(cost * 1.1) if cost else None,
+            # 마크업 = 택가 / 원가(VAT 포함) · 실판 마크업 = 실판가 / 원가(VAT 포함)
             'mult': round(tag / cost / 1.1, 2) if tag and cost else None,
+            'multReal': round(real / cost / 1.1, 2) if real and cost else None,
             'tagAmt': tag_amt,
             'saleAmt': sale_amt,
             'discount': (1 - sale_amt / tag_amt) if tag_amt else None,
@@ -424,8 +428,9 @@ for s in data:
         s['colors'] = sub['colors']
         # 원가·배수·TAG·실판가·생산처도 신규품번(이번 시즌) 기준 — 구품번 원가가 남지 않게
         for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate',
-                  'cost', 'mult', 'tag', 'real', 'vendor'):
+                  'cost', 'costV', 'mult', 'multReal', 'tag', 'real', 'vendor'):
             s[f] = sub.get(f)
+        s['priceStyle'] = sub['style']   # 단가·원가·마크업이 어느 품번 기준인지 카드에 표기
     s['arrived'] = '입고' if new_in > 0 else '미입고'
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
@@ -510,7 +515,13 @@ if '종합' in wb.sheetnames:
         return row[i] if len(row) > i else None
 
     def vals(r, cols, off=0):
-        return {k: num(cell(r, c, off)) for k, c in cols.items()}
+        v = {k: num(cell(r, c, off)) for k, c in cols.items()}
+        if 'mu' in v:        # 종합 시트 S열(MUP)을 그대로 믿지 않고 직접 계산
+            v['costV'] = round(v['cost'] * 1.1) if v.get('cost') else None
+            v['mu'] = round(v['tag'] / v['cost'] / 1.1, 2) if v.get('tag') and v.get('cost') else None
+            v['muPlan'] = round(v['tag'] / v['planCost'] / 1.1, 2) if v.get('tag') and v.get('planCost') else None
+            v['muReal'] = round(v['salesAmt'] / v['salesCost'] / 1.1, 2) if v.get('salesAmt') and v.get('salesCost') else None
+        return v
 
     # 1) 26FW 시즌별/복종별 + 전년비교 (7~23행)
     season, mode = '', 'new'
@@ -606,7 +617,12 @@ def _dup_sub(dst, src):
     if dst.get('salesTag'):
         dst['disc'] = 1 - (dst.get('salesAmt') or 0) / dst['salesTag']
     if dst.get('cost'):
+        dst['costV'] = round(dst['cost'] * 1.1)
         dst['mu'] = (dst.get('tag') or 0) / dst['cost'] / 1.1
+    if dst.get('planCost'):
+        dst['muPlan'] = (dst.get('tag') or 0) / dst['planCost'] / 1.1
+    if dst.get('salesCost'):
+        dst['muReal'] = (dst.get('salesAmt') or 0) / dst['salesCost'] / 1.1
 
 
 def _grp(item):
