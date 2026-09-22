@@ -422,7 +422,9 @@ for s in data:
     if s.get('sub'):
         s['ttl'] = sub['ttl']
         s['colors'] = sub['colors']
-        for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate'):
+        # 원가·배수·TAG·실판가·생산처도 신규품번(이번 시즌) 기준 — 구품번 원가가 남지 않게
+        for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate',
+                  'cost', 'mult', 'tag', 'real', 'vendor'):
             s[f] = sub.get(f)
     s['arrived'] = '입고' if new_in > 0 else '미입고'
 print('통합 카드:', len(subs), '쌍')
