@@ -8,6 +8,10 @@
 import base64, json, datetime, os, re, sys
 import openpyxl
 
+# 콘솔이 cp949 라 '—' 같은 글자에서 print 가 죽는다(2026-09-22 실제 발생 — 택가 정본 로그가 터졌다).
+try: sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception: pass
+
 HERE = os.path.dirname(os.path.abspath(__file__))                 # .../build
 ROOT = os.path.dirname(HERE) if os.path.basename(HERE) == 'build' else HERE
 DATA_DIR = os.path.join(ROOT, 'data') if os.path.isdir(os.path.join(ROOT, 'data')) else ROOT
@@ -28,6 +32,29 @@ print('원본:', os.path.basename(SRC))
 OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html')
 OUT_SUM = os.path.join(SHARE_DIR, '26fw-season-summary.html')
 OUT_CMP = os.path.join(SHARE_DIR, '26fw-season-compare.html')
+
+# ---- 택가 정본: MDP 최종TAG (production-hub/fw-intake/tagmap.json) ----
+# 스타일맵 Z열(택가)은 전산 덤프라 MDP 최종TAG 와 어긋나는 판이 있다. 카드에 찍는 택가는
+# MDP 를 정본으로 덮는다(MD 지시 2026-09-22). 실판가(Y)·원가(AA)·수량·금액(BH/BI)은 원천 그대로 둔다.
+# 경로는 여기 한 곳에만 둔다 — 환경변수 TAGMAP_JSON 으로 덮을 수 있다.
+# 허브 클론이 없는 PC 에서도 빌드가 깨지면 안 되므로, 못 읽으면 경고 한 줄 남기고 시트 택가로 돈다.
+TAGMAP_JSON = os.environ.get('TAGMAP_JSON') or os.path.join(
+    os.path.dirname(ROOT), 'production-hub', 'fw-intake', 'tagmap.json')
+
+
+def load_tagmap(path):
+    """{품번: 택가} 를 돌려준다. 못 읽으면 빈 dict — 그 경우 시트 택가가 그대로 쓰인다."""
+    try:
+        doc = json.load(open(path, encoding='utf-8'))
+        tm = {k: float(v) for k, v in (doc.get('tag') or {}).items() if v}
+    except Exception as e:
+        print('[경고] 택가 정본을 못 읽어 시트 택가로 진행합니다 — %s (%s)' % (path, e))
+        return {}
+    print('택가 정본: %d건 · 기준 %s · %s' % (len(tm), doc.get('at') or '?', doc.get('source') or ''))
+    return tm
+
+
+TAGMAP = load_tagmap(TAGMAP_JSON)
 
 # 시트명은 파일마다 '생판재주간-' / '생판재-' 로 다를 수 있어 앞부분만 매칭
 def sheet(*keys):
@@ -118,6 +145,18 @@ if '26FW 러닝스타일 리스트' in wb.sheetnames:
 # 러닝 시트는 판에 따라 전 브랜드 덤프(260914 PT2: 1,594 스타일)로 오기도 하므로 리스트 품번으로 한정한다
 run_codes = set(run_group)
 
+
+def mdp_tag(code, sheet_tag):
+    """표시 택가 = MDP 최종TAG 정본. 덮는 대상은 '자기 품번이 정본에 있는 행'만이다.
+    러닝 구품번(WBE/WBD/GF1/SBE 계열)은 정본에 없으니 시트 택가가 그대로 남고,
+    통합 카드는 아래(sub 복사 루프)에서 러닝 신품번 값으로 갈아끼운다. 여기서 구품번을
+    신품번으로 앞당겨 조회하면 짝이 안 묶인 구품번 단독 카드까지 덮여
+    택가는 신품번·원가는 구품번인 상태로 배수가 섞인다.
+    정본에 없으면 시트 값을 그대로 둔다 — 추정값은 넣지 않는다."""
+    t = TAGMAP.get(code)
+    return t if t else sheet_tag
+
+
 styles = {}
 order = []
 
@@ -132,6 +171,9 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             continue
         season = txt(r[ST_['season']]).replace('(러닝)', '').strip()
         tag, cost, real = num(r[ST_['tag']]), num(r[ST_['cost']]), num(r[ST_['real']])
+        # 택가만 MDP 최종TAG 정본으로 덮는다(원천 시트 택가는 tagErp 로 보존).
+        # 이 줄이 택가의 유일한 통로다 — 통합 카드 복사·집계도 전부 여기를 지난다.
+        tag_erp, tag = tag, mdp_tag(code, tag)
         tag_amt, sale_amt = num(r[ST_['tag_amt']]), num(r[ST_['sale_amt']])
         # 이미지 폴더 후보: 품번 -> 러닝 시트 BR열 품번 -> 러닝 매핑표의 짝 품번 순으로 시도
         img_code = txt(r[ST_['img_code']]) if len(r) > ST_['img_code'] else ''
@@ -152,6 +194,10 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'themes': [txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [],
             'vendor': txt(r[ST_['vendor']]),
             'tag': tag,
+            'tagErp': tag_erp,              # 시트 Z열 원본 택가 — 덮기 전 값 보존(실판가 대타는 이 값을 쓴다)
+            # MDP 최종TAG 미확정 — 카드에 '미확인' 으로 밝힌다(값은 전산 그대로 두고 지어내지 않는다).
+            # 정본을 못 읽은 PC(TAGMAP 비어 있음)에서는 전부 False — 엉뚱한 배지가 뜨지 않게 한다.
+            'tagNA': bool(TAGMAP) and not TAGMAP.get(code),
             'real': real,
             'cost': cost,
             # 원가(AA열)는 VAT 미포함 — 표시용 costV 만 x1.1 (원천 cost 는 그대로 둔다)
@@ -167,6 +213,17 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         })
         if code not in order:
             order.append(code)
+
+# 택가 정본 적용 결과 — 바뀐 카드 / 시트가 비어 있어 값이 생긴 카드 / 정본에 없는 품번
+if TAGMAP:
+    _chg = [s for s in styles.values() if (s['tag'] or 0) != (s['tagErp'] or 0)]
+    _fill = [s for s in _chg if not s['tagErp']]
+    # 미커버 = 자기 품번도, 짝 러닝 신품번(통합 카드가 표시하는 값)도 정본에 없는 품번
+    _miss = sorted(c for c in styles
+                   if not TAGMAP.get(c) and not TAGMAP.get(run_group.get(c) or ''))
+    print('택가 정본 적용: %d스타일 중 교체 %d건(공란→값 %d건) · 미커버 %d건%s'
+          % (len(styles), len(_chg), len(_fill), len(_miss),
+             (' — ' + ', '.join(_miss[:8]) + (' 외' if len(_miss) > 8 else '')) if _miss else ''))
 
 # 메인/러닝: 26FW 시트(ST/CO)에 존재하면 메인
 main_codes = set()
@@ -428,7 +485,7 @@ for s in data:
         s['colors'] = sub['colors']
         # 원가·배수·TAG·실판가·생산처도 신규품번(이번 시즌) 기준 — 구품번 원가가 남지 않게
         for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate',
-                  'cost', 'costV', 'mult', 'multReal', 'tag', 'real', 'vendor'):
+                  'cost', 'costV', 'mult', 'multReal', 'tag', 'tagErp', 'tagNA', 'real', 'vendor'):
             s[f] = sub.get(f)
         s['priceStyle'] = sub['style']   # 단가·원가·마크업이 어느 품번 기준인지 카드에 표기
     s['arrived'] = '입고' if new_in > 0 else '미입고'

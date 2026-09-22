@@ -254,7 +254,7 @@ function card(s){
       <span class="noimg">NO IMAGE</span>
     </div>
     <div class="prices">
-      <div><b>${won(s.tag)}</b><span>TAG가</span></div>
+      <div${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><b>${won(s.tag)}</b><span>TAG가${s.tagNA?' · 미확인':''}</span></div>
       <div><b>${won(s.real)}</b><span>실판가</span></div>
       <div class="r"><b>${s.discount==null?'-':pct(s.discount*100,0)}</b><span>할인율</span></div>
     </div>
@@ -290,7 +290,8 @@ function card(s){
       <div><span>입고여부</span><b>${s.arrived}</b></div>
     </div>
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
-      s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}</div>
+      s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
+      <br>TAG가는 MDP 최종TAG(택가 정본) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값이라 산출 기준이 다르다${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
     </details>
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>
