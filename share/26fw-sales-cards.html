@@ -106,6 +106,9 @@
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
   .tag.ro{background:#fff1e6;color:#c2560c;border:1px solid #f6d3b5}
   td.re{color:#c2560c}
+  .recard{cursor:pointer}
+  .recard th.on,.recard td.on,.recard .stats div.on b{color:var(--blue)}
+  .recard td.on b{color:var(--blue)}
   .cname{font-size:14px;font-weight:800;letter-spacing:-.3px;padding:4px 11px 9px;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -464,18 +467,25 @@ function popupCard(s){
 }
 /* 리오더 팝업 (26FW 신상): 본 카드는 최초 기획만, 팝업은 최초 + 리오더 기획 합산.
    판매율은 본 카드와 같은 입고량 기준 */
+/* 리오더 팝업 (26FW 신상): 본 카드는 최초 기획만, 팝업은 최초 + 리오더 기획 합산.
+   판매율 = 누계 ÷ 기획량. 기본은 총 기획(최초+리오더) 기준, 팝업을 한 번 더 클릭하면 최초 기획 기준으로 바뀐다 */
+let RE_FIRST = false;                        // true = 최초 기획량 기준
 function rePopupCard(s){
   const st = s.re.stat;
-  const rate = st.rate==null ? 0 : Math.max(0, Math.min(100, st.rate));
+  const base = c => RE_FIRST ? (c.plan0||0) : (c.plan||0);
+  const rt = c => base(c) ? (c.total||0) / base(c) * 100 : null;
+  const rate = rt(st)==null ? 0 : Math.max(0, Math.min(100, rt(st)));
   const rows = s.re.colors.map(c=>`
     <tr>
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
-      <td>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td><b>${n0(c.plan)}</b></td>
+      <td${RE_FIRST?' class="on"':''}>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td${RE_FIRST?'':' class="on"'}><b>${n0(c.plan)}</b></td>
       <td>${n0(c.qtyIn)}</td><td>${n0(c.w1)}</td>
-      <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
+      <td>${n0(c.total)}</td><td>${pct(rt(c))}</td>
     </tr>`).join('');
-  return `<div class="card">
-    <div class="chead"><span class="code">${s.style}</span></div>
+  const label = RE_FIRST ? '최초 기획량 기준' : '총 기획량(최초+리오더) 기준';
+  return `<div class="card recard" title="클릭하면 판매율 기준이 바뀝니다">
+    <div class="chead"><span class="code">${s.style}</span>
+      <span class="tags"><em class="tag ro">${label}</em></span></div>
     <div class="cname">${s.name||''}</div>
     <div class="thumb">
       <img src="${s.img || IMG_BASE+encodeURIComponent((s.imgCodes||[s.style])[0])+'/cut_0.jpg'}" alt="${s.style}"
@@ -483,27 +493,27 @@ function rePopupCard(s){
       <span class="noimg">NO IMAGE</span>
     </div>
     <div class="stats s5">
-      <div><b>${n0(st.plan0)}</b><span>최초 기획량</span></div>
+      <div${RE_FIRST?' class="on"':''}><b>${n0(st.plan0)}</b><span>최초 기획량</span></div>
       <div><b>${n0(st.planRe)}</b><span>리오더 기획량</span></div>
-      <div><b>${n0(st.plan)}</b><span>총 기획량</span></div>
+      <div${RE_FIRST?'':' class="on"'}><b>${n0(st.plan)}</b><span>총 기획량</span></div>
       <div><b>${n0(st.qtyIn)}</b><span>입고량</span></div>
-      <div class="hl"><b>${pct(st.rate)}</b><span>판매율</span></div>
+      <div class="hl"><b>${pct(rt(st))}</b><span>판매율</span></div>
     </div>
     <div class="prog">
-      <div class="lb"><span>판매 진행률 (입고량 기준)</span><b>${pct(st.rate)}</b></div>
+      <div class="lb"><span>판매 진행률 (${label})</span><b>${pct(rt(st))}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
     <table>
       <colgroup><col style="width:13%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:13%"><col style="width:12.5%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:13.5%"></colgroup>
-      <thead><tr><th class="c">컬러</th><th>최초</th><th>리오더</th><th>기획</th><th>입고</th>
+      <thead><tr><th class="c">컬러</th><th${RE_FIRST?' class="on"':''}>최초</th><th>리오더</th><th${RE_FIRST?'':' class="on"'}>기획</th><th>입고</th>
                  <th>전주</th><th>누계</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
-          <td>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td>${n0(st.plan)}</td>
-          <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td>${pct(st.rate)}</td></tr>
+          <td${RE_FIRST?' class="on"':''}>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td${RE_FIRST?'':' class="on"'}>${n0(st.plan)}</td>
+          <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td>${pct(rt(st))}</td></tr>
       </tbody>
     </table>
-    <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 입고 중 리오더 입고 ${n0(st.inRe)}장</div>
+    <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = 누계 ÷ ${RE_FIRST?'최초 기획량':'총 기획량'} · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜 · 리오더 입고 ${n0(st.inRe)}장</div>
   </div>`;
 }
 listEl.addEventListener('click', e=>{
@@ -513,11 +523,21 @@ listEl.addEventListener('click', e=>{
   const s = view.find(x=>x.style===el.dataset.style);
   if(!s || !(s.popup || s.re)) return;
   document.getElementById('mtitle').textContent = s.re ? `${s.style} · 리오더 합산` : s.altStyle ? `${s.style} + ${s.altStyle}` : s.style;
-  document.getElementById('msub').textContent = s.re ? '최초 기획 + 리오더 기획 · 입고량 기준' : '시점재고 + 신규품번 · 현재고 기준';
+  document.getElementById('msub').textContent = s.re ? '최초 기획 + 리오더 기획 · 총 기획량 기준' : '시점재고 + 신규품번 · 현재고 기준';
+  RE_FIRST = false; modal.dataset.style = s.style;
   document.getElementById('mbody').innerHTML = s.re ? rePopupCard(s) : popupCard(s);
   modal.classList.add('on');
 });
 const closeModal = ()=>modal.classList.remove('on');
+// 리오더 팝업 카드 클릭: 판매율 기준을 총 기획 <-> 최초 기획으로 토글
+document.getElementById('mbody').addEventListener('click', e=>{
+  if(!e.target.closest('.recard')) return;
+  const s = DATA.find(x=>x.style===modal.dataset.style);
+  if(!s || !s.re) return;
+  RE_FIRST = !RE_FIRST;
+  document.getElementById('msub').textContent = RE_FIRST ? '최초 기획 + 리오더 기획 · 최초 기획량 기준' : '최초 기획 + 리오더 기획 · 총 기획량 기준';
+  document.getElementById('mbody').innerHTML = rePopupCard(s);
+});
 modal.addEventListener('click', e=>{ if(e.target===modal || e.target.id==='mclose') closeModal(); });
 addEventListener('keydown', e=>{
   if(e.key==='Escape') closeModal();
