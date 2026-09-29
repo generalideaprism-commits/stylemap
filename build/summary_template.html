@@ -181,8 +181,10 @@
   tbody tr+tr td{border-top:1px solid #f1f3f7}
   .cl{color:var(--blue);font-weight:700;font-size:11.5px;line-height:1.15}
   .cl small{display:block;color:var(--muted);font-weight:400;font-size:9.5px;line-height:1.15}
-  table.sum tr.grow th{background:#eef2f8;color:var(--ink);font-weight:800;font-size:12px;text-align:left;padding:7px 10px;border-top:2px solid #d7dfeb}
-  table.sum tr.grow+tr th,table.sum tr.grow+tr td{border-top:0}
+  table.sum .sh{display:block;font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.1;margin-top:1px}
+  table.sum tr.prow.lv2 th.nm{padding-left:22px;font-weight:600}
+  table.sum tr.prow.lv2+tr.srow th.nm.sub,table.sum tr.srow[data-p^="g-"] th.nm.sub{padding-left:44px}
+  table.sum tr.gttl th.nm{font-weight:800;color:var(--ink)}
   tr.ttl td{border-top:1px solid var(--line);font-weight:800;background:#fbfcfe}
   .dim{color:#c3c9d2}
 
@@ -363,19 +365,26 @@ function deltaHtml(v, was, col){
 
 const valOf = (o,c) => c.k==='inRate' ? inRateOf(o) : get(o,c.k);
 
-function cell(v, col, was){
-  const txt = FMT[col.f](v) + deltaHtml(v, was, col);
+// 성별 카테고리: 이 지표들은 값 옆에 전체(여성+유니맨) 대비 비중을 작게 붙인다
+const SHARE_KEYS = ['plan', 'qtyIn', 'wkQty', 'wkAmt', 'sales', 'costV'];
+function shareHtml(v, col, base){
+  if(!base || !SHARE_KEYS.includes(col.k) || v==null) return '';
+  const b = valOf(base, col);
+  return b ? `<span class="sh">${(v / b * 100).toFixed(1)}%</span>` : '';
+}
+function cell(v, col, was, base){
+  const txt = FMT[col.f](v) + deltaHtml(v, was, col) + shareHtml(v, col, base);
   return `<td class="num${v==null?' dim':''}${col.sep?' sep':''}">${txt}</td>`;
 }
 
 /* 전년 대비 모드는 26FW 지표 11개를 통째로 왼쪽, 25FW 지표 11개를 통째로 오른쪽에 둔다.
    왼쪽 값의 ▲▼ 는 방향만 알려 주고, 크기는 오른쪽 블록의 같은 자리 숫자를 읽으면 된다. */
-function cellsOfYr(o, cmp){
+function cellsOfYr(o, cmp, base){
   const left = COLS.map(c=>{
     const a = valOf(o,c), b = valOf(cmp,c);
     const ar = (a!=null && b!=null && a!==b)
       ? `<span class="ar ${a>b?'up':'down'}">${a>b?'▲':'▼'}</span>` : '';
-    return `<td class="num${a==null?' dim':''}">${FMT[c.f](a)}${ar}</td>`;
+    return `<td class="num${a==null?' dim':''}">${FMT[c.f](a)}${ar}${shareHtml(a, c, base)}</td>`;
   }).join('');
   const right = COLS.map((c,i)=>{
     const b = valOf(cmp,c);
@@ -384,12 +393,12 @@ function cellsOfYr(o, cmp){
   return left + right;
 }
 
-function cellsOf(o, cmp){
-  return MODE==='yr' ? cellsOfYr(o, cmp)
-                     : COLS.map(c=>cell(valOf(o,c), c, valOf(cmp,c))).join('');
+function cellsOf(o, cmp, base){
+  return MODE==='yr' ? cellsOfYr(o, cmp, base)
+                     : COLS.map(c=>cell(valOf(o,c), c, valOf(cmp,c), base)).join('');
 }
-function dataRow(name, o, cls, cmp){
-  return `<tr class="${cls||''}"><th class="nm">${name}</th>${cellsOf(o,cmp)}</tr>`;
+function dataRow(name, o, cls, cmp, base){
+  return `<tr class="${cls||''}"><th class="nm">${name}</th>${cellsOf(o,cmp,base)}</tr>`;
 }
 
 const colwWk = c => c.k==='styles' ? '5.9%' : c.k==='sku' ? '5.7%'
@@ -447,14 +456,15 @@ function sumRows(list){
 
 /* ---------- 접이식 행 (복종 클릭 -> 하위 카테고리) ---------- */
 const matchItem = (a,b) => a===b || a.startsWith(b) || b.startsWith(a);   // ACC <-> ACCESSORY
-function parentRow(name, o, cmp, gid, subCount, cls){
+function parentRow(name, o, cmp, gid, subCount, cls, parent, base){
   const tg = subCount ? `<span class="tg">▸</span>` : `<span class="tg none"></span>`;
-  return `<tr class="prow${subCount?' has':''} ${cls||''}" data-g="${gid}">
-    <th class="nm">${tg}${name}${subCount?`<span class="cnt">${subCount}</span>`:''}</th>${cellsOf(o,cmp)}</tr>`;
+  const nest = parent ? ` data-p="${parent}" style="display:none"` : '';
+  return `<tr class="prow${subCount?' has':''} ${cls||''}${parent?' lv2':''}" data-g="${gid}"${nest}>
+    <th class="nm">${tg}${name}${subCount?`<span class="cnt">${subCount}</span>`:''}</th>${cellsOf(o,cmp,base)}</tr>`;
 }
-function subRow(name, o, cmp, gid){
+function subRow(name, o, cmp, gid, base){
   return `<tr class="srow" data-p="${gid}" style="display:none">
-    <th class="nm sub">${name}</th>${cellsOf(o,cmp)}</tr>`;
+    <th class="nm sub">${name}</th>${cellsOf(o,cmp,base)}</tr>`;
 }
 
 function seasonCatTable(season){
@@ -471,23 +481,25 @@ function seasonCatTable(season){
 
 /* 성별(여성/유니맨) 카테고리 — 한 표 안에 성별 묶음 두 개, 시즌 블록과 같은 접이식. 25FW 짝이 없어 전년 모드에서는 오른쪽이 비고,
    기획 ST수·SKU·기획량은 종합 시트(ERP) 값이라 시즌 요약(MDP 기준)과 정의가 다르다 */
-const GENDER_LABEL = {'여성': '여성', '남성': '유니맨'};   // 화면 표기 (남성 블록 = 유니맨)
+const GENDER_LABEL = {'여성': '여성', '남성': '유니맨'};   // 화면 표기 (남성 블록 = 남성+공용 = 유니맨)
+/* 성별 카테고리: 성별 TTL 행만 보이고, 클릭하면 복종(OUTER·TOP·BOTTOM·ACC), 복종을 또 클릭하면 하위 카테고리.
+   기획량·입고량·주간판매량·주간판매금액·누계판매량·원가 옆에는 전체(여성+유니맨) 대비 비중을 붙인다. */
 function genderCatTable(){
-  const ncol = 1 + COLS.length * (MODE==='yr' ? 2 : 1);
+  const base = sumRows(SUM.genderItem.filter(d=>d.item==='TOTAL'));   // 여성+유니맨 = 신상품 전체 (비율은 다시 계산)
   return ['여성', '남성'].map(g=>{
     const label = GENDER_LABEL[g] || g;
     const parents = SUM.genderItem.filter(d=>d.gender===g && d.item!=='TOTAL');
     const ttl = SUM.genderItem.find(d=>d.gender===g && d.item==='TOTAL');
-    if(!parents.length && !ttl) return '';
+    if(!ttl) return '';
+    const gid0 = 'g-'+g;
     const rows = parents.map(d=>{
       const subs = SUM.genderCat.filter(x=>x.gender===g && matchItem(x.item, d.item));
-      const gid = 'g-'+g+'-'+d.item;
-      return parentRow(d.item, d, cmpOf(d), gid, subs.length)
-        + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid)).join('');
+      const gid = gid0+'-'+d.item;
+      return parentRow(d.item, d, cmpOf(d), gid, subs.length, '', gid0, base)
+        + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid, base)).join('');
     }).join('');
-    return `<tr class="grow"><th class="nm" colspan="${ncol}">${label}</th></tr>` + rows
-      + (ttl ? dataRow(label+' TTL', ttl, 'ttl grand', cmpOf(ttl)) : '');
-  }).join('');
+    return parentRow(label+' TTL', ttl, cmpOf(ttl), gid0, parents.length, 'ttl gttl', null, base) + rows;
+  }).join('') + dataRow('신상품 전체', base, 'ttl grand', null, base);
 }
 
 function runCatTable(){
@@ -585,10 +597,14 @@ function renderSum(){
     [...th.rows[1].cells].forEach(c=>c.style.top = h + 'px');
   });
 
+  const collapse = gid => document.querySelectorAll(`tr[data-p="${CSS.escape(gid)}"]`).forEach(x=>{
+    x.style.display = 'none';
+    if(x.classList.contains('prow')){ x.classList.remove('open'); collapse(x.dataset.g); }   // 하위 단계까지 접기
+  });
   document.querySelectorAll('tr.prow.has').forEach(tr=>tr.addEventListener('click',()=>{
     const open = tr.classList.toggle('open');
-    document.querySelectorAll(`tr[data-p="${CSS.escape(tr.dataset.g)}"]`)
-      .forEach(x=>x.style.display = open ? '' : 'none');
+    if(open) document.querySelectorAll(`tr[data-p="${CSS.escape(tr.dataset.g)}"]`).forEach(x=>x.style.display = '');
+    else collapse(tr.dataset.g);
   }));
 }
 
