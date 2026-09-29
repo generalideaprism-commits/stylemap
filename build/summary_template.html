@@ -181,6 +181,8 @@
   tbody tr+tr td{border-top:1px solid #f1f3f7}
   .cl{color:var(--blue);font-weight:700;font-size:11.5px;line-height:1.15}
   .cl small{display:block;color:var(--muted);font-weight:400;font-size:9.5px;line-height:1.15}
+  table.sum tr.grow th{background:#eef2f8;color:var(--ink);font-weight:800;font-size:12px;text-align:left;padding:7px 10px;border-top:2px solid #d7dfeb}
+  table.sum tr.grow+tr th,table.sum tr.grow+tr td{border-top:0}
   tr.ttl td{border-top:1px solid var(--line);font-weight:800;background:#fbfcfe}
   .dim{color:#c3c9d2}
 
@@ -467,6 +469,27 @@ function seasonCatTable(season){
   return rows + (ttl ? dataRow(season+' TTL', ttl.cur, 'ttl grand', cmpOf(ttl)) : '');
 }
 
+/* 성별(여성/유니맨) 카테고리 — 한 표 안에 성별 묶음 두 개, 시즌 블록과 같은 접이식. 25FW 짝이 없어 전년 모드에서는 오른쪽이 비고,
+   기획 ST수·SKU·기획량은 종합 시트(ERP) 값이라 시즌 요약(MDP 기준)과 정의가 다르다 */
+const GENDER_LABEL = {'여성': '여성', '남성': '유니맨'};   // 화면 표기 (남성 블록 = 유니맨)
+function genderCatTable(){
+  const ncol = 1 + COLS.length * (MODE==='yr' ? 2 : 1);
+  return ['여성', '남성'].map(g=>{
+    const label = GENDER_LABEL[g] || g;
+    const parents = SUM.genderItem.filter(d=>d.gender===g && d.item!=='TOTAL');
+    const ttl = SUM.genderItem.find(d=>d.gender===g && d.item==='TOTAL');
+    if(!parents.length && !ttl) return '';
+    const rows = parents.map(d=>{
+      const subs = SUM.genderCat.filter(x=>x.gender===g && matchItem(x.item, d.item));
+      const gid = 'g-'+g+'-'+d.item;
+      return parentRow(d.item, d, cmpOf(d), gid, subs.length)
+        + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid)).join('');
+    }).join('');
+    return `<tr class="grow"><th class="nm" colspan="${ncol}">${label}</th></tr>` + rows
+      + (ttl ? dataRow(label+' TTL', ttl, 'ttl grand', cmpOf(ttl)) : '');
+  }).join('');
+}
+
 function runCatTable(){
   const parents = SUM.runItem.filter(d=>d.item!=='TOTAL');
   const ttl = SUM.runItem.find(d=>d.item==='TOTAL');
@@ -532,9 +555,9 @@ function renderSum(){
     dataRow('전체 합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
             (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
-  const planNote = yr
+  const planNote = (yr
     ? ' · 26FW 기획 ST수·기획량은 MDP 확정 기준'
-    : '';
+    : '') + ' · 성별(여성·유니맨) = 신상품을 성별로 나눈 것(기획 ST수·SKU·기획량은 종합 시트 기준' + (yr ? ', 25FW 없음' : '') + ')';
   // 데이터 검증 근거 — 상단 캡슐 줄 오른쪽에 둔다 (모드에 따라 문구가 바뀐다)
   document.getElementById('basis').innerHTML =
     '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote;
@@ -543,8 +566,9 @@ function renderSum(){
     panel('① 시즌 요약' + runChip(), '', t1),
     panel('② 가을 카테고리', '', table(seasonCatTable('가을'))),
     panel('③ 겨울 카테고리', '', table(seasonCatTable('겨울'))),
-    panel('④ 러닝 카테고리' + runChip(), '', table(runCatTable())),
-    panel('⑤ 합계', '', grand),
+    panel('④ 성별 카테고리', '', table(genderCatTable())),
+    panel('⑤ 러닝 카테고리' + runChip(), '', table(runCatTable())),
+    panel('⑥ 합계', '', grand),
   ].join('');
 
   const toggleRun = e => { e.stopPropagation(); RUNSTK = !RUNSTK; renderSum(); };

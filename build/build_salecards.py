@@ -561,10 +561,11 @@ MET = dict(styles='G', sku='H', plan='I', inM='J', inSku='K', qtyIn='L', inRate=
 PREV = dict(qtyIn='BD', sales='BE', sellRate='BF', salesTag='BG', salesAmt='BH', disc='BI')
 # 25FW 시즌 판매 현황 블록은 26FW 블록을 26칸 오른쪽으로 그대로 옮겨 놓은 구조다
 PY_OFF = 26
-SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': [], 'seasonCat': []}
+SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': [], 'seasonCat': [],
+       'genderItem': [], 'genderCat': []}
 
 if '종합' in wb.sheetnames:
-    rows = list(wb['종합'].iter_rows(min_row=1, max_row=200, values_only=True))
+    rows = list(wb['종합'].iter_rows(min_row=1, max_row=400, values_only=True))   # 성별 블록이 234행까지 온다
 
     def cell(r, col, off=0):
         row = rows[r - 1]
@@ -652,6 +653,29 @@ if '종합' in wb.sheetnames:
             if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
                 SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e,
                                          'py': vals(r, MET, PY_OFF), **v})
+
+    # 6) 성별(여성/남성) 카테고리 상세 (2026-09-28 추가) — C열에 성별 머리글이 있는 블록 (152행 아래).
+    # 시즌 블록과 달리 A열 표시가 없고 25FW 짝(+26)도 없다. 복종 TOTAL 행이 부모, 카테고리명 행이 하위.
+    # 스타일수/SKU/기획량은 MDP 로 덮지 않고 종합 시트(ERP 작지) 값을 그대로 쓴다.
+    gender, gubun = '', ''
+    for r in range(66, len(rows) + 1):
+        c = txt(cell(r, 'C'))
+        if c in ('여성', '남성', '공용'):
+            gender, gubun = c, ''
+            continue
+        if not gender or txt(cell(r, 'A')) in ('가을', '겨울'):
+            continue
+        d, e, f = txt(cell(r, 'D')), txt(cell(r, 'E')), txt(cell(r, 'F'))
+        if d.endswith('TOTAL') and 'ACC제외' not in d:
+            SUM['genderItem'].append({'gender': gender, 'item': d.replace('TOTAL', '').strip() or 'TOTAL',
+                                      'py': None, **vals(r, MET)})
+            continue
+        if d and 'ACC제외' not in d:
+            gubun = d
+        if f and gubun:
+            v = vals(r, MET)
+            if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
+                SUM['genderCat'].append({'gender': gender, 'item': gubun, 'cat': f, 'code': e, 'py': None, **v})
 
 # ---- 종합 시트 중복 행 보정 (2026-09-14) ----
 # 종합 시트 62행처럼 카테고리 코드(E)가 비어 있는데 카테고리명(F)이 위의 코드 행과 같은 행은
@@ -744,6 +768,10 @@ for name in ('newCat', 'runCat'):
         d['_k'] = '%s|%s|%s' % (name, d['item'], d['cat'])
 for d in SUM['seasonCat']:
     d['_k'] = 'seasonCat|%s|%s|%s' % (d['season'], d['item'], d['cat'])
+for d in SUM['genderItem']:
+    d['_k'] = 'genderItem|%s|%s' % (d['gender'], d['item'])
+for d in SUM['genderCat']:
+    d['_k'] = 'genderCat|%s|%s|%s' % (d['gender'], d['item'], d['cat'])
 
 MET_KEYS = list(MET.keys()) + ['stock']
 
@@ -754,7 +782,7 @@ def row_vals(d):
 
 
 def all_rows():
-    for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat', 'seasonCat'):
+    for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat', 'seasonCat', 'genderItem', 'genderCat'):
         for d in SUM[name]:
             yield d
 
