@@ -164,6 +164,7 @@ def mdp_tag(code, sheet_tag):
 
 styles = {}
 order = []
+GIFT_CAT, GIFT = '사은품', {}     # 사은품 스타일: 품번 -> 품명
 STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
@@ -174,6 +175,10 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         if not code or code == '스타일':
             continue
         if not is_main and run_codes and code not in run_codes:
+            continue
+        # 사은품(아이템 '사은품')은 카드·집계에서 뺀다(사용자 지시 2026-10-02) — 집계표 쪽은 아래 '사은품 제외' 에서 처리
+        if txt(r[ST_['item2']]) == GIFT_CAT:
+            GIFT[code] = txt(r[ST_['name']])
             continue
         # 스타일명 맨 앞 '*' = 아직 반영하지 않는 스타일(사용자 지시 2026-10-02) — 카드·기획 스타일수에서 뺀다
         if txt(r[ST_['name']]).startswith('*'):
@@ -832,6 +837,30 @@ def all_rows():
 SNAP = os.path.join(HERE, 'sum_prev.json')
 snap = json.load(open(SNAP, encoding='utf-8')) if os.path.exists(SNAP) else None
 # v3: 스타일수/SKU/기획량 정의가 MDP 기준으로 바뀜 · v4: 다시 스타일맵(종합 시트) 기준 — 구버전 값은 비교하지 않는다
+def _gift_sub(dst, src):
+    """dst(상위 합계 행)에서 사은품 카테고리 행 src 의 값을 뺀다"""
+    if not dst or not src:
+        return
+    for k in ('styles', 'sku', 'plan'):
+        if dst.get(k) is not None and src.get(k):
+            dst[k] = dst[k] - src[k]
+    _dup_sub(dst, src)
+    if dst.get('inRate') is not None:
+        dst['inRate'] = (dst.get('qtyIn') or 0) / dst['plan'] if dst.get('plan') else None
+
+
+if snap and not snap.get('giftOut'):
+    for _rows in (snap.get('rows', {}), snap.get('carry', {})):
+        for _se in ('가을', '겨울'):
+            _g = _rows.get('seasonCat|%s|ACCESSORY|%s' % (_se, GIFT_CAT))
+            for _k in ('b1|new|%s|ACC|항목' % _se, 'b1|new|%s|TTL|%s TTL' % (_se, _se), 'b1|new||TTL|신상품 TTL', 'b1|run||TTL|전체 TTL'):
+                _gift_sub(_rows.get(_k), _g)
+        for _k in ('newItem|ACC', 'newItem|TOTAL'):
+            _gift_sub(_rows.get(_k), _rows.get('newCat|ACCESSORY|%s' % GIFT_CAT))
+        for _k in ('genderItem|남성|ACC', 'genderItem|남성|TOTAL'):
+            _gift_sub(_rows.get(_k), _rows.get('genderCat|남성|ACCESSORY|%s' % GIFT_CAT))
+    snap['giftOut'] = True
+
 if snap and snap.get('ver') != 4:
     for _rows in (snap.get('rows', {}), snap.get('carry', {})):
         for _v in _rows.values():
@@ -1076,6 +1105,35 @@ if FREEZE:
         _n += 1
     print('입고 고정: 집계표 %d행 입고 ST·SKU·입고량 유지' % _n)
 
+# ---- 사은품 제외 ----
+# 종합 시트 합계에는 사은품이 들어 있으므로, 사은품 카테고리 행의 값을 상위 합계(복종·시즌 TTL·신상품·전체)에서 빼고
+# 행 자체도 지운다. 입고 고정 뒤에 해야 고정된 입고에서도 같은 값이 빠진다. 재고(stock)는 카드에서 다시 세므로 건드리지 않는다.
+_gn = 0
+for _d in SUM['seasonCat']:
+    if _d['cat'] != GIFT_CAT:
+        continue
+    _gn += 1
+    for _b in SUM['block1']:
+        if (_b['mode'] == 'new' and ((_b['season'] == _d['season'] and _b['item'] == 'ACC' and _b.get('kind') == '항목')
+                                     or _b.get('kind') in ('%s TTL' % _d['season'], '신상품 TTL'))) or _b.get('kind') == '전체 TTL':
+            _gift_sub(_b['cur'], _d)
+            _gift_sub(_b.get('py'), _d.get('py'))
+for _d in SUM['newCat']:
+    if _d['cat'] == GIFT_CAT:
+        for _n in SUM['newItem']:
+            if _n['item'] in ('ACC', 'TOTAL'):
+                _gift_sub(_n, _d)
+                _gift_sub(_n.get('py'), _d.get('py'))
+for _d in SUM['genderCat']:
+    if _d['cat'] == GIFT_CAT:
+        for _n in SUM['genderItem']:
+            if _n['gender'] == _d['gender'] and _n['item'] in ('ACC', 'TOTAL'):
+                _gift_sub(_n, _d)
+for _name in ('seasonCat', 'newCat', 'genderCat'):
+    SUM[_name] = [_d for _d in SUM[_name] if _d['cat'] != GIFT_CAT]
+if GIFT or _gn:
+    print('사은품 제외: 카드 %d건(%s) · 집계표 사은품 행을 상위 합계에서 뺌' % (len(GIFT), ', '.join('%s %s' % kv for kv in GIFT.items())))
+
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
 
@@ -1111,7 +1169,7 @@ if not snap or snap.get('date') != updated:
     carry, carry_date = (snap or {}).get('rows', {}), (snap or {}).get('date')
 else:
     carry, carry_date = snap.get('carry', {}), snap.get('carryDate')
-json.dump({'ver': 4, 'date': updated,
+json.dump({'ver': 4, 'giftOut': True, 'date': updated,
            'rows': {d['_k']: row_vals(d) for d in all_rows()},
            'carry': carry, 'carryDate': carry_date},
           open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
