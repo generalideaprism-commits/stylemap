@@ -1,0 +1,2456 @@
+{
+"for": "2026-09-28",
+"note": "2026-10-02: 260928 재저장본은 CO 시트 입고가 10/2 시점 값 — 입고(수량·ST·SKU·입출고일)는 9/29 배포본 값으로 유지",
+"cards": {
+"GF1LSS506": {
+"inDate": "8/7",
+"outDate": "8/21",
+"colors": {
+"PL": 321.0,
+"WH": 408.0
+}
+},
+"GF3LSS507": {
+"inDate": "9/18",
+"outDate": "9/22",
+"colors": {
+"BE": 500.0,
+"CR": 500.0,
+"NA": 600.0
+}
+},
+"GF3LSS510": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"CR": 0,
+"PI": 0
+}
+},
+"GF3LTS501": {
+"inDate": "8/18",
+"outDate": "8/19",
+"colors": {
+"BK": 768.0,
+"CH": 855.0,
+"WH": 1005.0
+}
+},
+"GF3LTS502": {
+"inDate": "8/7",
+"outDate": "8/14",
+"colors": {
+"BE": 519.0,
+"BK": 918.0,
+"WH": 581.0
+}
+},
+"GF3LTS503": {
+"inDate": "8/25",
+"outDate": "8/26",
+"colors": {
+"BK": 2003.0,
+"BT": 1157.0,
+"CH": 1664.0,
+"IV": 1259.0
+}
+},
+"GF3LTS504": {
+"inDate": "8/25",
+"outDate": "9/1",
+"colors": {
+"BK": 1530.0,
+"CH": 1208.0,
+"DR": 984.0,
+"IV": 1289.0,
+"MG": 1244.0,
+"OL": 946.0
+}
+},
+"GF3LTS505": {
+"inDate": "8/21",
+"outDate": "8/25",
+"colors": {
+"BK": 1596.0,
+"CH": 1114.0,
+"WH": 1310.0
+}
+},
+"GF3LTS506": {
+"inDate": "8/25",
+"outDate": "8/26",
+"colors": {
+"BK": 1518.0,
+"BR": 910.0,
+"CH": 1151.0
+}
+},
+"GF3LTS508": {
+"inDate": "9/7",
+"outDate": "9/9",
+"colors": {
+"BK": 395.0,
+"IV": 388.0,
+"MG": 403.0
+}
+},
+"GF3LTS509": {
+"inDate": "8/27",
+"outDate": "8/31",
+"colors": {
+"BK": 1187.0,
+"CH": 794.0,
+"KH": 596.0
+}
+},
+"GF3LTS511": {
+"inDate": "9/18",
+"outDate": "9/22",
+"colors": {
+"BK": 376.0,
+"CH": 598.0,
+"IV": 300.0,
+"MG": 350.0,
+"OA": 180.0,
+"WI": 418.0
+}
+},
+"GF3LTS512": {
+"inDate": "9/18",
+"outDate": "9/22",
+"colors": {
+"AP": 310.0,
+"BE": 416.0,
+"CR": 516.0
+}
+},
+"GF3LTS513": {
+"inDate": "9/8",
+"outDate": "9/10",
+"colors": {
+"BK": 1647.0,
+"CH": 1440.0,
+"IV": 2060.0
+}
+},
+"GF3LTS514": {
+"inDate": "9/18",
+"outDate": "9/22",
+"colors": {
+"CH": 1028.0,
+"CR": 824.0,
+"PI": 618.0
+}
+},
+"GF3LTS515": {
+"inDate": "9/18",
+"outDate": "9/22",
+"colors": {
+"CH": 825.0,
+"NA": 617.0,
+"PI": 410.0
+}
+},
+"GF3LTS517": {
+"inDate": "9/21",
+"outDate": "",
+"colors": {
+"CH": 840.0,
+"GR": 833.0
+}
+},
+"GF3LTS526": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3LSH501": {
+"inDate": "8/28",
+"outDate": "8/31",
+"colors": {
+"BK": 500.0,
+"IV": 800.0
+}
+},
+"GF3LSH503": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"BR": 667.0,
+"IV": 847.0,
+"OL": 564.0
+}
+},
+"GF3LSH504": {
+"inDate": "8/7",
+"outDate": "8/12",
+"colors": {
+"BL": 1066.0,
+"PI": 1263.0,
+"SB": 1045.0
+}
+},
+"GF3LSH505": {
+"inDate": "9/1",
+"outDate": "9/4",
+"colors": {
+"BK": 495.0,
+"BL": 714.0
+}
+},
+"GF3LSH506": {
+"inDate": "8/28",
+"outDate": "8/31",
+"colors": {
+"BK": 600.0,
+"BT": 500.0,
+"WH": 600.0
+}
+},
+"GF3LSH507": {
+"inDate": "8/21",
+"outDate": "8/26",
+"colors": {
+"BE": 436.0,
+"BK": 727.0,
+"CH": 601.0
+}
+},
+"GF3LSH508": {
+"inDate": "9/21",
+"outDate": "",
+"colors": {
+"BK": 630.0,
+"BL": 525.0,
+"WH": 945.0
+}
+},
+"GF3LSH509": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"NA": 0
+}
+},
+"GF3LOP501": {
+"inDate": "8/27",
+"outDate": "8/27",
+"colors": {
+"BK": 474.0,
+"CH": 370.0
+}
+},
+"GF3LOP503": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0
+}
+},
+"GF3LOP515": {
+"inDate": "9/22",
+"outDate": "9/22",
+"colors": {
+"BK": 398.0,
+"CH": 398.0
+}
+},
+"GF3LOP516": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LKC502": {
+"inDate": "9/2",
+"outDate": "9/3",
+"colors": {
+"BK": 744.0,
+"BT": 582.0,
+"CH": 1125.0
+}
+},
+"GF3LKC503": {
+"inDate": "8/27",
+"outDate": "8/28",
+"colors": {
+"CH": 1206.0,
+"DP": 709.0,
+"DR": 1504.0
+}
+},
+"GF3LKC504": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"AP": 611.0,
+"CH": 1019.0,
+"IV": 904.0
+}
+},
+"GF3LKC510": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"CH": 110.0,
+"IV": 83.0
+}
+},
+"GF3LKC514": {
+"inDate": "9/14",
+"outDate": "9/17",
+"colors": {
+"DR": 711.0,
+"GR": 1009.0,
+"OL": 505.0
+}
+},
+"GF3LKC515": {
+"inDate": "9/22",
+"outDate": "9/22",
+"colors": {
+"BK": 698.0,
+"CH": 496.0
+}
+},
+"GF3LKC516": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LKC517": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"DR": 0,
+"GR": 0,
+"IV": 0
+}
+},
+"GF3LKC518": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 274.0,
+"CH": 161.0,
+"IV": 272.0
+}
+},
+"GF3LKC520": {
+"inDate": "9/8",
+"outDate": "9/9",
+"colors": {
+"BK": 477.0,
+"CH": 494.0,
+"PL": 374.0
+}
+},
+"GF3LKC532": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"SD": 0
+}
+},
+"GF3LKC535": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"MG": 0,
+"NA": 0
+}
+},
+"GF3LKP501": {
+"inDate": "8/27",
+"outDate": "8/27",
+"colors": {
+"CH": 577.0,
+"IV": 461.0,
+"OL": 396.0
+}
+},
+"GF3LKP505": {
+"inDate": "8/11",
+"outDate": "8/13",
+"colors": {
+"CH": 841.0,
+"IV": 700.0,
+"OA": 456.0
+}
+},
+"GF3LKP506": {
+"inDate": "8/11",
+"outDate": "8/14",
+"colors": {
+"BK": 788.0,
+"BU": 491.0,
+"MG": 698.0
+}
+},
+"GF3LKP507": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"BK": 806.0,
+"GR": 995.0
+}
+},
+"GF3LKP508": {
+"inDate": "8/14",
+"outDate": "8/18",
+"colors": {
+"CH": 1506.0,
+"IV": 908.0,
+"PI": 1097.0
+}
+},
+"GF3LKP509": {
+"inDate": "8/27",
+"outDate": "9/1",
+"colors": {
+"BK": 913.0,
+"GR": 1007.0,
+"OA": 608.0
+}
+},
+"GF3LKP513": {
+"inDate": "9/22",
+"outDate": "9/23",
+"colors": {
+"GR": 299.0,
+"OA": 401.0,
+"PL": 298.0
+}
+},
+"GF3LKP521": {
+"inDate": "9/16",
+"outDate": "9/22",
+"colors": {
+"BE": 832.0,
+"GR": 700.0,
+"OL": 491.0
+}
+},
+"GF3LKP522": {
+"inDate": "9/17",
+"outDate": "9/18",
+"colors": {
+"MG": 699.0,
+"OA": 602.0
+}
+},
+"GF3LKP523": {
+"inDate": "9/17",
+"outDate": "9/22",
+"colors": {
+"BK": 592.0,
+"DY": 504.0,
+"SD": 504.0
+}
+},
+"GF3LKP524": {
+"inDate": "9/21",
+"outDate": "9/23",
+"colors": {
+"BE": 365.0,
+"BK": 274.0,
+"DY": 261.0
+}
+},
+"GF3LKP525": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"CH": 555.0,
+"IV": 446.0
+}
+},
+"GF3LKP526": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"PL": 0
+}
+},
+"GF3LKP527": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"IV": 0
+}
+},
+"GF3LKP528": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"IV": 0,
+"TP": 0
+}
+},
+"GF3LKP529": {
+"inDate": "9/15",
+"outDate": "9/17",
+"colors": {
+"BK": 1003.0,
+"CR": 800.0,
+"DN": 589.0
+}
+},
+"GF3LKP530": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"MG": 0,
+"WH": 0
+}
+},
+"GF3LKP531": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"OA": 0
+}
+},
+"GF3LKV511": {
+"inDate": "8/31",
+"outDate": "9/2",
+"colors": {
+"BR": 459.0,
+"IV": 495.0,
+"MG": 1039.0
+}
+},
+"GF3LKV512": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"BK": 597.0,
+"GR": 820.0
+}
+},
+"GF3LKV519": {
+"inDate": "9/8",
+"outDate": "9/9",
+"colors": {
+"BK": 307.0,
+"CH": 315.0,
+"PL": 230.0
+}
+},
+"GF3LWV517": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"DR": 0,
+"IV": 0
+}
+},
+"GF1LJK514": {
+"inDate": "8/12",
+"outDate": "8/13",
+"colors": {
+"BE": 333.0,
+"BK": 334.0
+}
+},
+"GF3LJK504": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BK": 0,
+"BW": 0
+}
+},
+"GF3LJK510": {
+"inDate": "8/26",
+"outDate": "9/1",
+"colors": {
+"BK": 524.0,
+"PI": 418.0
+}
+},
+"GF3LJK511": {
+"inDate": "9/4",
+"outDate": "9/7",
+"colors": {
+"DG": 443.0,
+"GR": 549.0
+}
+},
+"GF1LJP516": {
+"inDate": "8/12",
+"outDate": "8/14",
+"colors": {
+"KH": 403.0,
+"PI": 386.0
+}
+},
+"GF3LJP501": {
+"inDate": "9/9",
+"outDate": "9/10",
+"colors": {
+"BK": 1369.0,
+"BR": 549.0
+}
+},
+"GF3LJP502": {
+"inDate": "9/4",
+"outDate": "9/10",
+"colors": {
+"BK": 517.0,
+"BR": 480.0
+}
+},
+"GF3LJP503": {
+"inDate": "9/8",
+"outDate": "9/10",
+"colors": {
+"CA": 496.0,
+"KH": 497.0
+}
+},
+"GF3LJP512": {
+"inDate": "9/14",
+"outDate": "9/15",
+"colors": {
+"BR": 435.0,
+"CH": 366.0
+}
+},
+"GF3LJP525": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"CR": 0
+}
+},
+"GF3LJP526": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3LCT508": {
+"inDate": "9/8",
+"outDate": "9/10",
+"colors": {
+"BK": 841.0,
+"DR": 488.0
+}
+},
+"GF3LCT516": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BT": 0,
+"DN": 0,
+"LG": 0
+}
+},
+"GF3LHP501": {
+"inDate": "8/28",
+"outDate": "8/31",
+"colors": {
+"BK": 597.0,
+"DR": 403.0
+}
+},
+"GF3LHP508": {
+"inDate": "9/7",
+"outDate": "9/10",
+"colors": {
+"BK": 510.0,
+"CH": 306.0
+}
+},
+"GF3LHP526": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3LPT501": {
+"inDate": "9/1",
+"outDate": "9/2",
+"colors": {
+"BK": 701.0,
+"DN": 1324.0
+}
+},
+"GF3LPT502": {
+"inDate": "9/1",
+"outDate": "9/2",
+"colors": {
+"BK": 1013.0,
+"BL": 680.0,
+"DB": 1103.0
+}
+},
+"GF3LPT503": {
+"inDate": "8/31",
+"outDate": "9/2",
+"colors": {
+"BK": 1016.0,
+"CH": 1012.0
+}
+},
+"GF3LPT504": {
+"inDate": "9/8",
+"outDate": "9/9",
+"colors": {
+"CH": 624.0,
+"KE": 420.0
+}
+},
+"GF3LPT505": {
+"inDate": "8/28",
+"outDate": "9/2",
+"colors": {
+"BK": 393.0,
+"BR": 385.0,
+"KE": 390.0
+}
+},
+"GF3LPT507": {
+"inDate": "9/1",
+"outDate": "9/4",
+"colors": {
+"BL": 516.0,
+"PI": 502.0
+}
+},
+"GF3LPT509": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LPT510": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"CR": 0,
+"PI": 0
+}
+},
+"GF3LPT511": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0
+}
+},
+"GF3LPT512": {
+"inDate": "9/14",
+"outDate": "9/16",
+"colors": {
+"BR": 152.0,
+"CH": 409.0
+}
+},
+"GF3LPT513": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"CR": 0,
+"DR": 0,
+"PL": 0
+}
+},
+"GF3LPT514": {
+"inDate": "9/21",
+"outDate": "",
+"colors": {
+"BK": 129.0,
+"DY": 281.0,
+"SD": 152.0
+}
+},
+"GF3LPT515": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LPT516": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"DN": 0,
+"LB": 0
+}
+},
+"GF3LPT517": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 540.0,
+"ER": 382.0
+}
+},
+"GF3LPT518": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"DB": 0,
+"NA": 0
+}
+},
+"GF3LPT519": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"DR": 0,
+"KE": 0
+}
+},
+"GF3LPT526": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3LSK502": {
+"inDate": "8/7",
+"outDate": "8/19",
+"colors": {
+"BK": 569.0,
+"IV": 597.0,
+"OL": 402.0
+}
+},
+"GF3LSK503": {
+"inDate": "8/19",
+"outDate": "8/21",
+"colors": {
+"BK": 759.0,
+"CH": 487.0
+}
+},
+"GF3LSK504": {
+"inDate": "8/28",
+"outDate": "8/31",
+"colors": {
+"BK": 651.0,
+"BR": 468.0
+}
+},
+"GF3LSK505": {
+"inDate": "8/27",
+"outDate": "9/1",
+"colors": {
+"BK": 581.0,
+"CH": 499.0
+}
+},
+"GF3LSK506": {
+"inDate": "9/9",
+"outDate": "9/17",
+"colors": {
+"BE": 662.0,
+"BK": 741.0,
+"KH": 431.0
+}
+},
+"GF3LSK507": {
+"inDate": "9/3",
+"outDate": "9/4",
+"colors": {
+"BK": 800.0,
+"BR": 505.0,
+"GR": 512.0
+}
+},
+"GF3LSK508": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LSK509": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 969.0,
+"BL": 816.0
+}
+},
+"GF3LSK510": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"CR": 0
+}
+},
+"GF3LSK511": {
+"inDate": "9/16",
+"outDate": "9/22",
+"colors": {
+"BK": 603.0,
+"BR": 346.0
+}
+},
+"GF3LSK512": {
+"inDate": "9/14",
+"outDate": "9/15",
+"colors": {
+"BR": 404.0,
+"CH": 296.0
+}
+},
+"GF3LSK513": {
+"inDate": "9/1",
+"outDate": "9/2",
+"colors": {
+"BK": 364.0,
+"CH": 311.0
+}
+},
+"GF3LSK514": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BK": 0
+}
+},
+"GF3LSK515": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"CR": 0,
+"NA": 0
+}
+},
+"GF3LSK516": {
+"inDate": "9/17",
+"outDate": "9/22",
+"colors": {
+"BE": 510.0,
+"BK": 609.0,
+"DY": 617.0
+}
+},
+"GF3LSK517": {
+"inDate": "9/21",
+"outDate": "",
+"colors": {
+"CH": 660.0,
+"GR": 601.0
+}
+},
+"GF3LSK518": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3LBG508": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"DR": 0,
+"KH": 0
+}
+},
+"GF3LBG509": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"PL": 0
+}
+},
+"GF3LBG510": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"PL": 0
+}
+},
+"GF3LCP504": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BL": 0,
+"OA": 0
+}
+},
+"GF3LET501": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0
+}
+},
+"GF3LET502": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 50.0,
+"BR": 50.0
+}
+},
+"GF3LET506": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"SD": 0
+}
+},
+"GF3LSA503": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BK": 0,
+"BW": 0
+}
+},
+"GF1MSH004": {
+"inDate": "8/7",
+"outDate": "8/26",
+"colors": {
+"BR": 300.0,
+"NA": 301.0
+}
+},
+"GF3MKP005": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0
+}
+},
+"GF3MKP007": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BE": 299.0,
+"BK": 201.0,
+"CH": 314.0
+}
+},
+"GF3MCT001": {
+"inDate": "9/16",
+"outDate": "9/17",
+"colors": {
+"BK": 69.0,
+"KH": 312.0
+}
+},
+"GF3MPT001": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"BR": 381.0,
+"PI": 293.0
+}
+},
+"GF3MPT002": {
+"inDate": "8/24",
+"outDate": "8/26",
+"colors": {
+"BL": 366.0,
+"BR": 679.0,
+"KH": 658.0
+}
+},
+"GF3MPT003": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BR": 0,
+"CH": 0
+}
+},
+"GF3USS004": {
+"inDate": "9/4",
+"outDate": "9/10",
+"colors": {
+"BK": 482.0,
+"CH": 479.0
+}
+},
+"GF3USS005": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"IV": 0,
+"TG": 0
+}
+},
+"GF3USS006": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"NA": 0
+}
+},
+"GF3UTS001": {
+"inDate": "9/4",
+"outDate": "9/10",
+"colors": {
+"CH": 648.0,
+"SD": 426.0
+}
+},
+"GF3UTS003": {
+"inDate": "9/16",
+"outDate": "9/17",
+"colors": {
+"KH": 465.0,
+"LG": 473.0
+}
+},
+"GF3USH001": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"GN": 0,
+"RE": 0
+}
+},
+"GF3USH002": {
+"inDate": "9/16",
+"outDate": "9/22",
+"colors": {
+"CH": 406.0,
+"NA": 398.0
+}
+},
+"GF3UKC002": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"CH": 354.0,
+"NA": 104.0
+}
+},
+"GF3UKC006": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CH": 494.0
+}
+},
+"GF3UKC021": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3UKC024": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0,
+"MU": 0
+}
+},
+"GF3UKP001": {
+"inDate": "8/14",
+"outDate": "8/19",
+"colors": {
+"DR": 609.0,
+"GR": 409.0
+}
+},
+"GF3UKP004": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"RE": 0
+}
+},
+"GF3UKP008": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KH": 0
+}
+},
+"GF3UWV005": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0
+}
+},
+"GF3UJK007": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CH": 0,
+"RE": 0
+}
+},
+"GF3UJK012": {
+"inDate": "9/8",
+"outDate": "9/15",
+"colors": {
+"BK": 525.0,
+"KH": 693.0,
+"SD": 404.0
+}
+},
+"GF3UJK013": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"KH": 0
+}
+},
+"GF3UJP001": {
+"inDate": "8/31",
+"outDate": "9/1",
+"colors": {
+"BK": 2353.0,
+"BR": 1397.0
+}
+},
+"GF3UJP002": {
+"inDate": "8/24",
+"outDate": "8/31",
+"colors": {
+"BR": 802.0,
+"PI": 493.0
+}
+},
+"GF3UJP003": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"KH": 0
+}
+},
+"GF3UJP004": {
+"inDate": "9/8",
+"outDate": "9/10",
+"colors": {
+"BE": 705.0,
+"DN": 828.0,
+"DR": 502.0
+}
+},
+"GF3UJP006": {
+"inDate": "9/8",
+"outDate": "9/10",
+"colors": {
+"BK": 1221.0,
+"KH": 677.0
+}
+},
+"GF3UJP009": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 105.0,
+"CH": 45.0
+}
+},
+"GF3UJP010": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"GR": 0,
+"YE": 0
+}
+},
+"GF3UJP011": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"KH": 0,
+"NA": 0
+}
+},
+"GF3UPT004": {
+"inDate": "9/4",
+"outDate": "9/10",
+"colors": {
+"BK": 485.0,
+"CH": 489.0
+}
+},
+"GF3UPT009": {
+"inDate": "9/22",
+"outDate": "",
+"colors": {
+"BK": 522.0,
+"CH": 430.0
+}
+},
+"GF3UCP001": {
+"inDate": "8/31",
+"outDate": "9/4",
+"colors": {
+"BK": 299.0,
+"CH": 197.0,
+"KH": 300.0,
+"RE": 301.0
+}
+},
+"GF3UCP002": {
+"inDate": "9/3",
+"outDate": "9/4",
+"colors": {
+"BR": 304.0,
+"NA": 303.0,
+"PI": 199.0,
+"PU": 199.0
+}
+},
+"GF3UET003": {
+"inDate": "8/19",
+"outDate": "8/26",
+"colors": {
+"BE": 479.0
+}
+},
+"GF3UET004": {
+"inDate": "8/19",
+"outDate": "8/26",
+"colors": {
+"BK": 494.0
+}
+},
+"GF3UET005": {
+"inDate": "9/23",
+"outDate": "",
+"colors": {
+"BK": 400.0,
+"DR": 399.0
+}
+},
+"GF3UET006": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CH": 0,
+"CR": 0,
+"MG": 0
+}
+},
+"GF3UFG101": {
+"inDate": "8/10",
+"outDate": "8/12",
+"colors": {
+"BK": 5000.0
+}
+},
+"GF4LOP504": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0
+}
+},
+"GF4LKC534": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"MG": 0,
+"MI": 0
+}
+},
+"GF4LKC536": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BU": 0,
+"CH": 0,
+"NA": 0
+}
+},
+"GF4LKP533": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"IV": 0,
+"MG": 0
+}
+},
+"GF4LKP537": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CH": 0,
+"IV": 0
+}
+},
+"GF4LWV501": {
+"inDate": "9/10",
+"outDate": "9/21",
+"colors": {
+"BK": 500.0
+}
+},
+"GF4LJK508": {
+"inDate": "9/4",
+"outDate": "",
+"colors": {
+"BK": 998.0,
+"MO": 1198.0
+}
+},
+"GF4LJK514": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BW": 0
+}
+},
+"GF4LJP505": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"IV": 0
+}
+},
+"GF4LJP513": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BG": 0,
+"YB": 0
+}
+},
+"GF4LJP515": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CR": 0
+}
+},
+"GF4LJP521": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"KH": 0
+}
+},
+"GF4LCT502": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"KE": 0
+}
+},
+"GF4LCT507": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BR": 0
+}
+},
+"GF4LCT509": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0
+}
+},
+"GF4LCT518": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"OA": 0
+}
+},
+"GF4LCT519": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"CA": 0
+}
+},
+"GF4LSA505": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"IV": 0
+}
+},
+"GF4MKP022": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BK": 0,
+"MG": 0
+}
+},
+"GF4MKP023": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"MG": 0
+}
+},
+"GF4USH403": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"DN": 0,
+"OL": 0
+}
+},
+"GF4USH404": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"WH": 0
+}
+},
+"GF4UKC411": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"GN": 0,
+"IV": 0
+}
+},
+"GF4UKC413": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"MU": 0,
+"NA": 0
+}
+},
+"GF4UKC415": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"KH": 0,
+"NA": 0
+}
+},
+"GF4UKC419": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"DN": 0,
+"GR": 0
+}
+},
+"GF4UKP020": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0
+}
+},
+"GF4UKP025": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"CH": 0,
+"NA": 0,
+"VI": 0
+}
+},
+"GF4UKP409": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"OR": 0
+}
+},
+"GF4UKP410": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BR": 0,
+"GN": 0
+}
+},
+"GF4UKP412": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BL": 0,
+"BR": 0
+}
+},
+"GF4UKP414": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"MU": 0,
+"PU": 0
+}
+},
+"GF4UKP416": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"IV": 0
+}
+},
+"GF4UKP417": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"IV": 0
+}
+},
+"GF4UKP418": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"BR": 0,
+"KH": 0
+}
+},
+"GF4UJP008": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"OL": 0
+}
+},
+"GF4UJP014": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"DR": 0
+}
+},
+"GF4UJP415": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0
+}
+},
+"GF4UPT008": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"KH": 0
+}
+},
+"GF4UPT407": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"KH": 0
+}
+},
+"GF4UCP015": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CH": 0,
+"RE": 0
+}
+},
+"GF4UCP407": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"RE": 0
+}
+},
+"GF4UCP411": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"IV": 0
+}
+},
+"GF4UET014": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BR": 0,
+"CH": 0,
+"RE": 0
+}
+},
+"GF4UET408": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BK": 0,
+"RE": 0
+}
+},
+"GF4UET409": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"MT": 0
+}
+},
+"GF4UET410": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"MT": 0
+}
+},
+"GF4UET412": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"BE": 0,
+"BK": 0
+}
+},
+"GF4UFG101": {
+"inDate": "",
+"outDate": "",
+"colors": {
+"RE": 0
+}
+}
+},
+"rows": {
+"b1|new|가을|OUTER|항목": {
+"inM": 19.0,
+"inSku": 42.0,
+"qtyIn": 24821.0
+},
+"b1|new|가을|TOP|항목": {
+"inM": 54.0,
+"inSku": 152.0,
+"qtyIn": 106085.0
+},
+"b1|new|가을|BOTTOM|항목": {
+"inM": 27.0,
+"inSku": 62.0,
+"qtyIn": 34013.0
+},
+"b1|new|가을|ACC|항목": {
+"inM": 7.0,
+"inSku": 15.0,
+"qtyIn": 8974.0
+},
+"b1|new|가을|TTL|가을 TTL": {
+"inM": 107.0,
+"inSku": 271.0,
+"qtyIn": 173893.0
+},
+"b1|new|겨울|OUTER|항목": {
+"inM": 2.0,
+"inSku": 3.0,
+"qtyIn": 2696.0
+},
+"b1|new|겨울|TOP|항목": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"b1|new|겨울|BOTTOM|항목": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"b1|new|겨울|ACC|항목": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"b1|new|겨울|TTL|겨울 TTL": {
+"inM": 2.0,
+"inSku": 3.0,
+"qtyIn": 2696.0
+},
+"b1|new||TTL|신상품 TTL": {
+"inM": 109.0,
+"inSku": 274.0,
+"qtyIn": 176589.0
+},
+"b1|run||OUTER|항목": {
+"inM": 9.0,
+"inSku": 26.0,
+"qtyIn": 29560.0
+},
+"b1|run||TOP|항목": {
+"inM": 19.0,
+"inSku": 82.0,
+"qtyIn": 141187.0
+},
+"b1|run||BOTTOM|항목": {
+"inM": 8.0,
+"inSku": 20.0,
+"qtyIn": 9117.0
+},
+"b1|run||ACC|항목": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"b1|run||TTL|러닝 TTL": {
+"inM": 36.0,
+"inSku": null,
+"qtyIn": 179864.0
+},
+"b1|run||TTL|전체 TTL": {
+"inM": 145.0,
+"inSku": null,
+"qtyIn": 356453.0
+},
+"newItem|OUTER": {
+"inM": 21.0,
+"inSku": 45.0,
+"qtyIn": 27517.0
+},
+"newItem|TOP": {
+"inM": 54.0,
+"inSku": 152.0,
+"qtyIn": 106085.0
+},
+"newItem|BOTTOM": {
+"inM": 27.0,
+"inSku": 62.0,
+"qtyIn": 34013.0
+},
+"newItem|ACC": {
+"inM": 7.0,
+"inSku": 15.0,
+"qtyIn": 8974.0
+},
+"newItem|TOTAL": {
+"inM": 109.0,
+"inSku": 274.0,
+"qtyIn": 176589.0
+},
+"newCat|OUTER|코트": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1710.0
+},
+"newCat|OUTER|자켓": {
+"inM": 5.0,
+"inSku": 11.0,
+"qtyIn": 6419.0
+},
+"newCat|OUTER|점퍼": {
+"inM": 10.0,
+"inSku": 21.0,
+"qtyIn": 14626.0
+},
+"newCat|OUTER|니트베스트": {
+"inM": 3.0,
+"inSku": 8.0,
+"qtyIn": 4262.0
+},
+"newCat|OUTER|우븐베스트": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 500.0
+},
+"newCat|TOP|니트가디건": {
+"inM": 9.0,
+"inSku": 25.0,
+"qtyIn": 15020.0
+},
+"newCat|TOP|니트풀오버": {
+"inM": 15.0,
+"inSku": 41.0,
+"qtyIn": 25295.0
+},
+"newCat|TOP|원피스": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1640.0
+},
+"newCat|TOP|우븐셔츠(블라우스)": {
+"inM": 9.0,
+"inSku": 23.0,
+"qtyIn": 14930.0
+},
+"newCat|TOP|스웻셔츠": {
+"inM": 3.0,
+"inSku": 7.0,
+"qtyIn": 3290.0
+},
+"newCat|TOP|티셔츠": {
+"inM": 16.0,
+"inSku": 52.0,
+"qtyIn": 45910.0
+},
+"newCat|BOTTOM|긴바지": {
+"inM": 13.0,
+"inSku": 30.0,
+"qtyIn": 16427.0
+},
+"newCat|BOTTOM|반바지": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1816.0
+},
+"newCat|BOTTOM|스커트": {
+"inM": 12.0,
+"inSku": 28.0,
+"qtyIn": 15770.0
+},
+"newCat|ACCESSORY|가방": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"newCat|ACCESSORY|모자": {
+"inM": 2.0,
+"inSku": 8.0,
+"qtyIn": 2102.0
+},
+"newCat|ACCESSORY|기타액세서리": {
+"inM": 4.0,
+"inSku": 6.0,
+"qtyIn": 1872.0
+},
+"newCat|ACCESSORY|스카프": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"newCat|ACCESSORY|사은품": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 5000.0
+},
+"runItem|OUTER": {
+"inM": 8.0,
+"inSku": 26.0,
+"qtyIn": 29560.0
+},
+"runItem|TOP": {
+"inM": 18.0,
+"inSku": 82.0,
+"qtyIn": 141187.0
+},
+"runItem|BOTTOM": {
+"inM": 7.0,
+"inSku": 20.0,
+"qtyIn": 9117.0
+},
+"runItem|ACC": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"runItem|TOTAL": {
+"inM": 33.0,
+"inSku": 128.0,
+"qtyIn": 179864.0
+},
+"runCat|OUTER|코트": {
+"inM": 2.0,
+"inSku": 8.0,
+"qtyIn": 13859.0
+},
+"runCat|OUTER|자켓": {
+"inM": 3.0,
+"inSku": 9.0,
+"qtyIn": 8164.0
+},
+"runCat|OUTER|점퍼": {
+"inM": 2.0,
+"inSku": 5.0,
+"qtyIn": 3721.0
+},
+"runCat|OUTER|니트베스트": {
+"inM": 1.0,
+"inSku": 4.0,
+"qtyIn": 3816.0
+},
+"runCat|TOP|니트가디건": {
+"inM": 8.0,
+"inSku": 43.0,
+"qtyIn": 87207.0
+},
+"runCat|TOP|니트풀오버": {
+"inM": 6.0,
+"inSku": 24.0,
+"qtyIn": 28098.0
+},
+"runCat|TOP|우븐셔츠(블라우스)": {
+"inM": 1.0,
+"inSku": 3.0,
+"qtyIn": 8649.0
+},
+"runCat|TOP|티셔츠": {
+"inM": 3.0,
+"inSku": 12.0,
+"qtyIn": 17233.0
+},
+"runCat|BOTTOM|긴바지": {
+"inM": 6.0,
+"inSku": 19.0,
+"qtyIn": 8464.0
+},
+"runCat|BOTTOM|반바지": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 653.0
+},
+"runCat|BOTTOM|스커트": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|가을|OUTER|코트": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1710.0
+},
+"seasonCat|가을|OUTER|자켓": {
+"inM": 4.0,
+"inSku": 9.0,
+"qtyIn": 4223.0
+},
+"seasonCat|가을|OUTER|점퍼": {
+"inM": 10.0,
+"inSku": 21.0,
+"qtyIn": 14626.0
+},
+"seasonCat|가을|OUTER|니트베스트": {
+"inM": 3.0,
+"inSku": 8.0,
+"qtyIn": 4262.0
+},
+"seasonCat|가을|OUTER|우븐베스트": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|가을|TOP|니트가디건": {
+"inM": 9.0,
+"inSku": 25.0,
+"qtyIn": 15020.0
+},
+"seasonCat|가을|TOP|니트풀오버": {
+"inM": 15.0,
+"inSku": 41.0,
+"qtyIn": 25295.0
+},
+"seasonCat|가을|TOP|원피스": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1640.0
+},
+"seasonCat|가을|TOP|우븐셔츠(블라우스)": {
+"inM": 9.0,
+"inSku": 23.0,
+"qtyIn": 14930.0
+},
+"seasonCat|가을|TOP|스웻셔츠": {
+"inM": 3.0,
+"inSku": 7.0,
+"qtyIn": 3290.0
+},
+"seasonCat|가을|TOP|티셔츠": {
+"inM": 16.0,
+"inSku": 52.0,
+"qtyIn": 45910.0
+},
+"seasonCat|가을|BOTTOM|긴바지": {
+"inM": 13.0,
+"inSku": 30.0,
+"qtyIn": 16427.0
+},
+"seasonCat|가을|BOTTOM|반바지": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1816.0
+},
+"seasonCat|가을|BOTTOM|스커트": {
+"inM": 12.0,
+"inSku": 28.0,
+"qtyIn": 15770.0
+},
+"seasonCat|가을|ACCESSORY|가방": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|가을|ACCESSORY|모자": {
+"inM": 2.0,
+"inSku": 8.0,
+"qtyIn": 2102.0
+},
+"seasonCat|가을|ACCESSORY|기타액세서리": {
+"inM": 4.0,
+"inSku": 6.0,
+"qtyIn": 1872.0
+},
+"seasonCat|가을|ACCESSORY|스카프": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|가을|ACCESSORY|사은품": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 5000.0
+},
+"seasonCat|겨울|OUTER|코트": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|OUTER|자켓": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 2196.0
+},
+"seasonCat|겨울|OUTER|점퍼": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|OUTER|우븐베스트": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 500.0
+},
+"seasonCat|겨울|TOP|니트가디건": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|TOP|니트풀오버": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|TOP|원피스": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|TOP|우븐셔츠(블라우스)": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|BOTTOM|긴바지": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|ACCESSORY|모자": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|ACCESSORY|기타액세서리": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|ACCESSORY|스카프": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"seasonCat|겨울|ACCESSORY|사은품": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"genderItem|여성|OUTER": {
+"inM": 14.0,
+"inSku": 29.0,
+"qtyIn": 16386.0
+},
+"genderItem|여성|TOP": {
+"inM": 46.0,
+"inSku": 134.0,
+"qtyIn": 98923.0
+},
+"genderItem|여성|BOTTOM": {
+"inM": 23.0,
+"inSku": 53.0,
+"qtyIn": 29710.0
+},
+"genderItem|여성|ACC": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 100.0
+},
+"genderItem|여성|TOTAL": {
+"inM": 84.0,
+"inSku": 218.0,
+"qtyIn": 145119.0
+},
+"genderItem|남성|OUTER": {
+"inM": 7.0,
+"inSku": 16.0,
+"qtyIn": 11131.0
+},
+"genderItem|남성|TOP": {
+"inM": 8.0,
+"inSku": 18.0,
+"qtyIn": 7162.0
+},
+"genderItem|남성|BOTTOM": {
+"inM": 4.0,
+"inSku": 9.0,
+"qtyIn": 4303.0
+},
+"genderItem|남성|ACC": {
+"inM": 6.0,
+"inSku": 13.0,
+"qtyIn": 8874.0
+},
+"genderItem|남성|TOTAL": {
+"inM": 25.0,
+"inSku": 56.0,
+"qtyIn": 31470.0
+},
+"genderCat|여성|OUTER|코트": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 1329.0
+},
+"genderCat|여성|OUTER|자켓": {
+"inM": 4.0,
+"inSku": 8.0,
+"qtyIn": 4797.0
+},
+"genderCat|여성|OUTER|점퍼": {
+"inM": 5.0,
+"inSku": 10.0,
+"qtyIn": 5498.0
+},
+"genderCat|여성|OUTER|니트베스트": {
+"inM": 3.0,
+"inSku": 8.0,
+"qtyIn": 4262.0
+},
+"genderCat|여성|OUTER|우븐베스트": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 500.0
+},
+"genderCat|여성|TOP|니트가디건": {
+"inM": 8.0,
+"inSku": 22.0,
+"qtyIn": 14068.0
+},
+"genderCat|여성|TOP|니트풀오버": {
+"inM": 13.0,
+"inSku": 36.0,
+"qtyIn": 23463.0
+},
+"genderCat|여성|TOP|원피스": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1640.0
+},
+"genderCat|여성|TOP|우븐셔츠(블라우스)": {
+"inM": 7.0,
+"inSku": 19.0,
+"qtyIn": 13525.0
+},
+"genderCat|여성|TOP|스웻셔츠": {
+"inM": 2.0,
+"inSku": 5.0,
+"qtyIn": 2329.0
+},
+"genderCat|여성|TOP|티셔츠": {
+"inM": 14.0,
+"inSku": 48.0,
+"qtyIn": 43898.0
+},
+"genderCat|여성|BOTTOM|긴바지": {
+"inM": 9.0,
+"inSku": 21.0,
+"qtyIn": 12124.0
+},
+"genderCat|여성|BOTTOM|반바지": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1816.0
+},
+"genderCat|여성|BOTTOM|스커트": {
+"inM": 12.0,
+"inSku": 28.0,
+"qtyIn": 15770.0
+},
+"genderCat|여성|ACCESSORY|가방": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"genderCat|여성|ACCESSORY|모자": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"genderCat|여성|ACCESSORY|기타액세서리": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 100.0
+},
+"genderCat|여성|ACCESSORY|스카프": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"genderCat|남성|OUTER|코트": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 381.0
+},
+"genderCat|남성|OUTER|자켓": {
+"inM": 1.0,
+"inSku": 3.0,
+"qtyIn": 1622.0
+},
+"genderCat|남성|OUTER|점퍼": {
+"inM": 5.0,
+"inSku": 11.0,
+"qtyIn": 9128.0
+},
+"genderCat|남성|OUTER|우븐베스트": {
+"inM": 0.0,
+"inSku": 0.0,
+"qtyIn": 0.0
+},
+"genderCat|남성|TOP|니트가디건": {
+"inM": 1.0,
+"inSku": 3.0,
+"qtyIn": 952.0
+},
+"genderCat|남성|TOP|니트풀오버": {
+"inM": 2.0,
+"inSku": 5.0,
+"qtyIn": 1832.0
+},
+"genderCat|남성|TOP|우븐셔츠(블라우스)": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 1405.0
+},
+"genderCat|남성|TOP|스웻셔츠": {
+"inM": 1.0,
+"inSku": 2.0,
+"qtyIn": 961.0
+},
+"genderCat|남성|TOP|티셔츠": {
+"inM": 2.0,
+"inSku": 4.0,
+"qtyIn": 2012.0
+},
+"genderCat|남성|BOTTOM|긴바지": {
+"inM": 4.0,
+"inSku": 9.0,
+"qtyIn": 4303.0
+},
+"genderCat|남성|ACCESSORY|모자": {
+"inM": 2.0,
+"inSku": 8.0,
+"qtyIn": 2102.0
+},
+"genderCat|남성|ACCESSORY|기타액세서리": {
+"inM": 3.0,
+"inSku": 4.0,
+"qtyIn": 1772.0
+},
+"genderCat|남성|ACCESSORY|사은품": {
+"inM": 1.0,
+"inSku": 1.0,
+"qtyIn": 5000.0
+}
+}
+}

@@ -294,7 +294,7 @@ function card(s){
     </div>
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
-      <br>TAG가는 MDP 최종TAG(택가 정본) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값이라 산출 기준이 다르다${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
+      <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
     </details>
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>

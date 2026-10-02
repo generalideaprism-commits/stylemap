@@ -54,7 +54,11 @@ def load_tagmap(path):
     return tm
 
 
-TAGMAP = load_tagmap(TAGMAP_JSON)
+# 2026-10-02: 카드 TAG가·실판가는 스타일맵(전산) 기준으로 되돌린다 — MDP 최종TAG 는 전산 가격 변경이
+# 반영되지 않아 택가가 실판가보다 낮게 찍히는 카드가 생겼다(29장 불일치, 15장 택가<실판가).
+# MDP 정본으로 다시 덮으려면 True 로 바꾸면 된다.
+TAG_FROM_MDP = False
+TAGMAP = load_tagmap(TAGMAP_JSON) if TAG_FROM_MDP else {}
 
 # 시트명은 파일마다 '생판재주간-' / '생판재-' 로 다를 수 있어 앞부분만 매칭
 def sheet(*keys):
@@ -325,6 +329,34 @@ def calc_ttl(colors):
             'w2': sum(c['w2'] or 0 for c in colors),
             'total': tot, 'rate': (tot / qin * 100) if qin else None}
 
+
+# ---- 입고 고정 (build/inbound_freeze.json) ----
+# 판매는 주차 기준인데 CO 시트의 입고는 '내려받은 시점' 누적이라, 같은 주 파일을 며칠 뒤 다시 받으면
+# 입고만 앞서 나간다(260928 재저장본: 10/2 시점 입고). 고정 파일의 'for' 가 이 파일 날짜와 같을 때만
+# 신상품(메인)의 입고 수량·입출고일, 집계표의 입고 ST/SKU/입고량을 그 값으로 유지한다.
+# 다음 주 파일에서는 날짜가 달라 자동으로 무시된다.
+_base = os.path.basename(SRC)
+_updated = ('20%s-%s-%s' % (_base[0:2], _base[2:4], _base[4:6])) if _base[:6].isdigit() else ''
+FREEZE = {}
+_fz = os.path.join(HERE, 'inbound_freeze.json')
+if os.path.exists(_fz):
+    _doc = json.load(open(_fz, encoding='utf-8'))
+    if _doc.get('for') == _updated:
+        FREEZE = _doc
+        _n = _new = 0
+        for code, s in styles.items():
+            fz = FREEZE['cards'].get(code) if code in main_codes else None
+            if code in main_codes and fz is None:
+                _new += 1                      # 배포본에 없던 신규 스타일 — 새 파일 값 그대로
+            if not fz:
+                continue
+            for c in s['colors']:
+                if c['color'] in fz['colors']:
+                    c['qtyIn'] = fz['colors'][c['color']]
+                    c['rate'] = (c['total'] or 0) / c['qtyIn'] * 100 if c['qtyIn'] else None
+            s['inDate'], s['outDate'] = fz['inDate'], fz['outDate']
+            _n += 1
+        print('입고 고정: %s 기준 — 메인 %d스타일 입고·입출고일 유지 (고정값 없는 신규 %d스타일은 새 값)' % (_doc['for'], _n, _new))
 
 for code, s in styles.items():
     s['line'] = '메인' if code in main_codes else '러닝'
@@ -968,6 +1000,21 @@ if mdp_loaded and ACC_STYLES_FROM_SHEET:
 for _name in ('block1', 'newItem', 'newCat', 'seasonCat'):
     for _d in SUM[_name]:
         (_d['cur'] if 'cur' in _d else _d).pop('_sheetStyles', None)
+
+if FREEZE:
+    _n = 0
+    for _d in all_rows():
+        fz = FREEZE['rows'].get(_d['_k'])
+        if not fz:
+            continue
+        t_ = _d['cur'] if 'cur' in _d else _d
+        for k in ('inM', 'inSku', 'qtyIn'):
+            t_[k] = fz.get(k)
+        t_['sellRate'] = (t_.get('sales') or 0) / t_['qtyIn'] if t_.get('qtyIn') else None
+        if 'inRate' in t_:
+            t_['inRate'] = t_['qtyIn'] / t_['plan'] if t_.get('plan') and t_.get('qtyIn') is not None else None
+        _n += 1
+    print('입고 고정: 집계표 %d행 입고 ST·SKU·입고량 유지' % _n)
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
