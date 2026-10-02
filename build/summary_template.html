@@ -480,7 +480,7 @@ function seasonCatTable(season){
 }
 
 /* 성별(여성/유니맨) 카테고리 — 한 표 안에 성별 묶음 두 개, 시즌 블록과 같은 접이식. 25FW 짝이 없어 전년 모드에서는 오른쪽이 비고,
-   기획 ST수·SKU·기획량은 종합 시트(ERP) 값이라 시즌 요약(MDP 기준)과 정의가 다르다 */
+   기획 ST수·SKU·기획량은 시즌 요약과 같은 종합 시트 기준이다 */
 const GENDER_LABEL = {'여성': '여성', '남성': '유니맨'};   // 화면 표기 (남성 블록 = 남성+공용 = 유니맨)
 /* 성별 카테고리: 성별 TTL 행만 보이고, 클릭하면 복종(OUTER·TOP·BOTTOM·ACC), 복종을 또 클릭하면 하위 카테고리.
    기획량·입고량·주간판매량·주간판매금액·누계판매량·원가 옆에는 전체(여성+유니맨) 대비 비중을 붙인다. */
@@ -567,9 +567,7 @@ function renderSum(){
     dataRow('전체 합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
             (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
-  const planNote = (yr
-    ? ' · 26FW 기획 ST수·기획량은 MDP 확정 기준'
-    : '') + ' · 성별(여성·유니맨) = 신상품을 성별로 나눈 것(기획 ST수·SKU·기획량은 종합 시트 기준' + (yr ? ', 25FW 없음' : '') + ')';
+  const planNote = ' · 기획 ST수·SKU·기획량은 스타일맵(종합 시트) 기준 · 성별(여성·유니맨) = 신상품을 성별로 나눈 것' + (yr ? '(25FW 없음)' : '');
   // 데이터 검증 근거 — 상단 캡슐 줄 오른쪽에 둔다 (모드에 따라 문구가 바뀐다)
   document.getElementById('basis').innerHTML =
     '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote;

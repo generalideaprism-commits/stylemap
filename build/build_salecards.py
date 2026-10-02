@@ -79,7 +79,8 @@ def C(letter):
 # ST 시트 열
 ST = dict(season=C('D'), gender=C('E'), item=C('F'), item2=C('H'), theme=C('K'), style=C('M'), name=C('N'),
           vendor=C('P'), real=C('Y'), tag=C('Z'), cost=C('AA'),
-          tag_amt=C('BH'), sale_amt=C('BI'), img_code=C('BR'))
+          tag_amt=C('BH'), sale_amt=C('BI'), img_code=C('BR'),
+          plan_qty=C('AG'))                      # 기획 수량
 # CO 시트 열
 CO = dict(style=C('K'), color=C('M'), cname=C('N'), plan=C('R'),
           in_date=C('U'), qty_in=C('V'), out_date=C('Y'),
@@ -163,6 +164,7 @@ def mdp_tag(code, sheet_tag):
 
 styles = {}
 order = []
+STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
     ws = wb[st_sheet]
@@ -172,6 +174,11 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         if not code or code == '스타일':
             continue
         if not is_main and run_codes and code not in run_codes:
+            continue
+        # 스타일명 맨 앞 '*' = 아직 반영하지 않는 스타일(사용자 지시 2026-10-02) — 카드·기획 스타일수에서 뺀다
+        if txt(r[ST_['name']]).startswith('*'):
+            STAR[code] = {'season': txt(r[ST_['season']]).replace('(러닝)', '').strip(), 'name': txt(r[ST_['name']]),
+                          'plan': num(r[ST_['plan_qty']]) if len(r) > ST_['plan_qty'] else None, 'main': is_main}
             continue
         season = txt(r[ST_['season']]).replace('(러닝)', '').strip()
         tag, cost, real = num(r[ST_['tag']]), num(r[ST_['cost']]), num(r[ST_['real']])
@@ -247,6 +254,7 @@ for r in wb[CO_MAIN].iter_rows(min_row=4, values_only=True):
 _m = re.match(r'^(\d{2})(\d{2})(\d{2})_', os.path.basename(SRC))
 FILE_YEAR = 2000 + int(_m.group(1)) if _m else 2026
 
+_star_colors = set()
 for co_sheet in (CO_MAIN, CO_RUN):
     ws = wb[co_sheet]
     co = co_cols(ws)                 # 판마다 열이 밀릴 수 있어 시트별로 잡는다
@@ -277,6 +285,8 @@ for co_sheet in (CO_MAIN, CO_RUN):
         code = txt(r[co['style']] if len(r) > co['style'] else '')
         if not code or code == '스타일':
             continue
+        if code in STAR:
+            _star_colors.add((code, txt(r[co['color']])))
         s = styles.get(code)
         if s is None or (co_sheet == CO_RUN and run_codes and code not in run_codes):
             continue
@@ -821,8 +831,8 @@ def all_rows():
 
 SNAP = os.path.join(HERE, 'sum_prev.json')
 snap = json.load(open(SNAP, encoding='utf-8')) if os.path.exists(SNAP) else None
-# v3: 스타일수/SKU/기획량 정의가 MDP 기준으로 바뀜 — 구버전 값은 비교하지 않는다
-if snap and snap.get('ver') != 3:
+# v3: 스타일수/SKU/기획량 정의가 MDP 기준으로 바뀜 · v4: 다시 스타일맵(종합 시트) 기준 — 구버전 값은 비교하지 않는다
+if snap and snap.get('ver') != 4:
     for _rows in (snap.get('rows', {}), snap.get('carry', {})):
         for _v in _rows.values():
             for _k in ('styles', 'sku', 'plan', 'inRate'):
@@ -850,6 +860,9 @@ for st in data:
 # 기획량 = 컬러별수량(AN) 합. 구분 매핑: INNER -> TOP, SHOES -> ACC.
 MDP_PATH = os.path.join(DATA_DIR, '26FW_MDP.xlsb')
 mdpSeason, mdpBok = {}, {}
+# 2026-10-02: 기획 ST수·SKU·기획량은 스타일맵(종합 시트) 백데이터 기준으로 한다(사용자 지시).
+# MDP 확정 기준으로 되돌리려면 True — 그때는 data/26FW_MDP.xlsb 가 최신이어야 한다.
+PLAN_FROM_MDP = False
 mdp_loaded = False
 if os.path.exists(MDP_PATH):
     from pyxlsb import open_workbook as _oxb
@@ -873,6 +886,7 @@ if os.path.exists(MDP_PATH):
                        'bok': BOKMAP.get(txt(_d.get(_iF)), 'ACC'),
                        'code': txt(_d.get(_iH)),                     # 아이템코드 (집계표 카테고리 코드와 대응)
                        'ok': False,
+                       'mcode': txt(_d.get(C('AB'))),              # 메인품번
                        'sku': _d.get(_iAJ) if isinstance(_d.get(_iAJ), (int, float)) else 0,
                        'plan': _d.get(_iAK) if isinstance(_d.get(_iAK), (int, float)) else 0.0}
             if cur is None:
@@ -883,7 +897,7 @@ if os.path.exists(MDP_PATH):
         blocks.append(cur)
     mdpCat, _code_fbok = {}, {}
     for b in blocks:
-        if not b['ok'] or b['season'] not in ('가을', '겨울', '러닝'):
+        if not b['ok'] or b['season'] not in ('가을', '겨울', '러닝') or b.get('mcode') in STAR:
             continue
         _code_fbok.setdefault(b['code'], b['bok'])
         for tgt in (mdpSeason.setdefault(b['season'], {'styles': 0, 'sku': 0, 'plan': 0}),
@@ -905,7 +919,7 @@ if os.path.exists(MDP_PATH):
         for k in t:
             t[k] += v[k]
     mdpSeason['TTL'] = {k: sum(v[k] for v in mdpSeason.values()) for k in ('styles', 'sku', 'plan')}
-    mdp_loaded = True
+    mdp_loaded = PLAN_FROM_MDP
     print('MDP 확정 기준:', {k: (v['styles'], v['sku'], round(v['plan'])) for k, v in mdpSeason.items()},
           '| 미확정 제외', sum(1 for b in blocks if not b['ok']), '스타일')
 else:
@@ -933,6 +947,52 @@ for _name in ('block1', 'newItem', 'newCat', 'seasonCat'):
     for _d in SUM[_name]:
         _t = _d['cur'] if 'cur' in _d else _d
         _t['_sheetStyles'] = _t.get('styles')
+
+# '*' 스타일은 종합 시트 집계에 들어 있으므로, 시트 값을 그대로 쓰는 곳(ACC 기획 스타일수 · 성별 블록)에서 뺀다.
+# 품번 구조: GF + 숫자 + 성별(L=여성 / M·U=유니맨) + 카테고리 2자 + 번호. 입고·판매는 0 이라 다른 지표는 그대로다.
+def _sub(row, key, v):
+    if v and row.get(key) is not None:
+        row[key] = row[key] - v
+
+def _star_sub(row, sku, plan):
+    for _k, _v in (('styles', 1), ('_sheetStyles', 1), ('sku', sku), ('plan', plan)):
+        _sub(row, _k, _v)
+    if row.get('inRate') is not None:
+        row['inRate'] = (row.get('qtyIn') or 0) / row['plan'] if row.get('plan') else None
+
+
+for _code, _st in STAR.items():
+    if not _st['main']:
+        continue
+    _cat, _g = _code[4:6], ('여성' if _code[3] == 'L' else '남성')
+    _sku = sum(1 for _k in _star_colors if _k[0] == _code)
+    _plan, _se = _st['plan'], _st['season']
+    # 복종 묶음은 카테고리 코드가 걸린 행에서 읽는다 (ACCESSORY -> ACC)
+    _grp = next((_d['item'] for _d in SUM['newCat'] if _d.get('code') == _cat), '')
+    _grp = 'ACC' if _grp.startswith('ACC') else _grp
+    for _d in SUM['block1']:
+        if _d['mode'] == 'new' and ((_d['season'] == _se and _d['item'] == _grp and _d.get('kind') == '항목')
+                                    or _d.get('kind') in ('%s TTL' % _se, '신상품 TTL')):
+            _star_sub(_d['cur'], _sku, _plan)
+    for _d in SUM['newItem']:
+        if _d['item'] in (_grp, 'TOTAL'):
+            _star_sub(_d, _sku, _plan)
+    for _d in SUM['newCat']:
+        if _d.get('code') == _cat:
+            _star_sub(_d, _sku, _plan)
+    for _d in SUM['seasonCat']:
+        if _d.get('code') == _cat and _d['season'] == _se:
+            _star_sub(_d, _sku, _plan)
+    _gub = ''
+    for _d in SUM['genderCat']:
+        if _d['gender'] == _g and _d.get('code') == _cat:
+            _gub = _d['item']
+            _star_sub(_d, _sku, _plan)
+    for _d in SUM['genderItem']:
+        if _d['gender'] == _g and (_d['item'] == 'TOTAL' or (_gub and (_gub.startswith(_d['item']) or _d['item'].startswith(_gub)))):
+            _star_sub(_d, _sku, _plan)
+if STAR:
+    print("'*' 스타일 제외: %d건 — %s" % (len(STAR), ', '.join('%s(%s)' % (c, v['name']) for c, v in STAR.items())))
 
 _Z = {'styles': 0, 'sku': 0, 'plan': 0}
 _seasons = ('가을', '겨울')
@@ -1051,7 +1111,7 @@ if not snap or snap.get('date') != updated:
     carry, carry_date = (snap or {}).get('rows', {}), (snap or {}).get('date')
 else:
     carry, carry_date = snap.get('carry', {}), snap.get('carryDate')
-json.dump({'ver': 3, 'date': updated,
+json.dump({'ver': 4, 'date': updated,
            'rows': {d['_k']: row_vals(d) for d in all_rows()},
            'carry': carry, 'carryDate': carry_date},
           open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
