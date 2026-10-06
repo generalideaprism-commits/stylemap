@@ -91,6 +91,23 @@
          padding:8px 14px;font-size:12px;cursor:pointer;color:var(--sub)}
   #reset:hover{background:#eceff4}
 
+  /* ---------- 요약 바 (지금 걸러진 집합의 합계 — 카드 목록 바로 위) ---------- */
+  #sumbar{margin:16px 16px 0;background:#fff;border:1px solid var(--line);border-radius:12px;
+          padding:9px 14px;box-shadow:0 1px 3px rgba(16,24,40,.06);
+          display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;
+          font-variant-numeric:tabular-nums}
+  #sumbar .si{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+  #sumbar .si+.si{border-left:1px solid var(--line);padding-left:16px}
+  #sumbar .sl{flex:none;font-size:11px;color:var(--muted);font-weight:700}
+  #sumbar .sv{font-size:13px;font-weight:800;letter-spacing:-.2px}
+  #sumbar .si.hl .sv{color:var(--blue)}
+  #sumbar .sv small{font-weight:600;font-size:10.5px;color:var(--muted);margin-left:5px}
+  #sumbar .snote{margin-left:auto;font-size:10.5px;color:var(--muted);line-height:1.4}
+  @media (max-width:860px){
+    #sumbar .si+.si{border-left:0;padding-left:0}
+    #sumbar .snote{margin-left:0;flex-basis:100%}
+  }
+
   /* ---------- 카드 ---------- */
   main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(276px,1fr));gap:14px;
        align-items:start}
@@ -206,6 +223,7 @@
     <div id="sortbox"></div>
   </div>
 </header>
+<div id="sumbar"></div>
 <main id="list"></main>
 <div id="modal"><div class="box">
   <div class="mhead"><b id="mtitle"></b><span id="msub">시점재고 + 신규품번 · 현재고 기준</span>
@@ -386,6 +404,59 @@ function buildFilters(){
   }));
 }
 
+/* ---------- 요약 바 (필터·검색·정렬이 바뀔 때마다 지금 걸러진 집합의 합계) ----------
+   금액 합계는 택가·원가가 확인된 스타일만 — 수량·누계판매·판매율은 전부 포함한다.
+   마크업은 레코드의 mult 평균이 아니라 금액 가중(Σ택가금액 ÷ Σ원가금액(VAT 포함))으로 다시 계산한다.
+   러닝 통합 카드의 ttl 은 카드에 보이는 값 그대로다. 신품번 단독(s.sub)은 DATA 에 별도 원소로
+   들어있지 않으므로 ttl 만 더해도 중복 계상되지 않는다. */
+const amtOK   = s => !s.tagNA && +s.tag > 0 && +s.cost > 0;
+const costVat = s => (s.costV != null && +s.costV) ? +s.costV : (+s.cost || 0) * 1.1;
+const eok = v => (!v || v <= 0) ? '0원'
+              : ((Math.abs(v) / 1e8 >= 10 ? (v / 1e8).toFixed(1) : (v / 1e8).toFixed(2)) + '억');
+const qty = v => (Math.round(v) || 0).toLocaleString('ko-KR');
+
+function summarize(list){
+  const r = {styles:list.length, plan:0, qtyIn:0, sales:0,
+             supIn:0, supPlan:0, costIn:0, costPlan:0, noPrice:0};
+  for(const s of list){
+    const t = s.ttl || {};
+    const p = +t.plan || 0, qi = +t.qtyIn || 0, tot = +t.total || 0;
+    r.plan += p; r.qtyIn += qi; r.sales += tot;
+    if(!amtOK(s)){ r.noPrice++; continue; }          // 택가·원가 미확인 — 금액에서만 제외
+    const tg = +s.tag, cv = costVat(s);
+    r.supIn   += tg * qi;  r.costIn   += cv * qi;    // 입고 기준
+    r.supPlan += tg * p;   r.costPlan += cv * p;     // 기획 기준
+  }
+  r.mult     = r.costIn   > 0 ? r.supIn   / r.costIn   : null;
+  r.multPlan = r.costPlan > 0 ? r.supPlan / r.costPlan : null;
+  r.rate     = r.qtyIn    > 0 ? r.sales / r.qtyIn * 100 : null;
+  return r;
+}
+
+const sumEl = document.getElementById('sumbar');
+const si = (label, val, cls) =>
+  `<div class="si${cls ? ' ' + cls : ''}"><span class="sl">${label}</span><b class="sv">${val}</b></div>`;
+
+function renderSummary(list){
+  const r = summarize(list);
+  if(!r.styles){
+    sumEl.innerHTML = si('스타일', `0 / ${qty(DATA.length)}`) +
+      `<div class="snote">조건에 맞는 스타일이 없어 합계가 없습니다</div>`;
+    return;
+  }
+  const markup = r.mult != null     ? r.mult.toFixed(2) + '배'
+               : r.multPlan != null ? r.multPlan.toFixed(2) + '배<small>기획 기준</small>'
+               : '-';
+  sumEl.innerHTML =
+    si('스타일',         `${qty(r.styles)} / ${qty(DATA.length)}`) +
+    si('수량',           `기획 ${qty(r.plan)} → 입고 ${qty(r.qtyIn)}장`) +
+    si('공급액',         `${eok(r.supIn)}<small>기획 ${eok(r.supPlan)}</small>`) +
+    si('원가(VAT 포함)', `${eok(r.costIn)}<small>기획 ${eok(r.costPlan)}</small>`) +
+    si('마크업',         markup, 'hl') +
+    si('누계판매',       `${qty(r.sales)}장<small>입고 대비 ${r.rate != null ? r.rate.toFixed(1) + '%' : '-'}</small>`) +
+    (r.noPrice ? `<div class="snote">택가·원가 미확인 ${qty(r.noPrice)}스타일은 금액 합계에서 제외<br>(수량 · 누계판매 · 판매율에는 포함)</div>` : '');
+}
+
 /* ---------- 목록 렌더 (스크롤 시 조금씩 추가) ---------- */
 const CHUNK = 30;
 let view = [], shown = 0;
@@ -413,6 +484,7 @@ function render(){
   scrollTo(0, 0);
   more();
   document.getElementById('count').textContent = `${view.length} / ${DATA.length} 스타일`;
+  renderSummary(view);                 // 오른쪽 위 건수와 같은 view 로 계산 — 숫자가 어긋나지 않는다
 }
 
 /* ---------- 카드 클릭 -> CU 품번 단독 카드 모달 ---------- */
