@@ -670,6 +670,11 @@ if '종합' in wb.sheetnames:
                        txt(cell(r, 'F', off)))
             v = vals(r, MET, off)
             py = vals(r, MET, py_off) if py_off is not None else None
+            if not f and py_off is not None:        # 25FW 블록에만 있는 카테고리(셋업류) — 이름을 그쪽에서 가져온다
+                f = txt(cell(r, 'F', py_off))
+                # 이름 칸이 양쪽 다 비었는데 25FW 값만 있는 행(종합 35행 OUTER 2,080장) — 이름 없이라도 실어 합이 맞게 한다
+                if not f and not e and gubun and not d.endswith('TOTAL') and 'ACC제외' not in d and any((py.get(k) or 0) for k in ('qtyIn', 'sales')):
+                    f = '(명칭 없음)'
             if key_item == 'runItem':
                 # 기본 표시는 26FW 기획분 그대로. 시점재고는 따로 실어 두고
                 # 화면에서 '기획+시점재고' 로 켰을 때만 합친다.
@@ -680,26 +685,29 @@ if '종합' in wb.sheetnames:
             if d and not d.endswith('TOTAL'):
                 gubun = d
             if f:                                   # 카테고리명이 있는 행만 카테고리 집계
-                if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
+                # 26FW 값이 없어도 25FW 동시점 값이 있으면 싣는다 — 안 그러면 전년 하위 카테고리 합이 복종 행과 어긋난다
+                if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')) or (py and any((py.get(k) or 0) for k in ('qtyIn', 'sales'))):
                     SUM[key_cat].append({'item': gubun, 'cat': f, 'code': e, 'py': py, **v})
 
     # 5) 시즌(가을/겨울)별 카테고리 상세 — 66행 아래, A열에 시즌이 적혀 있는 블록
     cur_season, gubun = '', ''
     for r in range(66, len(rows) + 1):      # 시트가 150행보다 짧을 수 있다
         a = txt(cell(r, 'A'))
+        # A열 시즌 표시가 빠진 행(종합 91행 저지셋업상의)도 25FW 이름이 있으면 같은 시즌 블록으로 본다
+        if not a and cur_season and txt(cell(r, 'F', PY_OFF)):
+            a = cur_season
         if a not in ('가을', '겨울'):
             continue
         if a != cur_season:
             cur_season, gubun = a, ''
         d = txt(cell(r, 'D'))
-        e, f = txt(cell(r, 'E')), txt(cell(r, 'F'))
+        e, f = txt(cell(r, 'E')), txt(cell(r, 'F')) or txt(cell(r, 'F', PY_OFF))
         if d and not d.endswith('TOTAL') and 'ACC제외' not in d:
             gubun = d
         if f:
-            v = vals(r, MET)
-            if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
-                SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e,
-                                         'py': vals(r, MET, PY_OFF), **v})
+            v, py = vals(r, MET), vals(r, MET, PY_OFF)
+            if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')) or any((py.get(k) or 0) for k in ('qtyIn', 'sales')):
+                SUM['seasonCat'].append({'season': a, 'item': gubun, 'cat': f, 'code': e, 'py': py, **v})
 
     # 6) 성별(여성/남성) 카테고리 상세 (2026-09-28 추가) — C열에 성별 머리글이 있는 블록 (152행 아래).
     # 시즌 블록과 달리 A열 표시가 없고 25FW 짝(+26)도 없다. 복종 TOTAL 행이 부모, 카테고리명 행이 하위.
@@ -1133,6 +1141,44 @@ for _name in ('seasonCat', 'newCat', 'genderCat'):
     SUM[_name] = [_d for _d in SUM[_name] if _d['cat'] != GIFT_CAT]
 if GIFT or _gn:
     print('사은품 제외: 카드 %d건(%s) · 집계표 사은품 행을 상위 합계에서 뺌' % (len(GIFT), ', '.join('%s %s' % kv for kv in GIFT.items())))
+
+# ---- 25FW 동시점에서 빼는 품번 ----
+# 25FW 사은품이 기타액세서리로 들어와 전년 입고가 5만 장 부풀었다(QBE3U98007 드레스퍼퓸, 사용자 확인 2026-10-06).
+# '전년비교BACK(~동시점,생판재)' 시트에서 해당 품번 행을 읽어 25FW(py) 상위 합계에서 뺀다. 26FW 쪽은 건드리지 않는다.
+PY_EXCLUDE_CODES = ['QBE3U98007']
+_back = next((nm for nm in wb.sheetnames if '전년비교' in nm), None)
+if _back and PY_EXCLUDE_CODES:
+    _ws = wb[_back]
+    _h1 = [txt(v) for v in next(_ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+    _h2 = [txt(v) for v in next(_ws.iter_rows(min_row=2, max_row=2, values_only=True))]
+    _si = _h2.index('스타일')
+    _c = lambda label, k=0: _h1.index(label) + k
+    for _r in _ws.iter_rows(min_row=4, values_only=True):
+        _code = txt(_r[_si]) if len(_r) > _si else ''
+        if _code not in PY_EXCLUDE_CODES:
+            continue
+        _g = lambda i: (num(_r[i]) or 0) if len(_r) > i else 0
+        _qty_in = _g(_c('생산'))
+        _v = {'styles': 1, 'plan': _g(_c('기획')), 'planCost': _g(_c('기획', 2)),
+              'inM': 1 if _qty_in else 0, 'qtyIn': _qty_in, 'cost': _g(_c('생산', 2)), 'tag': _g(_c('생산', 1)),
+              'sales': _g(_c('판매(기간)')), 'salesTag': _g(_c('판매(기간)', 1)), 'salesAmt': _g(_c('판매(기간)', 2)),
+              'salesCost': _g(_c('판매(기간)', 3)), 'wkQty': _g(_c('판매(최근)')), 'wkAmt': _g(_c('판매(최근)', 2))}
+        _se, _cat, _grp = txt(_r[_h2.index('시즌')]), txt(_r[_h2.index('아이템')]), txt(_r[_h2.index('품목')])
+        _grp = 'ACC' if _grp.upper().startswith('ACC') else _grp
+        for _b in SUM['block1']:
+            if (_b['mode'] == 'new' and ((_b['season'] == _se and _b['item'] == _grp and _b.get('kind') == '항목')
+                                         or _b.get('kind') in ('%s TTL' % _se, '신상품 TTL'))) or _b.get('kind') == '전체 TTL':
+                _gift_sub(_b.get('py'), _v)
+        for _n in SUM['newItem']:
+            if _n['item'] in (_grp, 'TOTAL'):
+                _gift_sub(_n.get('py'), _v)
+        for _d in SUM['newCat']:
+            if _d['cat'] == _cat and (_d['item'].startswith(_grp) or _grp.startswith(_d['item'])):
+                _gift_sub(_d.get('py'), _v)
+        for _d in SUM['seasonCat']:
+            if _d['season'] == _se and _d['cat'] == _cat:
+                _gift_sub(_d.get('py'), _v)
+        print('25FW 제외: %s %s (%s %s %s) — 입고 %s · 누계 %s · 주간 %s' % (_code, txt(_r[_si + 1]), _se, _grp, _cat, int(_qty_in), int(_v['sales']), int(_v['wkQty'])))
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
