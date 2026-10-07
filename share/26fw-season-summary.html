@@ -35,11 +35,8 @@
   /* 집계 표 */
   .tw{overflow-x:auto}
   table.sum{width:100%;border-collapse:collapse;font-size:12px;
-    table-layout:fixed;min-width:1960px}   /* 좁은 화면에선 표 영역만 가로 스크롤 (원가·택가·마크업 4열 추가분 포함) */
-  table.sum th,table.sum td{padding:6px 8px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
-  /* 금액 칸: 값 + 증감 꼬리표가 한 줄에 안 들어가면 꼬리표만 다음 줄로 */
-  table.sum td.num{white-space:normal}
-  table.sum td.num .dt{display:inline-block;white-space:nowrap}
+    table-layout:fixed;min-width:1840px}   /* 좁은 화면에선 표 영역만 가로 스크롤 (원가·택가·마크업 4열 추가분 포함) */
+  table.sum th,table.sum td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #f1f3f7}
   table.sum thead th{position:sticky;top:0;background:#fff;color:var(--muted);font-weight:700;
     font-size:11px;border-bottom:1px solid var(--line);z-index:2}
   table.sum th.nm{text-align:left;font-weight:600;color:var(--sub);
@@ -313,10 +310,8 @@ const fmtP = v => v==null ? '-' : (v*100).toFixed(2)+'%';
 const fmtP1 = v => v==null ? '-' : (v*100).toFixed(1)+'%';
 const fmtP0 = v => v==null ? '-' : Math.round(v*100)+'%';
 // 금액은 백만 단위 (8,400,000 -> 8.4백만). 백만 미만의 자잘한 값은 그대로 숫자로.
-// 백만 앞자리가 4자리를 넘으면 쉼표로 끊는다 (2565.2백만 -> 2,565.2백만)
-const fmtMil = v => (v/1e6).toLocaleString('ko-KR', {minimumFractionDigits:1, maximumFractionDigits:1})+'백만';
 const fmtM = v => v==null ? '-' : v===0 ? '0'
-  : Math.abs(v)>=1e5 ? fmtMil(v) : fmtN(v);
+  : Math.abs(v)>=1e5 ? (v/1e6).toFixed(1)+'백만' : fmtN(v);
 // 마크업(배수)은 소수 둘째 자리까지
 const fmtX2 = v => v==null ? '-' : v.toFixed(2);
 const FMT = {n:fmtN, w:fmtW, p:fmtP, p1:fmtP1, p0:fmtP0, m:fmtM, x2:fmtX2};
@@ -331,22 +326,19 @@ const inRateOf = o => o==null ? null
   : (o.inRate!=null ? o.inRate : (o.plan ? (o.qtyIn||0)/o.plan : null));
 
 /* 러닝 보기 기준.
-   기본(false) = 26FW 기획분만. 켜면(true) 26.07.31 시점재고 물량을 기획량에, 실적을 판매에 얹는다.
+   기본(false) = 26FW 기획분만. 켜면(true) 26.07.31 시점재고의 물량·실적을 얹는다.
    스타일수·SKU·기획량은 기획 항목이라 그대로 두고, 물량과 실적만 합친다.
    입고율도 기획 대비 입고라 건드리지 않는다. */
 let RUNSTK = false;
-/* 2026-10-07: 시점재고(구품번 이월 물량)는 입고량이 아니라 기획량에 얹는다(사용자 지시).
-   입고량은 26FW 신품번 입고 그대로, 입고율 = 입고 ÷ (기획 + 시점재고). 판매 실적은 구+신 합산 그대로. */
 function withStk(o){
   if(!RUNSTK || !o || !o.stk) return o;
   const s = o.stk, t = Object.assign({}, o);
-  if(s.qtyIn!=null) t.plan = (o.plan||0) + s.qtyIn;
-  ['sales','salesTag','salesAmt','wkQty','wkAmt'].forEach(k=>{
+  ['qtyIn','sales','salesTag','salesAmt','wkQty','wkAmt'].forEach(k=>{
     if(s[k]!=null) t[k] = (o[k]||0) + s[k];
   });
   t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
   t.disc     = t.salesTag ? 1-(t.salesAmt||0)/t.salesTag : null;
-  t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
+  t.inRate   = inRateOf(o);          // 입고율은 기획분 기준 유지
   return t;
 }
 
@@ -362,7 +354,7 @@ function deltaHtml(v, was, col){
     if(!val) return '';
     txt = val.toFixed(dec)+'%';
   }else if(col.f==='m' && Math.abs(d)>=1e5){
-    txt = fmtMil(Math.abs(d));
+    txt = (Math.abs(d)/1e6).toFixed(1)+'백만';
   }else{
     const val = Math.round(Math.abs(d));
     if(!val) return '';
@@ -412,7 +404,7 @@ function dataRow(name, o, cls, cmp, base){
 const colwWk = c => c.k==='styles' ? '5.9%' : c.k==='sku' ? '5.7%'
   : c.k==='inM' ? '6.4%' : c.k==='inSku' ? '5.9%'
   : c.f==='x2' ? '6.4%'
-  : c.f[0]==='p' ? '7.4%' : c.f==='m' ? '11.6%' : '8.1%';
+  : c.f[0]==='p' ? '7.8%' : c.f==='m' ? '10.8%' : '8.5%';
 // 지표 하나가 차지하는 폭 — 26FW 블록과 25FW 블록에 같은 값을 쓴다
 // 실판매금액은 시점재고 합산 시 10억을 넘어('1172.6백만▲') 가장 넓게 둔다
 const YRW = {styles:3.9, plan:4.5, inM:3.9, qtyIn:4.5, inRate:3.4,
@@ -421,7 +413,7 @@ const YRW = {styles:3.9, plan:4.5, inM:3.9, qtyIn:4.5, inRate:3.4,
 
 function table(rows){
   if(MODE!=='yr'){
-    const cols = `<colgroup><col style="width:8.4%">${COLS.map(c=>`<col style="width:${colwWk(c)}">`).join('')}</colgroup>`;
+    const cols = `<colgroup><col style="width:7.4%">${COLS.map(c=>`<col style="width:${colwWk(c)}">`).join('')}</colgroup>`;
     return `<div class="tw"><table class="sum">${cols}
       <thead><tr><th class="nm">구분</th>${COLS.map(c=>`<th class="num${c.sep?' sep':''}">${c.label}</th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody></table></div>`;
@@ -547,7 +539,7 @@ function cmpSum(rows){
 /* 러닝 보기 전환 — 설명줄의 칩과 러닝 행 클릭, 둘 다 같은 토글이다 */
 const runChip = () =>
   `<button class="stkbtn${RUNSTK?' on':''}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`
-  + `<span class="stknote">${RUNSTK ? '기획량 = 26FW 러닝 기획 + 구품번 이월(26.07.31 시점재고) · 판매 = 구+신 합산 · 입고량은 신품번 입고'
+  + `<span class="stknote">${RUNSTK ? '26FW 러닝 신품번 + 구품번 이월(26.07.31 시점재고) 데이터 포함'
                                     : '26FW 러닝 신품번 기준 데이터'}</span>`;
 
 function renderSum(){
