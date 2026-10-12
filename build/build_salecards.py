@@ -1180,10 +1180,10 @@ if _back and PY_EXCLUDE_CODES:
                 _gift_sub(_d.get('py'), _v)
         print('25FW 제외: %s %s (%s %s %s) — 입고 %s · 누계 %s · 주간 %s' % (_code, txt(_r[_si + 1]), _se, _grp, _cat, int(_qty_in), int(_v['sales']), int(_v['wkQty'])))
 
-# ---- 25FW 러닝 입고 = 이월 포함 (사용자 지시 2026-10-12) ----
+# ---- 25FW 러닝: 이월 물량을 기획량에 (사용자 지시 2026-10-12·13) ----
 # 종합 시트 AL19/AL20 의 25FW 러닝 입고 수식은 전년비교BACK 생산(이월 포함)에서 25.07.31 시점재고를 빼도록 바뀌어
 # 있다(10/6). 그러면 25FW 러닝 누계판매(이월 품번 판매 포함)가 입고보다 커져 판매율이 100% 를 넘으므로,
-# 시트가 뺀 시점재고(시점재고(~25.07.31) 시트 A열 '러닝' 행의 AS열 생산 수량, 품목별)를 다시 더해 이월 포함으로 돌린다.
+# 시트가 뺀 시점재고(시점재고(~25.07.31) 시트 A열 '러닝' 행의 AS열 생산 수량, 품목별)를 기획량에 더한다.
 # 시트 수식을 원래대로 되돌리면 두 번 더해지므로 그때는 False 로.
 PY_RUN_INBOUND_WITH_CARRY = True
 _stk25 = next((nm for nm in wb.sheetnames if '시점재고' in nm and '25.07' in nm), None)
@@ -1205,13 +1205,15 @@ if PY_RUN_INBOUND_WITH_CARRY and _stk25:
                 else sum(_carry.values()) if _b.get('kind') in ('러닝 TTL', '전체 TTL') else 0)
         if not _add:
             continue
-        _py['qtyIn'] = (_py.get('qtyIn') or 0) + _add
-        _py['sellRate'] = (_py.get('sales') or 0) / _py['qtyIn'] if _py['qtyIn'] else None
-        if 'inRate' in _py:
-            _py['inRate'] = _py['qtyIn'] / _py['plan'] if _py.get('plan') else None
+        # 2026-10-13: 이월 물량은 입고가 아니라 기획량에 얹는다(26FW 러닝 토글과 같은 기준). 입고는 신품번 입고 그대로.
+        # 판매율은 이월 품번 판매까지 들어 있는 누계를 신품번 입고로 나누면 100% 를 넘으므로 (입고 + 이월) 로 나눈다.
+        if _b.get('kind') != '전체 TTL':             # 전체 TTL 행은 시트에 기획량이 없다(None) — 그대로 둔다
+            _py['plan'] = (_py.get('plan') or 0) + _add
+            _py['inRate'] = (_py.get('qtyIn') or 0) / _py['plan'] if _py['plan'] else None
+        _py['sellRate'] = (_py.get('sales') or 0) / ((_py.get('qtyIn') or 0) + _add)
         _n += 1
     # runItem 의 py 는 block1 의 같은 dict 를 가리키므로 따로 더하지 않는다
-    print('25FW 러닝 입고 이월 포함: 시점재고(~25.07.31) %s 를 복종별로 더함 (%d행)' % (dict(_carry), _n))
+    print('25FW 러닝 이월 -> 기획량: 시점재고(~25.07.31) %s 를 복종별 기획량에 더함 (%d행)' % (dict(_carry), _n))
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
