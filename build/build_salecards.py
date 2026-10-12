@@ -1180,6 +1180,39 @@ if _back and PY_EXCLUDE_CODES:
                 _gift_sub(_d.get('py'), _v)
         print('25FW 제외: %s %s (%s %s %s) — 입고 %s · 누계 %s · 주간 %s' % (_code, txt(_r[_si + 1]), _se, _grp, _cat, int(_qty_in), int(_v['sales']), int(_v['wkQty'])))
 
+# ---- 25FW 러닝 입고 = 이월 포함 (사용자 지시 2026-10-12) ----
+# 종합 시트 AL19/AL20 의 25FW 러닝 입고 수식은 전년비교BACK 생산(이월 포함)에서 25.07.31 시점재고를 빼도록 바뀌어
+# 있다(10/6). 그러면 25FW 러닝 누계판매(이월 품번 판매 포함)가 입고보다 커져 판매율이 100% 를 넘으므로,
+# 시트가 뺀 시점재고(시점재고(~25.07.31) 시트 A열 '러닝' 행의 AS열 생산 수량, 품목별)를 다시 더해 이월 포함으로 돌린다.
+# 시트 수식을 원래대로 되돌리면 두 번 더해지므로 그때는 False 로.
+PY_RUN_INBOUND_WITH_CARRY = True
+_stk25 = next((nm for nm in wb.sheetnames if '시점재고' in nm and '25.07' in nm), None)
+if PY_RUN_INBOUND_WITH_CARRY and _stk25:
+    _ws = wb[_stk25]
+    _h2 = [txt(v) for v in next(_ws.iter_rows(min_row=2, max_row=2, values_only=True))]
+    _iA, _iG, _iAS = 0, _h2.index('품목'), C('AS')
+    _carry = _dd(float)
+    for _r in _ws.iter_rows(min_row=4, values_only=True):
+        if len(_r) > _iAS and txt(_r[_iA]) == '러닝':
+            _g = txt(_r[_iG]).upper()
+            _carry['TOP' if _g.startswith(('KNIT', 'INNER')) else BOKMAP.get(_g, 'ACC')] += num(_r[_iAS]) or 0
+    _n = 0
+    for _b in SUM['block1']:
+        if _b['mode'] != 'run' or not _b.get('py'):
+            continue
+        _py = _b['py']
+        _add = (_carry.get(_b['item'], 0) if _b.get('kind') == '항목'
+                else sum(_carry.values()) if _b.get('kind') in ('러닝 TTL', '전체 TTL') else 0)
+        if not _add:
+            continue
+        _py['qtyIn'] = (_py.get('qtyIn') or 0) + _add
+        _py['sellRate'] = (_py.get('sales') or 0) / _py['qtyIn'] if _py['qtyIn'] else None
+        if 'inRate' in _py:
+            _py['inRate'] = _py['qtyIn'] / _py['plan'] if _py.get('plan') else None
+        _n += 1
+    # runItem 의 py 는 block1 의 같은 dict 를 가리키므로 따로 더하지 않는다
+    print('25FW 러닝 입고 이월 포함: 시점재고(~25.07.31) %s 를 복종별로 더함 (%d행)' % (dict(_carry), _n))
+
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
 
