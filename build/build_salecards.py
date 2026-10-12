@@ -1185,7 +1185,7 @@ if _back and PY_EXCLUDE_CODES:
 # 있다(10/6). 그러면 25FW 러닝 누계판매(이월 품번 판매 포함)가 입고보다 커져 판매율이 100% 를 넘으므로,
 # 시트가 뺀 시점재고(시점재고(~25.07.31) 시트 A열 '러닝' 행의 AS열 생산 수량, 품목별)를 다시 더해 이월 포함으로 돌린다.
 # 시트 수식을 원래대로 되돌리면 두 번 더해지므로 그때는 False 로.
-PY_RUN_INBOUND_WITH_CARRY = True
+PY_RUN_INBOUND_WITH_CARRY = False   # 2026-10-12: 종합 시트 정의가 바뀌어 백데이터 값 그대로 쓴다
 _stk25 = next((nm for nm in wb.sheetnames if '시점재고' in nm and '25.07' in nm), None)
 if PY_RUN_INBOUND_WITH_CARRY and _stk25:
     _ws = wb[_stk25]
@@ -1205,7 +1205,11 @@ if PY_RUN_INBOUND_WITH_CARRY and _stk25:
                 else sum(_carry.values()) if _b.get('kind') in ('러닝 TTL', '전체 TTL') else 0)
         if not _add:
             continue
+        # 기획량에도 같은 이월 물량을 더한다 — 26FW 의 '기획 + 시점재고' 보기와 같은 정의.
+        # 입고에만 더하면 입고율이 488% 처럼 나온다 (2026-10-12 지적).
         _py['qtyIn'] = (_py.get('qtyIn') or 0) + _add
+        if _py.get('plan') is not None:
+            _py['plan'] = (_py.get('plan') or 0) + _add
         _py['sellRate'] = (_py.get('sales') or 0) / _py['qtyIn'] if _py['qtyIn'] else None
         if 'inRate' in _py:
             _py['inRate'] = _py['qtyIn'] / _py['plan'] if _py.get('plan') else None
