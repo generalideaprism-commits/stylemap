@@ -591,6 +591,43 @@ for s in styles.values():
         saved += 1
         break
 
+# 3순위: NAS 촬영원본 제품 정면 컷 (build/nas_images.json — Supabase·도식화에 없는 카드만, 2026-10-19)
+# 원본은 3000x4000 1~5MB 라 카드용으로 세로 720px 로 줄여 share/img/ 에 저장한다. NAS 가 안 열리는 PC 에서는
+# 이미 만들어 둔 share/img 파일을 그대로 쓴다.
+_nas_path = os.path.join(HERE, 'nas_images.json')
+if os.path.exists(_nas_path):
+    _nas = json.load(open(_nas_path, encoding='utf-8'))
+    _root = _nas.get('root', '').replace(chr(92), '/')
+    _n_new = _n_keep = 0
+    for s in styles.values():
+        if s.get('img') or any(cache.get(c) for c in s['imgCodes']):
+            continue
+        ent = _nas['images'].get(s['style'])
+        if not ent:
+            continue
+        name = s['style'].upper() + '.jpg'
+        path = os.path.join(IMG_DIR, name)
+        src = _root + '/' + ent['src']
+        if os.path.exists(src):
+            try:
+                from PIL import Image
+                im = Image.open(src).convert('RGB')
+                im.thumbnail((720, 720))
+                im.save(path + '.tmp', 'JPEG', quality=85, optimize=True)
+                if not os.path.exists(path) or open(path, 'rb').read() != open(path + '.tmp', 'rb').read():
+                    os.replace(path + '.tmp', path)
+                    _n_new += 1
+                else:
+                    os.remove(path + '.tmp')
+            except Exception as e:
+                print('  NAS 이미지 실패:', s['style'], e)
+        if os.path.exists(path):
+            s['img'] = 'img/' + name
+            s['imgSrc'] = ent.get('kind', 'NAS')
+            written.add(name)
+            _n_keep += 1
+    print('NAS 제품컷: %d장 사용 (새로 저장 %d장)' % (_n_keep, _n_new))
+
 # 더 이상 쓰이지 않는 이미지 파일 정리
 for f in os.listdir(IMG_DIR):
     if f.lower().endswith('.jpg') and f not in written:

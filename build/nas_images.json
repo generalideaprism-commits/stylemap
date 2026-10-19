@@ -1,0 +1,71 @@
+{
+ "root": "//DiskStation/촬영사진",
+ "note": "Supabase·도식화에 없는 카드의 NAS 제품 정면 컷 (2026-10-19). 경로는 root 기준 상대 경로.",
+ "images": {
+  "GF3LTS526": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LTS526/CH/제품컷/general idea29937.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF3LJP526": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LJP526/CH/제품컷/general idea29941.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF3LPT526": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LPT526/CH/제품컷/general idea29933.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF3LET506": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LET506/BK/제품컷/general idea29863.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF3UKC024": {
+   "src": "UNI/26FW/26FW_3차/GF3UKC024/M/CH/제품컷/general idea29907.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4LOP504": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LOP504/BK/제품컷/general idea29957.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4LKC534": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LKC534/BK/제품컷/general idea29837.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4LKC536": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LKC536/BK/제품컷/general idea29949.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4LKP537": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LKP537/BK/제품컷/general idea29955.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4MKP022": {
+   "src": "UNI/26FW/26FW_3차/GF4MKP022/BK/제품컷/general idea29788.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4MKP023": {
+   "src": "UNI/26FW/26FW_3차/GF4MKP023/MG/제품컷/general idea29790.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF4UKP025": {
+   "src": "UNI/26FW/26FW_3차/GF4UKP025/M/CH/제품컷/general idea29919.jpg",
+   "kind": "제품컷",
+   "note": "제품컷 정면 (첫 jpg)"
+  },
+  "GF3LJP525": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LJP525/CH/260909gs1416.jpg",
+   "kind": "모델컷",
+   "note": "제품컷 없음 — 모델 정면 컷 임시 사용"
+  }
+ }
+}
