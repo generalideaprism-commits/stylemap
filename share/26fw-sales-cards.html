@@ -109,16 +109,17 @@
   }
 
   /* ---------- 카드 ---------- */
-  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(276px,1fr));gap:14px;
+  main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(276px,100%),1fr));gap:14px;
        align-items:start}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
         box-shadow:0 1px 3px rgba(16,24,40,.06);
         /* 화면 밖 카드는 렌더링을 건너뛰고, 레이아웃 영향도 카드 안으로 가둠 */
-        content-visibility:auto;contain-intrinsic-size:auto 700px;contain:layout paint style}
-  .chead{display:flex;align-items:center;gap:4px;padding:10px 11px 0}
-  .chead .code{font-size:11px;color:var(--muted);letter-spacing:.4px}
+        content-visibility:auto;contain-intrinsic-size:auto 700px;contain:layout paint style;
+        container-type:inline-size}   /* 카드 폭 기준(cqw)으로 글자 크기를 줄여 표가 잘리지 않게 */
+  .chead{display:flex;align-items:center;gap:4px;padding:10px 11px 0;flex-wrap:wrap}
+  .chead .code{font-size:11px;font-size:clamp(5px,3.7cqw,11px);color:var(--muted);letter-spacing:.4px}
   .tags{margin-left:auto;display:flex;gap:4px}
-  .tag{font-size:9.5px;border-radius:5px;padding:1px 5px;font-weight:700}
+  .tag{font-size:9.5px;font-size:clamp(4.5px,3.2cqw,9.5px);border-radius:5px;padding:1px 5px;font-weight:700}
   .tag.b{background:var(--blue);color:#fff}
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
   .tag.ro{background:#fff1e6;color:#c2560c;border:1px solid #f6d3b5}
@@ -126,8 +127,8 @@
   .recard{cursor:pointer}
   .recard th.on,.recard td.on,.recard .stats div.on b{color:var(--blue)}
   .recard td.on b{color:var(--blue)}
-  .cname{font-size:14px;font-weight:800;letter-spacing:-.3px;padding:4px 11px 9px;
-         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cname{font-size:14px;font-size:clamp(8px,5.2cqw,14px);font-weight:800;letter-spacing:-.3px;padding:4px 11px 9px;line-height:1.3;
+         white-space:normal;word-break:keep-all;overflow-wrap:anywhere}   /* 품명은 줄바꿈으로 전부 보이게 */
 
   .thumb{position:relative;background:var(--soft);height:264px;display:flex;
          align-items:center;justify-content:center}
@@ -138,54 +139,57 @@
           border-bottom:1px solid var(--line);background:#fff}
   .prices div{padding:9px 4px;text-align:center;border-right:1px solid var(--line)}
   .prices div:last-child{border-right:0}
-  .prices b{display:block;font-size:12px;font-weight:800;white-space:nowrap}
-  .prices span{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
+  .prices b{display:block;font-size:12px;font-size:clamp(6px,4.4cqw,12px);font-weight:800;white-space:nowrap}
+  .prices span{display:block;font-size:9.5px;font-size:clamp(4.5px,3.6cqw,9.5px);color:var(--muted);margin-top:2px;white-space:nowrap}
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:12px 4px 10px}
   /* 러닝 카드는 현재고(시점재고+신규입고)까지 5칸 */
   .stats.s5{grid-template-columns:repeat(5,1fr)}
   .stats div{text-align:center}
-  .stats b{display:block;font-size:13px;font-weight:800;letter-spacing:-.4px;
-           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .stats span{display:block;font-size:9px;color:var(--muted);margin-top:2px;white-space:nowrap}
+  .stats b{display:block;font-size:13px;font-size:clamp(6px,4.9cqw,13px);font-weight:800;letter-spacing:-.4px;
+           white-space:nowrap}
+  .stats span{display:block;font-size:9px;font-size:clamp(4.5px,3.4cqw,9px);color:var(--muted);margin-top:2px;white-space:nowrap}
   .stats .hl b{color:var(--blue)}
+  .stats b span.dim{display:inline;font-size:1em;margin:0}   /* 값 없음 '-' 는 숫자와 같은 크기로 */
 
   .prog{margin:2px 12px 13px;background:var(--soft);border:1px solid var(--line);border-radius:8px;
         padding:7px 10px}
-  .prog .lb{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-bottom:5px}
+  .prog .lb{display:flex;justify-content:space-between;font-size:11px;font-size:clamp(5px,3.7cqw,11px);color:var(--sub);margin-bottom:5px}
   .prog .lb b{color:var(--blue)}
   .bar{height:6px;border-radius:99px;background:#e3e8ef;overflow:hidden}
   .bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
 
-  table{width:100%;border-collapse:collapse;table-layout:fixed}
-  th,td{font-size:11px;padding:3.5px 5px;text-align:right;white-space:nowrap;
-        overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+  table{width:100%;border-collapse:collapse;table-layout:auto}
+  /* 표 글씨는 카드 폭에 맞춰 줄어든다(cqw) — 어떤 화면 폭·확대에서도 숫자가 말줄임(…)으로 잘리지 않는다 */
+  .card table{font-size:11px;font-size:clamp(4.5px,3.3cqw,11px)}
+  .recard table{font-size:11px;font-size:clamp(4.5px,2.9cqw,11px)}   /* 8열 표라 조금 더 줄인다 — 좁은 팝업에서도 판매율 열이 안 잘리게 */
+  th,td{font-size:1em;padding:.32em .38em;text-align:right;white-space:nowrap;line-height:1.25}
   th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:#fff}
   td.c{text-align:left}
   tbody tr+tr td{border-top:1px solid #f1f3f7}
-  .cl{color:var(--blue);font-weight:700;font-size:11.5px;line-height:1.15}
-  .cl small{display:block;color:var(--muted);font-weight:400;font-size:9px;line-height:1.15}
+  .cl{color:var(--blue);font-weight:700;font-size:1.04em;line-height:1.15}
+  .cl small{display:block;color:var(--muted);font-weight:400;font-size:.82em;line-height:1.15}
   tr.ttl td{border-top:1px solid var(--line);font-weight:800;background:#fbfcfe}
-  .pnote{margin:8px 12px 10px;font-size:11px;line-height:1.5;color:var(--sub)}
+  .pnote{margin:8px 12px 10px;font-size:11px;font-size:clamp(4.5px,3.7cqw,11px);line-height:1.5;color:var(--sub)}
   /* 26FW 미진행 컬러(구품번 시점재고만) — 글자색을 회색으로 */
   tr.oldc td,tr.oldc td.cl,tr.oldc td small,.pnote .oldc{color:#9aa3b2}
   tr.oldc td.cl{font-weight:600}
   .dim{color:#c3c9d2}
 
   details.det{border-top:1px solid var(--line);background:#fcfdfe}
-  details.det>summary{list-style:none;cursor:pointer;padding:6px 12px;font-size:11px;
+  details.det>summary{list-style:none;cursor:pointer;padding:6px 12px;font-size:11px;font-size:clamp(5px,3.7cqw,11px);
         color:var(--muted);display:flex;align-items:center;gap:5px;user-select:none}
   details.det>summary::-webkit-details-marker{display:none}
   details.det>summary::after{content:'▾';margin-left:auto;font-size:10px;transition:.15s}
   details.det[open]>summary::after{transform:rotate(180deg)}
   details.det>summary:hover{color:var(--sub);background:var(--soft)}
   .meta{padding:2px 12px 8px;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
-  .meta div{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);
+  .meta div{display:flex;justify-content:space-between;gap:.4em;font-size:11px;font-size:clamp(4.5px,3.7cqw,11px);color:var(--sub);
         line-height:1.5}
   .meta div span{color:var(--muted)}
   .foot{border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap}
-  .foot em{font-style:normal;font-size:9.5px;background:var(--blue-soft);color:var(--blue);
+  .foot em{font-style:normal;font-size:9.5px;font-size:clamp(4.5px,3.2cqw,9.5px);background:var(--blue-soft);color:var(--blue);
            border-radius:5px;padding:2px 6px;font-weight:700}
   .foot em.th{background:#fff4e5;color:#b45309}
   .foot em.n{background:var(--soft);color:var(--sub)}
@@ -194,6 +198,48 @@
   .card.has-sub{cursor:pointer}
   .card.has-sub:hover{box-shadow:0 4px 14px rgba(16,24,40,.12);border-color:#c9d6f0}
   .foot em.click{background:#fff;border:1px dashed #c9d6f0;color:var(--blue)}
+
+
+  /* ---------- 정렬 기준값 줄 · 정렬 메뉴 · 리뷰 비교 (MD 2026-10-19) ---------- */
+  .sortv{margin:0 11px 8px;padding:5px 8px;border-radius:8px;background:#fff8e6;border:1px solid #f6e3b4;
+         color:#7a5200;font-size:11px;font-size:clamp(5px,3.7cqw,11px);line-height:1.45}
+  .sortv b{font-weight:800;color:#5c3d00}
+  .sgw{position:relative}
+  .sgbtn::after{content:' ▾';font-size:10px}
+  .smenu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:#fff;border:1px solid var(--line);
+         border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,.16);padding:8px;min-width:210px;flex-direction:column;gap:4px}
+  .sgw.open .smenu{display:flex}
+  .smenu .chip{text-align:left;width:100%}
+  .rv{border-top:1px dashed var(--line);padding:8px 12px 8px;font-size:11px;font-size:clamp(5px,3.5cqw,11px);color:var(--sub);line-height:1.55}
+  .rvh{font-weight:800;color:var(--ink);margin-bottom:5px}
+  .rvh small{font-weight:500;color:var(--muted);margin-left:6px}
+  .rvg{display:grid;grid-template-columns:.9fr 1fr 1fr 1.1fr;gap:2px 4px;align-items:baseline;font-variant-numeric:tabular-nums}
+  .rvc{text-align:right;white-space:nowrap}
+  .rvc.l{text-align:left;color:var(--muted)}
+  .rvc.hd{color:var(--muted);font-weight:600;font-size:.92em;white-space:normal;line-height:1.2}
+  .rvc small{display:block;color:var(--muted);font-size:.85em;line-height:1.1}
+  .rv .up{color:var(--blue)} .rv .down{color:var(--red)}
+  .rvn{margin-top:7px;display:grid;gap:5px}
+  .rvn b{color:var(--ink)}
+  .rvx{color:var(--sub)}
+  /* 낮은 화면·중간 폭(폰 가로, 큰 확대 …): 헤더 고정을 풀어야 필터가 화면을 다 덮지 않는다 */
+  @media (max-width:1100px), (max-height:700px){
+    header{position:static}
+  }
+  /* 좁은 화면(폰·큰 확대): 필터를 가로 폭 전체로 쌓고, 정렬 메뉴는 화면 폭 안에서 연다 */
+  @media (max-width:760px){
+    header{position:relative;flex-direction:column;gap:8px;padding:10px 12px}
+    #filters{width:100%}
+    .top{align-self:stretch;align-items:stretch;gap:8px}
+    .top .search{margin-left:0;flex-wrap:wrap}
+    input#q{width:100%;flex:1 1 140px}
+    .fgroup+.fgroup{border-left:0;padding-left:0}
+    .fgroup.sortg{margin-left:0}
+    .sgw{position:static}
+    .smenu{left:12px;right:12px;top:auto;min-width:0;max-height:70vh;overflow:auto}
+    #sumbar{margin:12px 12px 0}
+    main{padding:12px}
+  }
 
   /* ---------- 모달 ---------- */
   #modal{position:fixed;inset:0;z-index:50;background:rgba(17,24,39,.45);
@@ -269,6 +315,7 @@ function card(s){
       </span>
     </div>
     <div class="cname">${s.name||''}</div>
+    ${sortStrip(s)}
     <div class="thumb">
       <img src="${s.img || IMG_BASE+encodeURIComponent(codes[0])+'/cut_0.jpg'}" alt="${s.style}" loading="lazy"
            data-c="${s.img ? '' : codes.join(',')}" data-i="0" onerror="nextImg(this)">
@@ -313,6 +360,7 @@ function card(s){
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
       <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
+      <div class="rv" data-k="${s.style}"></div>
     </details>
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>
@@ -330,30 +378,93 @@ const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여
               ['gender','성별'],['item','품목'],['themes','테마']];
 // 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목, 3줄 = 테마(+정렬)
 const ROWS = [['season','line','arrived','reorder'], ['gender','item'], ['themes']];
-// 정렬 (판매율 = 누계판매 ÷ 입고량. 값이 없는 스타일은 항상 뒤로)
-const SORTS = [
-  {k:'',          label:'기본순'},
-  {k:'rateDesc',  label:'판매율 높은순'},
-  {k:'rateAsc',   label:'판매율 낮은순'},
-  {k:'salesDesc', label:'누계판매 많은순'},
+// 정렬 — 값이 없는 스타일은 항상 뒤로 (MD 2026-10-19 확대: 재고·가격·할인율·전주 판매 …)
+// 재고 = 남은 수량. 신상 = 입고 − 누계판매 / 러닝 = (시점재고+신규입고) − (구품번 8/1~ 판매 + 신규 누계판매) (러닝 팝업의 현재고 − 판매)
+// 재고금액 = 재고 × 실판가(없으면 TAG가) · 재고원가 = 재고 × 원가(VAT 포함)
+const SGROUPS = [
+  ['판매', [['rateDesc','판매율 높은순'],['rateAsc','판매율 낮은순'],['salesDesc','누계판매 많은순'],['salesAsc','누계판매 적은순'],
+           ['w1Desc','전주 판매 많은순'],['w1Asc','전주 판매 적은순'],['chgDesc','전주 증가율 높은순'],['chgAsc','전주 증가율 낮은순']]],
+  ['재고', [['stockDesc','재고 수량 많은순'],['stockAsc','재고 수량 적은순'],['stockAmtDesc','재고금액 많은순'],['stockAmtAsc','재고금액 적은순'],
+           ['stockCostDesc','재고원가 많은순'],['stockCostAsc','재고원가 적은순']]],
+  ['가격·할인', [['realDesc','판매가 높은순'],['realAsc','판매가 낮은순'],['tagDesc','TAG가 높은순'],['tagAsc','TAG가 낮은순'],
+              ['discDesc','할인율 높은순'],['discAsc','할인율 낮은순'],['multDesc','배수(택가) 높은순'],['multRealDesc','배수(실판) 높은순']]],
+  ['물량·매출', [['qtyInDesc','입고량 많은순'],['qtyInAsc','입고량 적은순'],['planDesc','기획량 많은순'],['saleAmtDesc','실판매금액 많은순'],
+              ['saleAmtAsc','실판매금액 적은순'],['inDateAsc','입고일 빠른순'],['inDateDesc','입고일 늦은순']]],
 ];
+const SLABEL = {};
+SGROUPS.forEach(([,o])=>o.forEach(([k,l])=>SLABEL[k]=l));
 let SORT = '';
-/* 러닝(통합 카드)은 신규품번(CU열) 단독 판매율로 줄 세운다.
-   카드에 보이는 값은 구품번+신규품번 통합이라 정렬 기준과 다르므로,
-   판매율 정렬 중에는 카드 하단에 신규품번 판매율을 함께 띄운다. */
+const nz = v => (v==null || v==='' || isNaN(+v)) ? null : +v;
 const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
+const qin  = s => (s.ttl && +s.ttl.qtyIn) || 0;
+const sold = s => (s.ttl && +s.ttl.total) || 0;
+const stockLeft = s => s.popup ? ((+s.popup.stat.stock||0) - (+s.popup.stat.sales||0)) : (qin(s) - sold(s));
+const unitReal  = s => (+s.real > 0) ? +s.real : ((+s.tag > 0) ? +s.tag : null);
+const w1Of  = s => (s.ttl && s.ttl.w1 != null) ? +s.ttl.w1 : null;
+const chgOf = s => (s.ttl && +s.ttl.w2 > 0) ? (+s.ttl.w1||0) / (+s.ttl.w2) - 1 : null;
+const inDateN = s => { const m = String(s.inDate||'').match(/(\d+)\s*\/\s*(\d+)/); return m ? (+m[1])*100 + (+m[2]) : null; };
+const hasIn = s => qin(s) > 0 || !!(s.popup && +s.popup.stat.stock > 0);   // 입고 전(입고 0) 스타일은 재고·판매 정렬에서 '값 없음'
+const onlyIn = f => s => hasIn(s) ? f(s) : null;
+const stockAmt  = s => { const u = unitReal(s); return (u==null || !hasIn(s)) ? null : stockLeft(s) * u; };
+const stockCostV = s => { const c = costVat(s); return (c > 0 && hasIn(s)) ? stockLeft(s) * c : null; };
+const SMETA = {
+  rateDesc:{f:rateOf,d:-1}, rateAsc:{f:rateOf,d:1},
+  salesDesc:{f:onlyIn(sold),d:-1}, salesAsc:{f:onlyIn(sold),d:1},
+  w1Desc:{f:onlyIn(w1Of),d:-1}, w1Asc:{f:onlyIn(w1Of),d:1},
+  chgDesc:{f:chgOf,d:-1}, chgAsc:{f:chgOf,d:1},
+  stockDesc:{f:onlyIn(stockLeft),d:-1}, stockAsc:{f:onlyIn(stockLeft),d:1},
+  stockAmtDesc:{f:stockAmt,d:-1}, stockAmtAsc:{f:stockAmt,d:1},
+  stockCostDesc:{f:stockCostV,d:-1}, stockCostAsc:{f:stockCostV,d:1},
+  realDesc:{f:s=>nz(s.real),d:-1}, realAsc:{f:s=>nz(s.real),d:1},
+  tagDesc:{f:s=>nz(s.tag),d:-1}, tagAsc:{f:s=>nz(s.tag),d:1},
+  discDesc:{f:s=>nz(s.discount),d:-1}, discAsc:{f:s=>nz(s.discount),d:1},
+  multDesc:{f:s=>nz(s.mult),d:-1}, multRealDesc:{f:s=>nz(s.multReal),d:-1},
+  qtyInDesc:{f:onlyIn(qin),d:-1}, qtyInAsc:{f:onlyIn(qin),d:1},
+  planDesc:{f:s=>(s.ttl && nz(s.ttl.plan)),d:-1},
+  saleAmtDesc:{f:s=>nz(s.saleAmt),d:-1}, saleAmtAsc:{f:s=>nz(s.saleAmt),d:1},
+  inDateAsc:{f:inDateN,d:1}, inDateDesc:{f:inDateN,d:-1},
+};
 function applySort(list){
-  if(!SORT) return list;
-  const key = SORT==='salesDesc' ? (s=>(s.ttl&&s.ttl.total)||0) : rateOf;
-  const asc = SORT==='rateAsc';
+  const m = SORT && SMETA[SORT];
+  if(!m) return list;
   return list.slice().sort((a,b)=>{
-    const va=key(a), vb=key(b);
-    if(va==null && vb==null) return 0;
-    if(va==null) return 1;              // 값 없는 스타일은 뒤로
-    if(vb==null) return -1;
-    return asc ? va-vb : vb-va;
+    const va=m.f(a), vb=m.f(b);
+    const na = va==null || isNaN(va), nb = vb==null || isNaN(vb);
+    if(na && nb) return 0;
+    if(na) return 1;                    // 값 없는 스타일은 뒤로
+    if(nb) return -1;
+    return m.d * (va - vb);
   });
 }
+/* 정렬 중에는 카드 위에 '무엇으로 줄 세웠는지' 값을 함께 띄운다 (재고는 카드에 숫자가 따로 없어서) */
+const sgn = v => (v>0?'+':'') + (v*100).toFixed(0) + '%';
+function sortNote(s){
+  const t = s.ttl || {};
+  if(!hasIn(s) && /^(sales|w1|stock|qtyIn)/.test(SORT)) return '입고 전(입고 0) — 값 없음, 맨 뒤로 정렬';
+  const rn = s.popup ? ' · 러닝은 팝업 기준 재고(신상 판매 리뷰 보유재고와 정의가 달라 값이 다를 수 있음)' : '';
+  switch(SORT){
+    case 'rateDesc': case 'rateAsc': return `판매율 ${pct(rateOf(s))}`;
+    case 'salesDesc': case 'salesAsc': return `누계판매 ${qty(sold(s))}장`;
+    case 'w1Desc': case 'w1Asc': return `전주 ${qty(t.w1||0)}장 (2주전 ${qty(t.w2||0)}장)`;
+    case 'chgDesc': case 'chgAsc': { const c = chgOf(s); return c==null ? '2주전 판매 없음' : `전주 ${qty(t.w1||0)}장 ↔ 2주전 ${qty(t.w2||0)}장 (${sgn(c)})`; }
+    case 'stockDesc': case 'stockAsc':
+      return s.popup ? `재고 ${qty(stockLeft(s))}장 = (기초+입고) ${qty(s.popup.stat.stock)} − 판매 ${qty(s.popup.stat.sales)}${rn}`
+                     : `재고 ${qty(stockLeft(s))}장 = 입고 ${qty(qin(s))} − 누계판매 ${qty(sold(s))}`;
+    case 'stockAmtDesc': case 'stockAmtAsc': { const u = unitReal(s); return u==null ? '실판가·TAG가 없음' : `재고금액 ${eok(stockAmt(s))} = ${qty(stockLeft(s))}장 × ${s.real>0?'실판가':'TAG가'} ${won(u)}${rn}`; }
+    case 'stockCostDesc': case 'stockCostAsc': { const c = costVat(s); return c>0 ? `재고원가 ${eok(stockCostV(s))} = ${qty(stockLeft(s))}장 × 원가(VAT 포함) ${won(c)}${rn}` : '원가 없음'; }
+    case 'realDesc': case 'realAsc': return `판매가(실판가) ${won(s.real)} · TAG ${won(s.tag)}`;
+    case 'tagDesc': case 'tagAsc': return `TAG가 ${won(s.tag)}`;
+    case 'discDesc': case 'discAsc': return s.discount==null ? '할인율 없음' : `할인율 ${pct(s.discount*100,0)}${s.tagAmt ? ` (TAG판매금액 ${eok(s.tagAmt)} → 실판매금액 ${eok(s.saleAmt||0)})` : ''}`;
+    case 'multDesc': return `배수(택가) ${s.mult ?? '-'} · 원가(VAT 포함) ${won(s.costV)}`;
+    case 'multRealDesc': return `배수(실판) ${s.multReal ?? '-'} · 실판가 ${won(s.real)}`;
+    case 'qtyInDesc': case 'qtyInAsc': return `입고량 ${qty(qin(s))}장 (기획 ${qty(t.plan||0)})`;
+    case 'planDesc': return `기획량 ${qty(t.plan||0)}장 (입고 ${qty(qin(s))})`;
+    case 'saleAmtDesc': case 'saleAmtAsc': return `실판매금액 ${eok(s.saleAmt||0)} (누계판매 ${qty(sold(s))}장)`;
+    case 'inDateAsc': case 'inDateDesc': return `입고일 ${s.inDate||'-'}`;
+  }
+  return '';
+}
+const sortStrip = s => SORT ? `<div class="sortv"><b>${SLABEL[SORT]}</b> · ${sortNote(s)}</div>` : '';
 
 // 카테고리별 버튼 노출 순서 (목록에 없는 값은 뒤에 자동 추가)
 const ORDER = {
@@ -384,17 +495,9 @@ function buildFilters(){
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
-  const sortGroup = `<div class="fgroup sortg"><span class="flabel">정렬</span>` +
-    SORTS.map(o=>`<button class="chip${o.k===SORT?' on':''}" data-s="${o.k}">${o.label}</button>`).join('') +
-    `</div>`;
   document.getElementById('filters').innerHTML =
     ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('');
-  document.getElementById('sortbox').innerHTML = sortGroup;
-  document.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{
-    SORT = b.dataset.s;
-    document.querySelectorAll('.chip[data-s]').forEach(x=>x.classList.toggle('on', x===b));
-    render();
-  }));
+  syncSortUI();
   KEYS.forEach(([k])=>sel[k]='');
   document.querySelectorAll('.chip[data-k]').forEach(b=>b.addEventListener('click',()=>{
     sel[b.dataset.k] = b.dataset.v;
@@ -412,6 +515,7 @@ function buildFilters(){
 const amtOK   = s => !s.tagNA && +s.tag > 0 && +s.cost > 0;
 const costVat = s => (s.costV != null && +s.costV) ? +s.costV : (+s.cost || 0) * 1.1;
 const eok = v => (!v || v <= 0) ? '0원'
+              : v < 1e6 ? (Math.max(1, Math.round(v / 1e4)).toLocaleString('ko-KR') + '만원')
               : ((Math.abs(v) / 1e8 >= 10 ? (v / 1e8).toFixed(1) : (v / 1e8).toFixed(2)) + '억');
 const qty = v => (Math.round(v) || 0).toLocaleString('ko-KR');
 
@@ -466,6 +570,7 @@ function more(){
   if(shown >= view.length) return;
   const part = view.slice(shown, shown + CHUNK).map(card).join('');
   listEl.insertAdjacentHTML('beforeend', part);
+  paintRv();
   shown += CHUNK;
   // 화면이 아직 덜 찼으면 이어서 채움
   if(shown < view.length && document.body.scrollHeight < innerHeight * 1.8) more();
@@ -589,7 +694,7 @@ function rePopupCard(s){
   </div>`;
 }
 listEl.addEventListener('click', e=>{
-  if(e.target.closest('summary')) return;              // 상세 토글은 그대로
+  if(e.target.closest('summary,.rv,.sortv')) return;   // 상세 토글 · 리뷰 비교 글 · 정렬값 줄은 눌러도 팝업이 안 뜬다
   const el = e.target.closest('.card.has-sub');
   if(!el) return;
   const s = view.find(x=>x.style===el.dataset.style);
@@ -612,7 +717,7 @@ document.getElementById('mbody').addEventListener('click', e=>{
 });
 modal.addEventListener('click', e=>{ if(e.target===modal || e.target.id==='mclose') closeModal(); });
 addEventListener('keydown', e=>{
-  if(e.key==='Escape') closeModal();
+  if(e.key==='Escape'){ closeModal(); closeSortMenus(); }
   // Ctrl/Cmd+F: 브라우저 검색 대신 품번 검색창으로
   if((e.ctrlKey||e.metaKey) && !e.altKey && !e.shiftKey && (e.key==='f'||e.key==='F')){
     e.preventDefault();
@@ -625,13 +730,148 @@ addEventListener('scroll', ()=>{
   if(innerHeight + scrollY > document.body.scrollHeight - 900) more();
 }, {passive:true});
 
+
+/* 정렬 버튼: 기본순 + 묶음 메뉴(판매·재고·가격·할인·물량·매출) — 눌러서 펼친다 */
+function sortGroupHTML(){
+  const grp = SGROUPS.map(([g,opts],gi)=>{
+    const hit = opts.find(o=>o[0]===SORT);
+    return `<span class="sgw"><button class="chip sgbtn${hit?' on':''}" aria-haspopup="true" aria-expanded="false">${hit ? hit[1] : g}</button><div class="smenu">${
+      opts.map(o=>`<button class="chip${o[0]===SORT?' on':''}" data-s="${o[0]}">${o[1]}</button>`).join('')}</div></span>`;
+  }).join('');
+  return `<div class="fgroup sortg"><span class="flabel">정렬</span><button class="chip${SORT===''?' on':''}" data-s="">기본순</button>${grp}</div>`;
+}
+function syncSortUI(){
+  const box = document.getElementById('sortbox');
+  box.innerHTML = sortGroupHTML();
+  box.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{ SORT = b.dataset.s; syncSortUI(); render(); }));
+  box.querySelectorAll('.sgbtn').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const w = b.parentElement, was = w.classList.contains('open');
+    closeSortMenus();
+    if(!was){ w.classList.add('open'); b.setAttribute('aria-expanded','true'); }
+  }));
+}
+function closeSortMenus(){
+  document.querySelectorAll('.sgw.open').forEach(x=>{ x.classList.remove('open'); const b = x.querySelector('.sgbtn'); if(b) b.setAttribute('aria-expanded','false'); });
+}
+['click','pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{ if(!e.target.closest('.sgw')) closeSortMenus(); }));
+
+/* ---------- 신상 판매 리뷰와 수량 비교 (MD 2026-10-19) ----------
+   판매자료 카드(스타일맵 · 일요일 마감 스냅샷)와 신상 판매 리뷰(판매변동표 · 매일 갱신)를 번갈아 보는데 수량이 어긋나서,
+   카드 맨 아래 상세에 두 자료의 차이와 이유를 적는다. 리뷰 쪽 값은 같은 폴더의 style-lookup.json(리뷰가 갱신할 때마다 새로 써짐)을 열 때 읽는다. */
+const UPDATED = "2026-10-19";
+const CARDEND = "2026-10-18";            // 카드 '전주'(스타일맵 W1)의 마지막 날(일요일) — 빌드 때 박힘
+let LOOK = null, LOOKAT = '', LOOKW1 = '', LOOKSTATE = 'loading';
+const BYSTYLE = new Map(DATA.map(s=>[s.style, s]));
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mdD = d => (d.getMonth()+1) + '/' + d.getDate();
+const isoD = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const rangeOf = mon => { const sun = new Date(mon); sun.setDate(mon.getDate() + 6); return mdD(mon) + '~' + mdD(sun); };
+/* 카드의 전주 = 스타일맵 W1 (월~일). 날짜를 못 읽으면 업데이트 날짜(월요일) 직전 주로 추정(exact=false) */
+function cardWeek(){
+  const end = new Date(CARDEND + 'T00:00:00');
+  let mon, exact = false;
+  if(!isNaN(end)){ mon = new Date(end); mon.setDate(end.getDate() - 6); exact = true; }
+  else{ const u = new Date(UPDATED + 'T00:00:00'); if(isNaN(u)) return null; mon = new Date(u); mon.setDate(u.getDate() - 7); }
+  return {iso:isoD(mon), label:rangeOf(mon), exact};
+}
+function lookWeekLabel(){ const m = new Date(LOOKW1 + 'T00:00:00'); return isNaN(m) ? '' : rangeOf(m); }
+const sd = (v, unit='') => v === 0 ? '<span class="dim">0 (같음)</span>' : `<b class="${v>0?'up':'down'}">${v>0?'+':'−'}${qty(Math.abs(v))}${unit}</b>`;
+const sgS = n => (n>=0?'+':'−') + qty(Math.abs(n));
+function rvHTML(s){
+  const k = s.altStyle || s.style;                         // 러닝 카드는 신품번 단독 값끼리 비교
+  const head = `<div class="rvh">📊 신상 판매 리뷰와 수량 비교${LOOKAT ? `<small>리뷰 기준 ${esc(LOOKAT)}</small>` : ''}</div>`;
+  if(LOOKSTATE === 'loading') return head + '<div class="rvx">리뷰 자료를 불러오는 중…</div>';
+  if(!LOOK) return head + '<div class="rvx">리뷰 자료(style-lookup.json)를 읽지 못했습니다. 공유파일(허브) 주소에서 열면 비교가 보입니다.</div>';
+  const t = s.ttl || {}, r = LOOK[k];
+  if(!r){
+    const why = s.item === 'ACC' ? 'ACC(잡화) 품번이라 신상 판매 리뷰의 스타일 비교 자료에 없습니다.'
+              : (!(+s.tag > 0) ? '택가가 확정되지 않아 신상 판매 리뷰의 스타일 비교 자료에서 빠진 품번으로 보입니다.'
+                               : '신상 판매 리뷰의 스타일 비교 자료에 이 품번이 없습니다.');
+    return head + `<div class="rvx">${why}<br>카드 기준 — 입고 ${qty(qin(s))} · 누계판매 ${qty(sold(s))}</div>`;
+  }
+  const cIn = qin(s), cSale = sold(s), cStock = cIn - cSale;
+  const dIn = (+r.inq||0) - cIn, dSale = (+r.sale||0) - cSale, dStock = (+r.stock||0) - cStock;
+  const cRate = rateOf(s), rRate = r.rate != null ? +r.rate : null;
+  const cRate1 = cRate == null ? null : Math.round(cRate*10)/10;          // 화면에 보이는 소수 1자리끼리 비교
+  const dRate = (cRate1 != null && rRate != null) ? Math.round((rRate - cRate1)*10)/10 : null;
+  const row = (lb, c, v, d) => `<div class="rvc l">${lb}</div><div class="rvc">${c}</div><div class="rvc">${v}</div><div class="rvc">${d}</div>`;
+  const h = head + `<div class="rvg"><div class="rvc l hd"></div><div class="rvc hd">판매자료 카드</div><div class="rvc hd">신상 판매 리뷰</div><div class="rvc hd">차이(리뷰−카드)</div>` +
+    row('입고', qty(cIn), qty(r.inq), sd(dIn)) +
+    row('누계 판매', qty(cSale), qty(r.sale), sd(dSale)) +
+    row('판매율', cRate==null?'-':cRate.toFixed(1)+'%', rRate==null?'-':rRate.toFixed(1)+'%', dRate==null?'-':(dRate===0?'<span class="dim">같음</span>':`<b class="${dRate>0?'up':'down'}">${dRate>0?'+':'−'}${Math.abs(dRate).toFixed(1)}%p</b>`)) +
+    row('재고', qty(cStock) + '<small>입고−판매</small>', qty(r.stock) + '<small>보유재고</small>', sd(dStock)) + `</div>`;
+  const cw = cardWeek();
+  // 카드 전주와 리뷰 전주가 같은 주인지 — 달라지면(월요일 자동 갱신 뒤 새 스타일맵 전) 주 단위 설명은 하지 않는다
+  const sameWeek = !cw || !cw.exact || !LOOKW1 || cw.iso === LOOKW1;
+  const notes = [];
+  if(dIn === 0 && dSale === 0){
+    notes.push('✅ 입고·누계 판매 수량이 같습니다.');
+  }else{
+    if(dIn !== 0) notes.push(`입고가 ${qty(Math.abs(dIn))}장 ${dIn>0?'리뷰가 많습니다':'카드가 많습니다'} — 카드는 스타일맵 입고, 리뷰는 판매변동표 입고라 입고 반영 시점·리오더 입고 처리가 다를 때 생길 수 있습니다.`);
+    if(dSale !== 0){
+      const w1c = +t.w1 || 0, w2c = +t.w2 || 0, run = !!s.altStyle;
+      const lead = `<b>누계 판매 ${qty(Math.abs(dSale))}장 차이(${dSale < 0 ? '리뷰가 적습니다' : '리뷰가 많습니다'})</b>`;
+      if(!sameWeek){
+        notes.push(`${lead} — <b>기준 주가 다릅니다.</b> 카드의 전주는 ${cw.label}, 리뷰의 전주는 ${lookWeekLabel()}라서 ${LOOKW1 > cw.iso ? '리뷰' : '카드'}가 더 최근 주까지 반영돼 있습니다. 같은 주로 맞춰 비교하려면 카드(스타일맵)를 새로 올려야 합니다.`);
+      }else if(r.w1 != null && r.w2 != null){
+        const dw1 = r.w1 - w1c, dw2 = r.w2 - w2c, rest = dSale - dw1 - dw2, wr = cw ? cw.label : '';
+        let line = `${lead} — 전주${wr?`(${wr})`:''} 카드 ${qty(w1c)} ↔ 리뷰 ${qty(r.w1)} (${sgS(dw1)})`;
+        if(dw2 !== 0) line += `, 2주 전 카드 ${qty(w2c)} ↔ 리뷰 ${qty(r.w2)} (${sgS(dw2)})`;
+        if(rest === 0){
+          line += dw2 === 0 ? '. 2주 전부터의 누계는 같고 차이가 전주 판매에서만 생겼습니다. 원인은 확인되지 않았습니다.'
+                            : '. 두 주의 차이를 더하면 누계 차이와 같고, 그 이전 누계는 같습니다.';
+        }else{
+          line += `. 이 두 주로 설명되지 않는 ${qty(Math.abs(rest))}장(${rest>0?'리뷰가 많음':'리뷰가 적음'})이 더 있습니다`;
+          if(!run && rest > 0) line += ' — 리뷰 누계는 판매변동표 합계라 이번 주 진행분까지 들어가고 카드는 지난 일요일 마감까지라, 그 몫일 수 있습니다.';
+          else if(run && rest < 0) line += ' — 리뷰의 러닝 누계는 8월 1주(8/3)부터 합산한 값이라 그 이전 판매는 빠집니다(카드는 스타일맵 합계 그대로).';
+          else line += '. 원인은 확인되지 않았습니다.';
+        }
+        notes.push(line);
+      }else{                                              // 전주 값이 없는 구버전 lookup
+        notes.push(`${lead} — 카드 전주 판매는 ${qty(w1c)}장입니다.${Math.abs(dSale) <= w1c
+          ? ' 차이가 전주 판매 범위 안이라 가장 최근 주 집계에서 생긴 것으로 보이지만 원인은 확인되지 않았습니다.'
+          : ' 차이가 카드 전주 판매보다 커서 최근 주 집계만으로는 설명되지 않습니다. 원천(스타일맵 ↔ 판매변동표) 확인이 필요합니다.'}`);
+      }
+      const cc = new Map((s.colors||[]).map(c=>[c.color, +c.total||0]));
+      const cd = (r.colors||[]).map(c=>[c.c, (+c.sale||0) - (cc.get(c.c)||0)]).filter(x=>x[1]!==0);
+      if(cd.length) notes.push('컬러별 차이(리뷰−카드): ' + cd.map(x=>`${esc(x[0])} ${x[1]>0?'+':'−'}${qty(Math.abs(x[1]))}`).join(' · '));
+    }
+  }
+  if(dStock !== 0){
+    const viaSale = -dSale, rest = dStock - viaSale, sdir = dStock > 0 ? '리뷰가 많음' : '리뷰가 적음';
+    if(dSale === 0) notes.push(`재고 ${qty(Math.abs(dStock))}장 차이(${sdir}) — 카드는 '입고 − 누계판매', 리뷰는 판매변동표의 보유재고(물류+채널)라 정의가 다릅니다. 구체적인 원인은 확인되지 않았습니다.`);
+    else if(rest === 0) notes.push(`재고 ${qty(Math.abs(dStock))}장 차이(${sdir})는 위 누계 판매 차이가 그대로 재고 차이로 이어진 것입니다 — 리뷰 판매가 ${qty(Math.abs(dSale))}장 ${dSale<0?'적으면 재고가 그만큼 많고':'많으면 재고가 그만큼 적고'}, 그 밖의 차이는 없습니다.`);
+    else notes.push(`재고 ${qty(Math.abs(dStock))}장 차이(${sdir}) = 위 누계 판매 차이로 생긴 몫 ${sgS(viaSale)}장 + 그 밖의 차이 ${sgS(rest)}장 (카드 = 입고 − 누계판매, 리뷰 = 판매변동표 보유재고 · 그 밖의 차이는 원인 미확인).`);
+  }
+  if(s.popup && r.psale != null){
+    // 리뷰의 psale = 구품번 + 신품번 8월 1주(8/3)~ 합산 → 신규 단독은 r.sale 이므로 빼면 구품번분
+    const aug = +s.augSales || 0, cm = +s.popup.stat.sales || 0, rOld = (+r.psale||0) - (+r.sale||0), dm = (+r.psale||0) - cm, dOld = rOld - aug;
+    let line = `<b>러닝 구품번 포함 합산 판매</b> — 카드 팝업 ${qty(cm)}장(구품번 8/1~ ${qty(aug)} + 신규 ${qty(cSale)}) ↔ 리뷰 ${qty(r.psale)}장(구·신품번 8월 1주~ 합산)`;
+    if(dm === 0) line += ' — 같음.';
+    else{
+      line += ` — ${qty(Math.abs(dm))}장 차이(${dm>0?'리뷰':'카드'}가 많음) = 신규 품번 ${sgS(dSale)} + 구품번 ${sgS(dOld)} (구품번 카드 ${qty(aug)} ↔ 리뷰 ${qty(rOld)}).`;
+      if(dOld !== 0) line += ' 카드의 구품번 집계는 7/27주(8/1이 든 주)부터, 리뷰는 8/3주부터라 시작 주가 다르고, 최근 주 집계 차이도 섞여 있을 수 있습니다.';
+    }
+    notes.push(line);
+  }
+  return h + '<div class="rvn">' + notes.map(x=>`<div>${x}</div>`).join('') + '</div>';
+}
+/* 새로 붙은 카드만 칠한다(all=true 면 전부) — 이미 펼쳐 읽는 글이 다시 그려져 사라지지 않게 */
+const paintRv = all => document.querySelectorAll(all ? '.rv[data-k]' : '.rv[data-k]:not([data-p])').forEach(el=>{
+  const s = BYSTYLE.get(el.dataset.k); if(s){ el.innerHTML = rvHTML(s); el.dataset.p = '1'; }
+});
+fetch('style-lookup.json', {cache:'no-store'}).then(r=>r.ok ? r.json() : Promise.reject())
+  .then(j=>{ LOOK = j.styles || null; LOOKAT = j.at || ''; LOOKW1 = j.w1d || ''; LOOKSTATE = 'ok'; paintRv(true); })
+  .catch(()=>{ LOOKSTATE = 'fail'; paintRv(true); });
+
 buildFilters();
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('reset').addEventListener('click',()=>{
   document.getElementById('q').value='';
   SORT='';
   document.querySelectorAll('.chip[data-k]').forEach(b=>b.classList.toggle('on', b.dataset.v===''));
-  document.querySelectorAll('.chip[data-s]').forEach(b=>b.classList.toggle('on', b.dataset.s===''));
+  syncSortUI();
   KEYS.forEach(([k])=>sel[k]='');
   render();
 });

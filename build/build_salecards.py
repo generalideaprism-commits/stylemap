@@ -1305,7 +1305,7 @@ def render(tpl_name, out_path, **repl):
 
 
 render('salecards_template.html', OUT_CARD,
-       **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False)})
+       **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END})
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
