@@ -22,7 +22,7 @@
   #filters{flex:1;min-width:0}
   /* 오른쪽 묶음: 검색은 위, 정렬은 헤더 아래쪽 변에 붙인다 — 필터 줄 높이만큼 늘어나 둘 사이를 벌린다 */
   .top{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;
-       align-self:stretch;gap:8px;flex:none;padding-top:1px}
+       align-self:stretch;gap:8px;flex:none;padding-top:1px;max-width:460px}   /* 정렬 버튼이 7개로 늘어 한 줄에 다 놓으면 필터 영역이 좁아진다 — 두 줄로 접는다 */
   #sortbox .fgroup.sortg{margin-left:0}
   .top h1{font-size:16px;margin:0;letter-spacing:-.2px}
   .tabs{display:flex;gap:4px;background:var(--soft);border-radius:999px;padding:3px}
@@ -98,6 +98,8 @@
           font-variant-numeric:tabular-nums}
   #sumbar .si{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
   #sumbar .si+.si{border-left:1px solid var(--line);padding-left:16px}
+  #sumbar .si.wrapx{white-space:normal;flex-wrap:wrap}
+  #sumbar .si.wrapx .sv{white-space:normal}
   #sumbar .sl{flex:none;font-size:11px;color:var(--muted);font-weight:700}
   #sumbar .sv{font-size:13px;font-weight:800;letter-spacing:-.2px}
   #sumbar .si.hl .sv{color:var(--blue)}
@@ -125,8 +127,8 @@
   .tag.ro{background:#fff1e6;color:#c2560c;border:1px solid #f6d3b5}
   td.re{color:#c2560c}
   .recard{cursor:pointer}
-  .recard th.on,.recard td.on,.recard .stats div.on b{color:var(--blue)}
-  .recard td.on b{color:var(--blue)}
+  .recard th.on,.recard td.on,.recard .stats div.on b,.lotcard th.on,.lotcard td.on,.lotcard .stats div.on b{color:var(--blue)}
+  .recard td.on b,.lotcard td.on b{color:var(--blue)}
   .cname{font-size:14px;font-size:clamp(8px,5.2cqw,14px);font-weight:800;letter-spacing:-.3px;padding:4px 11px 9px;line-height:1.3;
          white-space:normal;word-break:keep-all;overflow-wrap:anywhere}   /* 품명은 줄바꿈으로 전부 보이게 */
 
@@ -162,8 +164,8 @@
 
   table{width:100%;border-collapse:collapse;table-layout:auto}
   /* 표 글씨는 카드 폭에 맞춰 줄어든다(cqw) — 어떤 화면 폭·확대에서도 숫자가 말줄임(…)으로 잘리지 않는다 */
-  .card table{font-size:11px;font-size:clamp(4.5px,3.3cqw,11px)}
-  .recard table{font-size:11px;font-size:clamp(4.5px,2.9cqw,11px)}   /* 8열 표라 조금 더 줄인다 — 좁은 팝업에서도 판매율 열이 안 잘리게 */
+  .card table{font-size:11px;font-size:clamp(4.5px,3.0cqw,11px)}   /* 폰트가 넓어져도 안 잘리게 여유를 둔다 */
+  .recard table,.lotcard table{font-size:11px;font-size:clamp(4.5px,2.6cqw,11px)}   /* 8열 표라 조금 더 줄인다 — 좁은 팝업에서도 판매율 열이 안 잘리게 */
   th,td{font-size:1em;padding:.32em .38em;text-align:right;white-space:nowrap;line-height:1.25}
   th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:#fff}
   td.c{text-align:left}
@@ -208,8 +210,9 @@
   .sgbtn::after{content:' ▾';font-size:10px}
   .smenu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:#fff;border:1px solid var(--line);
          border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,.16);padding:8px;min-width:210px;flex-direction:column;gap:4px}
-  .sgw.open .smenu{display:flex}
+  .sgw.open .smenu{display:flex;max-height:min(60vh,440px);overflow:auto}
   .smenu .chip{text-align:left;width:100%}
+  #sortbox .fgroup .chip{padding:5px 10px}
   .rv{border-top:1px dashed var(--line);padding:8px 12px 8px;font-size:11px;font-size:clamp(5px,3.5cqw,11px);color:var(--sub);line-height:1.55}
   .rvh{font-weight:800;color:var(--ink);margin-bottom:5px}
   .rvh small{font-weight:500;color:var(--muted);margin-left:6px}
@@ -222,22 +225,96 @@
   .rvn{margin-top:7px;display:grid;gap:5px}
   .rvn b{color:var(--ink)}
   .rvx{color:var(--sub)}
+  /* ---------- 차수(초도·리오더) · 온/오프 · 품목별 요약 ---------- */
+  .lotv,.chv{margin:0 11px 8px;padding:5px 8px;border-radius:8px;font-size:11px;font-size:clamp(5px,3.7cqw,11px);line-height:1.45}
+  .lotv{background:var(--blue-soft);border:1px solid #c9d6f0;color:#1d4ed8}
+  .chv{background:#eefbf3;border:1px solid #bfe6cc;color:#0b6b3a}
+  .chv.dim2{background:var(--soft);border-color:var(--line);color:var(--muted)}
+  .chv span{opacity:.8}
+  .chrow{display:grid;grid-template-columns:repeat(4,1fr);padding:0 4px 10px}
+  .chrow>div{text-align:center;border-radius:8px}
+  .chrow b{display:block;font-size:11px;font-size:clamp(5.5px,4.4cqw,12px);font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+  .chrow span{display:block;font-size:9px;font-size:clamp(4.5px,3.4cqw,9px);color:var(--muted);margin-top:2px;white-space:nowrap}
+  .chrow .o b{color:var(--blue)}
+  .chrow .f b{color:var(--green)}
+  .chrow.pon>.o,.chrow.poff>.f{background:#eefbf3}
+  .chbar{grid-column:1/-1;display:flex;height:5px;border-radius:99px;overflow:hidden;background:#e3e8ef;margin:7px 8px 0}
+  .chbar u{display:block;height:100%;background:var(--blue);text-decoration:none}
+  .chbar u.f{background:var(--green)}
+  .lotline{margin:6px 12px 2px;font-size:clamp(4.5px,3.7cqw,11px);color:var(--ink);font-weight:700;line-height:1.5}
+  .chb{border-top:1px dashed var(--line);padding:8px 12px;font-size:clamp(5px,3.5cqw,11px);color:var(--sub);line-height:1.55}
+  .chh{font-weight:800;color:var(--ink);margin-bottom:5px}
+  .chh small{font-weight:500;color:var(--muted);margin-left:6px}
+  .chtab{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:1em}
+  .chtab th,.chtab td{padding:.25em .35em;text-align:right;white-space:nowrap;font-size:1em}
+  .chtab th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+  .chtab td.l,.chtab th.l{text-align:left}
+  .chtab tr.hl td{background:var(--blue-soft)}
+  .chtab tr.sum td{font-weight:800;border-top:1px solid var(--line);background:#fbfcfe}
+  .chtab small{display:block;color:var(--muted);font-size:.82em;line-height:1.1;font-weight:400}
+  .chx{font-size:.95em;color:var(--muted)}
+  .lotsum{margin:2px 12px 10px;font-size:clamp(4.5px,3.4cqw,11px)}
+  .lsh{display:flex;gap:6px;flex-wrap:wrap;align-items:baseline;font-weight:800;color:var(--ink);margin:2px 0 4px}
+  .lsh em{font-style:normal;font-weight:700;color:#b45309;background:#fff4e5;border-radius:5px;padding:0 5px}
+  .lsh span{margin-left:auto;font-weight:500;color:var(--muted)}
+  .lt{width:100%;border-collapse:collapse;font-size:1em;font-variant-numeric:tabular-nums}
+  .lt th,.lt td{padding:.32em .4em;text-align:right;white-space:nowrap;font-size:1em}
+  .lt th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+  .lt td.l,.lt th.l,.lt td.c{text-align:left;white-space:normal}
+  .lt td small,.lt th small{display:block;color:var(--muted);font-size:.82em;line-height:1.15;font-weight:400}
+  .lt tbody tr[data-lot]{cursor:pointer}
+  .lt tbody tr[data-lot]:hover td{background:var(--soft)}
+  .lt tr.pend td{color:var(--muted)}
+  .lt tr.sum td{font-weight:800;border-top:1px solid var(--line);background:#fbfcfe}
+  .lsx,.lotnote,.lotinfo{font-size:clamp(4.5px,3.4cqw,10.5px);line-height:1.5;color:var(--sub)}
+  .lsx{margin-top:4px;color:var(--muted)}
+  .lotnote{margin:6px 12px 10px}
+  .lotinfo{margin:0 12px 8px}
+  .basesw{display:flex;gap:6px;align-items:center;margin:0 12px 8px;font-size:11px;color:var(--sub)}
+  .bchip{border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:999px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+  .bchip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+  .vchip small{opacity:.7;margin-left:2px}
+  #itembar{margin:8px 16px 0}
+  #itembar .itd{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 3px rgba(16,24,40,.06)}
+  #itembar summary{cursor:pointer;padding:8px 14px;font-size:12px;font-weight:800;color:var(--ink)}
+  #itembar summary small{font-weight:500;color:var(--muted);margin-left:6px}
+  #itembar .itwrap{overflow-x:auto;padding:0 0 8px}
+  #itembar .it th:first-child,#itembar .it td:first-child{padding-left:16px}
+  #itembar table.it{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+  #itembar .it th,#itembar .it td{padding:6px 10px;text-align:right;white-space:nowrap}
+  #itembar .it th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+  #itembar .it td.l,#itembar .it th.l{text-align:left;font-weight:700;position:sticky;left:0;background:#fff}
+  #itembar .it tr.sel td.l{background:var(--blue-soft)}
+  #itembar .it tr.sum td.l{background:#fbfcfe}
+  #itembar .it td small{opacity:.7}
+  #itembar .it tbody tr[data-item]{cursor:pointer}
+  #itembar .it tbody tr[data-item]:hover td{background:var(--soft)}
+  #itembar .it tr.sel td{background:var(--blue-soft)}
+  #itembar .it td.hl{background:#eefbf3}
+  #itembar .it tr.sum td{font-weight:800;border-top:1px solid var(--line);background:#fbfcfe}
   /* 낮은 화면·중간 폭(폰 가로, 큰 확대 …): 헤더 고정을 풀어야 필터가 화면을 다 덮지 않는다 */
-  @media (max-width:1100px), (max-height:700px){
-    header{position:static}
+  @media (max-width:1499px), (max-height:859px){
+    header{position:static}      /* 필터가 4줄이라 작은 화면에서 고정하면 화면을 가린다 — 넓고 큰 화면(1500×860 이상)에서만 고정 */
   }
-  /* 좁은 화면(폰·큰 확대): 필터를 가로 폭 전체로 쌓고, 정렬 메뉴는 화면 폭 안에서 연다 */
-  @media (max-width:760px){
-    header{position:relative;flex-direction:column;gap:8px;padding:10px 12px}
+  @media (max-width:1100px){
+    header{flex-direction:column;gap:8px;padding:10px 12px}
     #filters{width:100%}
     .top{align-self:stretch;align-items:stretch;gap:8px}
     .top .search{margin-left:0;flex-wrap:wrap}
-    input#q{width:100%;flex:1 1 140px}
     .fgroup+.fgroup{border-left:0;padding-left:0}
     .fgroup.sortg{margin-left:0}
+  }
+  /* 좁은 화면(폰·큰 확대): 필터를 가로 폭 전체로 쌓고, 정렬 메뉴는 화면 폭 안에서 연다 */
+  @media (min-width:761px) and (max-width:1100px){
+    .smenu{left:0;right:auto}                                   /* 정렬 줄이 왼쪽 정렬로 쌓이므로 메뉴도 버튼 왼쪽 끝에서 열린다 */
+  }
+  @media (max-width:760px){
+    header{position:relative}
+    input#q{width:100%;flex:1 1 140px}
     .sgw{position:static}
     .smenu{left:12px;right:12px;top:auto;min-width:0;max-height:70vh;overflow:auto}
     #sumbar{margin:12px 12px 0}
+    #itembar{margin:8px 12px 0}
     main{padding:12px}
   }
 
@@ -245,13 +322,29 @@
   #modal{position:fixed;inset:0;z-index:50;background:rgba(17,24,39,.45);
          display:none;align-items:flex-start;justify-content:center;padding:24px;overflow:auto}
   #modal.on{display:flex}
-  #modal .box{width:480px;max-width:100%}
+  #modal .box{width:min(680px,100%)}   /* 차수별 표가 들어가 조금 키웠다 — 좁은 화면은 100% 로 줄고 글자는 cqw 로 줄어든다 */
   #modal .mhead{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#fff}
   #modal .mhead b{font-size:13px}
   #modal .mhead span{font-size:11px;opacity:.75}
   #modal .x{margin-left:auto;background:rgba(255,255,255,.15);border:0;color:#fff;
             width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer}
-  #modal .card{cursor:default}
+  #modal .card{cursor:default;content-visibility:visible}
+  #modal{overscroll-behavior:contain}
+  #modal .thumb{height:200px}
+  #modal .card table{font-size:clamp(4.5px,3.0cqw,12.5px)}
+  #modal .lotcard table{font-size:clamp(4.5px,2.6cqw,12.5px)}
+  #modal .stats b{font-size:clamp(6px,4.9cqw,16px)}
+  #modal{padding-top:0}
+  #modal .box{padding-top:24px}      /* 위 여백을 box 안으로 — 칩 줄 sticky 가 화면 맨 위에 붙고 제목줄은 안 가려진다 */
+  @media (max-width:480px){ #modal{padding:0 10px 10px} #modal .box{padding-top:10px} }
+  @media (min-width:1500px) and (min-height:860px){ html{scroll-padding-top:180px} }   /* 고정 헤더에 포커스된 카드가 가려지지 않게 */
+  @media (max-height:520px){ .lotchips{position:static} }   /* 낮은 화면·큰 확대에서는 칩 줄이 본문을 가리지 않게 고정을 푼다 */
+  /* 차수 버튼 줄 — 모달 크롬(카드 밖)에 고정. 글자는 px (cqw 는 카드 안에서만) */
+  .lotchips{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 10px;background:rgba(17,24,39,.96)}
+  .lchip{min-height:32px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;
+         padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .lchip.on{background:var(--blue);border-color:var(--blue)}
+  .lchip.pend{border-style:dashed;opacity:.9}
 </style>
 </head>
 <body>
@@ -270,8 +363,9 @@
   </div>
 </header>
 <div id="sumbar"></div>
+<div id="itembar"></div>
 <main id="list"></main>
-<div id="modal"><div class="box">
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle"><div class="box">
   <div class="mhead"><b id="mtitle"></b><span id="msub">시점재고 + 신규품번 · 현재고 기준</span>
     <button class="x" id="mclose">×</button></div>
   <div id="mbody"></div>
@@ -304,18 +398,18 @@ function card(s){
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
       <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
     </tr>`).join('');
-  return `<div class="card${(s.popup||s.re)?' has-sub':''}" data-style="${s.style}">
+  return `<div class="card${(s.popup||s.re||s.lots)?' has-sub':''}" data-style="${s.style}"${(s.popup||s.re||s.lots)?' tabindex="0" aria-haspopup="dialog"':''}>
     <div class="chead">
       <span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span>
       <span class="tags">
         <em class="tag b">${s.gender||'-'}</em>
         <em class="tag g">${s.season||'-'}</em>
         <em class="tag g">${s.line}</em>
-        ${s.re?'<em class="tag ro">리오더</em>':''}
+        ${s.reorder==='O'?`<em class="tag ro">리오더${(s.reN||[]).length>1?'×'+s.reN.length:''}</em>`:''}
       </span>
     </div>
     <div class="cname">${s.name||''}</div>
-    ${sortStrip(s)}
+    ${sortStrip(s)}${lotStrip(s)}${chStrip(s)}
     <div class="thumb">
       <img src="${s.img || IMG_BASE+encodeURIComponent(codes[0])+'/cut_0.jpg'}" alt="${s.style}" loading="lazy"
            data-c="${s.img ? '' : codes.join(',')}" data-i="0" onerror="nextImg(this)">
@@ -332,6 +426,7 @@ function card(s){
       <div><b>${n0(t.total)}</b><span>누계판매</span></div>
       <div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div>
     </div>
+    ${chRow(s)}
     <div class="prog">
       <div class="lb"><span>판매 진행률</span><b>${pct(t.rate)}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
@@ -347,6 +442,7 @@ function card(s){
       </tbody>
     </table>
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
+    ${lotLine(s)}
     <div class="meta">
       <div><span>원가(VAT 포함)</span><b>${won(s.costV)}</b></div>
       <div><span title="마크업 = 택가 ÷ 원가(VAT 포함)">배수(택가)</span><b>${s.mult ?? '-'}</b></div>
@@ -360,14 +456,14 @@ function card(s){
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
       <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
+      ${chBlock(s)}
       <div class="rv" data-k="${s.style}"></div>
     </details>
     <div class="foot">
       <em>생산처 ${s.vendor||'-'}</em>
       <em class="n">${s.item||'-'}</em>
       ${(s.themes||[]).map(x=>`<em class="th">${x}</em>`).join('')}
-      ${s.popup?`<em class="n click">클릭 → 현재고 실적</em>`:''}
-      ${s.re?`<em class="n click">클릭 → 리오더 합산</em>`:''}
+      ${s.lots?`<em class="n click">클릭 → 차수별 입고·판매</em>`:(s.popup?`<em class="n click">클릭 → 현재고 실적</em>`:'')+(s.re&&!s.lots?`<em class="n click">클릭 → 리오더 합산</em>`:'')}
 
     </div>
   </div>`;
@@ -378,6 +474,149 @@ const KEYS = [['season','시즌'],['line','메인/러닝'],['arrived','입고여
               ['gender','성별'],['item','품목'],['themes','테마']];
 // 필터 배치: 1줄 = 시즌 | 메인/러닝 | 입고여부, 2줄 = 성별 | 품목, 3줄 = 테마(+정렬)
 const ROWS = [['season','line','arrived','reorder'], ['gender','item'], ['themes']];
+/* ---------- 차수(초도 · 리오더 N차) — 입고스케줄 '리오더' 탭 + 스타일맵 총량 (MD 2026-10-19) ----------
+   s.lots.list = [{n, kind:'base'|'first'|'re', label, ord(지시), recv(입고), sold(판매), pend(입고예정), state, inv(투입), rd(입고일), due(납기), colors:[{c,cn,ord,recv,sold}]}]
+   판매는 차수별 기록이 없어 컬러별 선입선출(초도 → 1차 → 2차 …)로 나눈 추정(≈). 합계는 항상 카드 값과 같다.
+   러닝의 이월재고(구품번 시점재고) 판매는 구품번 판매 그대로라 추정이 아니다. lots 가 없는 카드는 전체를 '초도' 한 덩어리로 본다. */
+const lotsOf = s => (s.lots && s.lots.list) ? s.lots.list : null;
+function lotsAny(s){
+  const L = lotsOf(s);
+  if(L) return L;
+  const t = s.ttl || {};
+  return [{n:0, kind:'first', label:'초도', ord:+t.plan||0, recv:+t.qtyIn||0, sold:+t.total||0, pend:0, state:(+t.qtyIn>0?'종결':'예정'), colors:[]}];
+}
+const reLotsOf = s => lotsAny(s).filter(l=>l.kind==='re');
+const RESEQ = [...new Set(DATA.flatMap(s=>reLotsOf(s).map(l=>l.n)))].sort((a,b)=>a-b);
+const anyReIn = L => L.some(l=>l.kind==='re' && l.recv>0);                 // 리오더가 실제로 들어왔나 — 아니면 판매는 전부 초도 몫(추정 아님)
+const isApprox = (l, L) => l.kind==='re' || (l.kind==='first' && anyReIn(L));
+let VIEW = 'all';                                                            // 보기: all · first · re · re1 · re2 …
+const viewLabel = v => v==='all' ? '전체' : v==='first' ? '초도' : v==='re' ? '리오더 전체' : (v.slice(2) + '차 리오더');
+const viewMatch = (l, v) => l.kind!=='base' && (v==='all' || (v==='first' && l.kind==='first') || (v==='re' && l.kind==='re') || (/^re\d+$/.test(v) && l.kind==='re' && l.n===+v.slice(2)));
+/* 보기 기준 수량 — 해당 차수가 없는 카드는 null */
+function lotNums(s, v){
+  const L = lotsAny(s), sel = L.filter(l=>viewMatch(l, v));
+  if(!sel.length) return null;
+  const r = {ord:0, recv:0, sold:0, pend:0, est:false, lots:sel, n:sel.length};
+  sel.forEach(l=>{ r.ord += l.ord; r.recv += l.recv; r.sold += l.sold; r.pend += l.pend||0; if(isApprox(l, L)) r.est = true; });
+  return r;
+}
+/* 카드 한 장의 수량 — 보기가 전체면 지금 카드 값 그대로 */
+function numsOf(s){
+  if(VIEW==='all'){ const t = s.ttl || {}; return {ord:+t.plan||0, recv:+t.qtyIn||0, sold:+t.total||0, pend:0, est:false}; }
+  return lotNums(s, VIEW);
+}
+const reAgg = s => lotNums(s, 're');
+const reShare = s => { const r = reAgg(s); if(!r) return null; const all = lotNums(s, 'all'); return all && all.ord>0 ? r.ord/all.ord : null; };
+const reWait = s => { const L = reLotsOf(s); return L.length ? L.reduce((a,l)=>a + (l.state==='종결' ? 0 : Math.max(0, l.ord - l.recv)), 0) : null; };
+const lotRate = (l) => l.recv>0 ? l.sold / l.recv * 100 : null;
+/* 보기 중 카드 위에 한 줄 */
+function lotStrip(s){
+  if(VIEW==='all') return '';
+  const r = lotNums(s, VIEW); if(!r) return '';
+  const rate = r.recv>0 ? r.sold/r.recv*100 : null, one = r.n===1 ? r.lots[0] : null;
+  let when = '';
+  if(one && one.kind==='re') when = ` · 투입 ${one.inv||'-'}` + (one.state==='예정' ? ` · 납기 ${one.due||'-'} 예정` : (one.rd ? ` · 입고 ${one.rd}` : ''));
+  return `<div class="lotv"><b>${viewLabel(VIEW)}</b> · 지시 ${qty(r.ord)} · 입고 ${qty(r.recv)}${r.pend?` (+예정 ${qty(r.pend)})`:''} · 판매${r.est?'≈':''} ${qty(r.sold)}${rate==null?'':` (${rate.toFixed(1)}%)`}${when}</div>`;
+}
+/* 카드 상세(펼침) 맨 위 한 줄 — 초도 N + 리오더 N = 입고 N */
+function lotLine(s){
+  const L = lotsOf(s); if(!L) return '';
+  const first = L.find(l=>l.kind==='first'), re = L.filter(l=>l.kind==='re');
+  if(!re.length) return '';
+  const rin = re.reduce((a,l)=>a+l.recv,0), pend = reWait(s) || 0;
+  return `<div class="lotline">초도 입고 ${qty(first?first.recv:0)} + 리오더 입고 ${qty(rin)} (${re.length}회 지시) = ${qty((first?first.recv:0)+rin)}장${pend?` · 리오더 입고 대기 ${qty(pend)}장`:''}</div>`;
+}
+function reNote(s){
+  const r = reAgg(s);
+  if(!r) return '리오더 없음 — 맨 뒤로 정렬';
+  return `리오더 ${r.n}회 · 지시 ${qty(r.ord)} · 입고 ${qty(r.recv)} · 판매≈ ${qty(r.sold)}${reWait(s)?` · 입고 대기 ${qty(reWait(s))}`:''}`;
+}
+/* 목록 위 '보기' 버튼 — 차수 */
+const HASLOTS = DATA.some(s=>s.lots);                                      // 입고스케줄을 못 읽은 빌드는 차수 보기·리오더 정렬을 숨긴다
+const VIEWS = HASLOTS ? [['all','전체'], ['first','초도'], ['re','리오더']].concat(RESEQ.map(n=>['re'+n, n+'차'])) : [['all','전체']];
+function viewCount(v){ return DATA.filter(s=>v==='all'||v==='first'||lotNums(s,v)).length; }
+function viewGroupHTML(){
+  if(!HASLOTS) return '';
+  return `<div class="fgroup"><span class="flabel">차수</span>${VIEWS.map(([v,t])=>
+    `<button class="chip vchip${VIEW===v?' on':''}" data-v="${v}" title="${v==='re'?'리오더한 스타일만':v==='first'?'초도 기준':/^re\d/.test(v)?v.slice(2)+'차 리오더가 있는 스타일만':'전체'}">${t}${v==='all'||v==='first'?'':` <small>${viewCount(v)}</small>`}</button>`).join('')}</div>`;
+}
+const REITEMS = [['v:re','리오더한 것만 보기']].concat(RESEQ.map(n=>['v:re'+n, n+'차 리오더만 보기']),
+  [['reOrdDesc','리오더 지시 많은순'], ['reRecvDesc','리오더 입고 많은순'], ['reSoldDesc','리오더 판매≈ 많은순'],
+   ['reWaitDesc','리오더 입고 대기 많은순'], ['reShareDesc','리오더 비중 높은순'], ['reCntDesc','리오더 회차 많은순']]);
+/* ---------- 온라인 / 오프라인 판매 (MD 2026-10-19 "온,오프 판매도 볼 수 있어야 되겠다") ----------
+   원천 = 허브 MARK 채널 자료(신상 판매 리뷰의 온라인/오프라인 버튼과 같은 팀 정의). 스타일맵에는 채널별 판매가 없다.
+   s.ch.t = [온라인 누계, 온라인 전주, 오프라인 누계, 오프라인 전주, 기타 누계, 기타 전주], s.ch.c = {컬러:[…6]}.
+   온라인 = 온라인팀(자사몰·몰·풀필먼트·벤더 포함, 반품은 마이너스) · 오프라인 = 직영·백화점·아울렛·면세 매장 · 기타 = 글로벌팀+기타팀. 2주전은 원천이 없어 나누지 않는다. */
+const CHAT = "__CHAT__";                       // MARK 기준일 (카드 마감일과 같아야 합계가 맞는다)
+let CH = 'all';                               // 채널 보기: all · on · off
+const HASCH = DATA.some(s=>s.ch);
+const chanLabel = c => c==='on' ? '온라인' : c==='off' ? '오프라인' : '합계';
+const chStale = () => !!(CHAT && typeof CARDEND === 'string' && CARDEND && CHAT !== CARDEND);   // MARK 기준일 ≠ 카드 마감일
+function chNums(s){
+  if(!s.ch) return null;
+  const t = s.ch.t;
+  return {on:t[0], onW:t[1], off:t[2], offW:t[3], et:t[4], etW:t[5], all:t[0]+t[2]+t[4], allW:t[1]+t[3]+t[5]};
+}
+const chShareOf = (s, k) => { const n = chNums(s); return n && n.all>0 ? n[k]/n.all : null; };
+const pct0 = x => x==null ? '-' : Math.round(x*100) + '%';
+function chStrip(s){
+  if(CH==='all') return '';
+  const n = chNums(s);
+  if(!n) return `<div class="chv dim2">${chanLabel(CH)} · 채널 판매 자료 없음</div>`;
+  return `<div class="chv"><b>${chanLabel(CH)}</b> · 누계 ${qty(n[CH])}장 (${pct0(n.all>0?n[CH]/n.all:null)}) · 전주 ${qty(n[CH+'W'])}장${VIEW!=='all'?' · <span>카드 전체 기준(차수 구분 없음)</span>':''}</div>`;
+}
+function chNote(s){
+  const n = chNums(s); if(!n) return '채널 판매 자료 없음 — 맨 뒤로 정렬';
+  return `온라인 ${qty(n.on)} (${pct0(n.all>0?n.on/n.all:null)}) · 오프라인 ${qty(n.off)} (${pct0(n.all>0?n.off/n.all:null)}) · 전주 온 ${qty(n.onW)} / 오프 ${qty(n.offW)}`;
+}
+/* 카드 상세·팝업: 온/오프 표 */
+function chBlock(s){
+  if(!HASCH) return '';
+  const n = chNums(s);
+  const head = `<div class="chh">📡 온라인 · 오프라인 판매<small>MARK 기준 ${CHAT ? esc(CHAT.slice(5).replace('-','/')) : '-'}</small></div>`;
+  if(!n){
+    const why = qin(s)===0 && !s.popup ? '아직 입고 전이라' : (sold(s)===0 ? '아직 판매 기록이 없어' : 'MARK 채널 자료에 이 품번이 없어');
+    return `<div class="chb">${head}<div class="rvx">${why} 온/오프 판매 자료가 없습니다.</div></div>`;
+  }
+  const row = (lb, k) => `<tr${CH===k?' class="hl"':''}><td class="l">${lb}</td><td>${qty(n[k])}</td><td>${n.all>0?(n[k]/n.all*100).toFixed(1)+'%':'-'}</td><td>${qty(n[k+'W'])}</td></tr>`;
+  const cardTot = +(s.ttl||{}).total || 0, gap = cardTot - n.all;
+  const cols = (s.colors||[]).map(c=>{
+    const v = s.ch.c[c.color]; if(!v) return '';
+    const all = v[0]+v[2]+v[4];
+    return `<tr><td class="l">${esc(c.color)}<small>${esc(c.cname||'')}</small></td><td>${qty(v[0])}</td><td>${qty(v[2])}</td><td>${qty(v[4])}</td><td>${all>0?(v[0]/all*100).toFixed(1)+'%':'-'}</td></tr>`;
+  }).join('');
+  const stale = chStale();
+  return `<div class="chb">${head}
+    <table class="chtab"><thead><tr><th class="l">구분</th><th>누계</th><th>비중</th><th>전주</th></tr></thead><tbody>
+      ${row('온라인','on')}${row('오프라인','off')}${n.et||n.etW ? row('기타(글로벌 등)','et') : ''}
+      <tr class="sum"><td class="l">합계</td><td>${qty(n.all)}</td><td>100.0%</td><td>${qty(n.allW)}</td></tr></tbody></table>
+    ${cols ? `<table class="chtab"><thead><tr><th class="l">컬러</th><th>온라인</th><th>오프라인</th><th>기타</th><th>온라인 비중</th></tr></thead><tbody>${cols}</tbody></table>` : ''}
+    <div class="chx">${gap ? `카드 누계 ${qty(cardTot)}장과 온·오프·기타 합 ${qty(n.all)}장이 ${qty(Math.abs(gap))}장 다릅니다(전주 판매도 같은 만큼 다릅니다) — 스타일맵(일요일 마감)과 MARK 의 집계 시점 차이로 보이지만 확인되지는 않았습니다. ` : ''}${stale ? `⚠ MARK 기준일(${esc(CHAT)})이 카드 마감일(${esc(CARDEND)})과 달라 차이가 날 수 있습니다. ` : ''}비중은 반올림이라 합이 100%와 0.1%p 다를 수 있습니다. 온라인은 자사몰·몰·풀필먼트·벤더 판매를 포함하고 반품은 마이너스로 빠집니다. 오프라인은 직영·백화점·아울렛·면세 매장입니다. 2주전은 원천이 없어 나누지 않았습니다.${s.altStyle ? ' 러닝은 신품번 기준이며 구품번 이월 판매는 채널 구분이 없습니다.' : ''}</div></div>`;
+}
+function chanGroupHTML(){
+  if(!HASCH) return '';
+  return `<div class="fgroup"><span class="flabel">판매 채널</span>${['all','on','off'].map(c=>
+    `<button class="chip cchip${CH===c?' on':''}" data-c="${c}">${chanLabel(c)}</button>`).join('')}</div>`;
+}
+const CHITEMS = [['chOnDesc','온라인 판매 많은순'], ['chOffDesc','오프라인 판매 많은순'], ['chOnShareDesc','온라인 비중 높은순'],
+                 ['chOffShareDesc','오프라인 비중 높은순'], ['chOnWDesc','전주 온라인 많은순'], ['chOffWDesc','전주 오프라인 많은순']];
+const itemChanHead = () => HASCH ? '<th>온라인</th><th>오프라인</th><th>온라인 비중</th>' : '';
+function itemChanCells(a){
+  if(!HASCH) return '';
+  const all = a.on + a.off + a.et;
+  return `<td${CH==='on'?' class="hl"':''}>${a.cn?qty(a.on):'<span class="dim">-</span>'}</td><td${CH==='off'?' class="hl"':''}>${a.cn?qty(a.off):'<span class="dim">-</span>'}</td><td>${a.cn&&all>0?Math.round(a.on/all*100)+'%':'-'}</td>`;
+}
+
+/* 카드 본체: 통계 4칸 아래 한 줄 — 온라인·오프라인 누계 + 전주 + 비중 바 */
+function chRow(s){
+  const n = chNums(s); if(!n) return '';
+  const on = n.all>0 ? n.on/n.all*100 : 0, off = n.all>0 ? n.off/n.all*100 : 0;
+  return `<div class="chrow${CH==='on'?' pon':CH==='off'?' poff':''}">
+    <div class="o"><b>${qty(n.on)}</b><span>온라인${n.all>0?' '+Math.round(on)+'%':''}</span></div>
+    <div class="f"><b>${qty(n.off)}</b><span>오프라인${n.all>0?' '+Math.round(off)+'%':''}</span></div>
+    <div><b>${qty(n.onW)}</b><span>전주 온</span></div><div><b>${qty(n.offW)}</b><span>전주 오프</span></div>
+    ${n.all>0 ? `<div class="chbar"><u style="width:${on}%"></u><u class="f" style="width:${off}%"></u></div>` : ''}</div>`;
+}
 // 정렬 — 값이 없는 스타일은 항상 뒤로 (MD 2026-10-19 확대: 재고·가격·할인율·전주 판매 …)
 // 재고 = 남은 수량. 신상 = 입고 − 누계판매 / 러닝 = (시점재고+신규입고) − (구품번 8/1~ 판매 + 신규 누계판매) (러닝 팝업의 현재고 − 판매)
 // 재고금액 = 재고 × 실판가(없으면 TAG가) · 재고원가 = 재고 × 원가(VAT 포함)
@@ -390,7 +629,8 @@ const SGROUPS = [
               ['discDesc','할인율 높은순'],['discAsc','할인율 낮은순'],['multDesc','배수(택가) 높은순'],['multRealDesc','배수(실판) 높은순']]],
   ['물량·매출', [['qtyInDesc','입고량 많은순'],['qtyInAsc','입고량 적은순'],['planDesc','기획량 많은순'],['saleAmtDesc','실판매금액 많은순'],
               ['saleAmtAsc','실판매금액 적은순'],['inDateAsc','입고일 빠른순'],['inDateDesc','입고일 늦은순']]],
-];
+  ['리오더', REITEMS],
+].filter(g=>g[0]!=='리오더' || HASLOTS).concat(HASCH ? [['온·오프', CHITEMS]] : []);
 const SLABEL = {};
 SGROUPS.forEach(([,o])=>o.forEach(([k,l])=>SLABEL[k]=l));
 let SORT = '';
@@ -423,6 +663,12 @@ const SMETA = {
   planDesc:{f:s=>(s.ttl && nz(s.ttl.plan)),d:-1},
   saleAmtDesc:{f:s=>nz(s.saleAmt),d:-1}, saleAmtAsc:{f:s=>nz(s.saleAmt),d:1},
   inDateAsc:{f:inDateN,d:1}, inDateDesc:{f:inDateN,d:-1},
+  reOrdDesc:{f:s=>{const r=reAgg(s);return r?r.ord:null},d:-1}, reRecvDesc:{f:s=>{const r=reAgg(s);return r?r.recv:null},d:-1},
+  reSoldDesc:{f:s=>{const r=reAgg(s);return r?r.sold:null},d:-1}, reWaitDesc:{f:s=>reWait(s),d:-1},
+  reShareDesc:{f:s=>reShare(s),d:-1}, reCntDesc:{f:s=>{const r=reAgg(s);return r?r.n:null},d:-1},
+  chOnDesc:{f:s=>{const n=chNums(s);return n?n.on:null},d:-1}, chOffDesc:{f:s=>{const n=chNums(s);return n?n.off:null},d:-1},
+  chOnShareDesc:{f:s=>chShareOf(s,'on'),d:-1}, chOffShareDesc:{f:s=>chShareOf(s,'off'),d:-1},
+  chOnWDesc:{f:s=>{const n=chNums(s);return n?n.onW:null},d:-1}, chOffWDesc:{f:s=>{const n=chNums(s);return n?n.offW:null},d:-1},
 };
 function applySort(list){
   const m = SORT && SMETA[SORT];
@@ -461,6 +707,8 @@ function sortNote(s){
     case 'planDesc': return `기획량 ${qty(t.plan||0)}장 (입고 ${qty(qin(s))})`;
     case 'saleAmtDesc': case 'saleAmtAsc': return `실판매금액 ${eok(s.saleAmt||0)} (누계판매 ${qty(sold(s))}장)`;
     case 'inDateAsc': case 'inDateDesc': return `입고일 ${s.inDate||'-'}`;
+    case 'reOrdDesc': case 'reRecvDesc': case 'reSoldDesc': case 'reWaitDesc': case 'reShareDesc': case 'reCntDesc': return reNote(s);
+    case 'chOnDesc': case 'chOffDesc': case 'chOnShareDesc': case 'chOffShareDesc': case 'chOnWDesc': case 'chOffWDesc': return chNote(s);
   }
   return '';
 }
@@ -496,7 +744,8 @@ function buildFilters(){
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
   document.getElementById('filters').innerHTML =
-    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('');
+    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('') + '<div class="frow" id="viewrow"></div>';
+  syncViewUI();
   syncSortUI();
   KEYS.forEach(([k])=>sel[k]='');
   document.querySelectorAll('.chip[data-k]').forEach(b=>b.addEventListener('click',()=>{
@@ -521,10 +770,13 @@ const qty = v => (Math.round(v) || 0).toLocaleString('ko-KR');
 
 function summarize(list){
   const r = {styles:list.length, plan:0, qtyIn:0, sales:0,
-             supIn:0, supPlan:0, costIn:0, costPlan:0, noPrice:0};
+             supIn:0, supPlan:0, costIn:0, costPlan:0, noPrice:0, on:0, off:0, et:0, cn:0, est:false};
   for(const s of list){
-    const t = s.ttl || {};
-    const p = +t.plan || 0, qi = +t.qtyIn || 0, tot = +t.total || 0;
+    const nn = numsOf(s); if(!nn) continue;                  // 보기(차수) 기준 수량 — 전체면 카드 값 그대로
+    const p = nn.ord, qi = nn.recv; let tot = nn.sold; if(nn.est) r.est = true;
+    const cn = chNums(s); if(cn){ r.on += cn.on; r.off += cn.off; r.et += cn.et; r.cn++; }
+    if(cn) r.cardTot = (r.cardTot||0) + (+(s.ttl||{}).total || 0);
+    if(CH!=='all' && VIEW==='all') tot = cn ? cn[CH] : 0;    // 채널 보기: 그 채널의 판매
     r.plan += p; r.qtyIn += qi; r.sales += tot;
     if(!amtOK(s)){ r.noPrice++; continue; }          // 택가·원가 미확인 — 금액에서만 제외
     const tg = +s.tag, cv = costVat(s);
@@ -553,11 +805,15 @@ function renderSummary(list){
                : '-';
   sumEl.innerHTML =
     si('스타일',         `${qty(r.styles)} / ${qty(DATA.length)}`) +
-    si('수량',           `기획 ${qty(r.plan)} → 입고 ${qty(r.qtyIn)}장`) +
+    (VIEW!=='all' ? si('보기', `${viewLabel(VIEW)}`, 'hl') : '') +
+    si('수량',           `${VIEW==='all'?'기획':'지시'} ${qty(r.plan)} → 입고 ${qty(r.qtyIn)}장${VIEW==='all' && HASLOTS ? '<small>메인 리오더 지시 미포함 · 러닝은 포함</small>' : ''}`, 'wrapx') +
     si('공급액',         `${eok(r.supIn)}<small>기획 ${eok(r.supPlan)}</small>`) +
     si('원가(VAT 포함)', `${eok(r.costIn)}<small>기획 ${eok(r.costPlan)}</small>`) +
     si('마크업',         markup, 'hl') +
-    si('누계판매',       `${qty(r.sales)}장<small>입고 대비 ${r.rate != null ? r.rate.toFixed(1) + '%' : '-'}</small>`) +
+    si(CH!=='all' && VIEW==='all' ? chanLabel(CH) + ' 판매' : (VIEW!=='all' ? viewLabel(VIEW) + ' 판매' + (r.est?'≈':'') : '누계판매'),
+       `${qty(r.sales)}장<small>입고 대비 ${r.rate != null ? r.rate.toFixed(1) + '%' : '-'}</small>`) +
+    (HASCH && r.cn ? si('온/오프', `온라인 ${qty(r.on)} (${pct0(r.on/(r.on+r.off+r.et||1))}) · 오프라인 ${qty(r.off)} (${pct0(r.off/(r.on+r.off+r.et||1))})${r.et?`<small>기타 ${qty(r.et)}</small>`:''}${VIEW!=='all'?'<small>카드 전체 기준</small>':''}${!CHAT ? '<small>MARK 기준일 미상</small>' : chStale() ? `<small>⚠ MARK ${esc(CHAT)} 기준 — 카드 마감(${esc(CARDEND)})과 날짜가 다름</small>` : `<small>MARK ${esc(CHAT.slice(5).replace('-','/'))} 기준</small>`}${r.cardTot && r.cardTot !== r.on+r.off+r.et ? `<small>카드 누계와 ${qty(Math.abs(r.cardTot-(r.on+r.off+r.et)))}장 차이(전주 열)</small>` : ''}`, 'wrapx') : '') +
+    (!HASLOTS ? `<div class="snote">입고스케줄을 읽지 못해 차수(초도·리오더) 정보 없이 만든 화면입니다</div>` : '') +
     (r.noPrice ? `<div class="snote">택가·원가 미확인 ${qty(r.noPrice)}스타일은 금액 합계에서 제외<br>(수량 · 누계판매 · 판매율에는 포함)</div>` : '');
 }
 
@@ -578,25 +834,27 @@ function more(){
 
 function render(){
   const q = document.getElementById('q').value.trim().toUpperCase();
-  view = DATA.filter(s =>
-    KEYS.every(([k]) => !sel[k] || (Array.isArray(s[k]) ? s[k].includes(sel[k]) : s[k]===sel[k])) &&
+  const passes = (s, skip) =>
+    KEYS.every(([k]) => k===skip || !sel[k] || (Array.isArray(s[k]) ? s[k].includes(sel[k]) : s[k]===sel[k])) &&
     (!q || (s.style||'').toUpperCase().includes(q) || (s.altStyle||'').toUpperCase().includes(q)
-        || (s.name||'').toUpperCase().includes(q))
-  );
-  view = applySort(view);
+        || (s.name||'').toUpperCase().includes(q)) &&
+    (VIEW==='all' || VIEW==='first' || !!lotNums(s, VIEW));      // 보기: 그 차수가 있는 카드만
+  view = applySort(DATA.filter(s=>passes(s)));
+  const itemBase = DATA.filter(s=>passes(s, 'item'));            // 품목별 표는 품목 필터만 빼고 계산
   shown = 0;
   listEl.innerHTML = view.length ? '' : '<div class="empty">조건에 맞는 스타일이 없습니다.</div>';
   scrollTo(0, 0);
   more();
   document.getElementById('count').textContent = `${view.length} / ${DATA.length} 스타일`;
   renderSummary(view);                 // 오른쪽 위 건수와 같은 view 로 계산 — 숫자가 어긋나지 않는다
+  renderItems(itemBase);
 }
 
 /* ---------- 카드 클릭 -> CU 품번 단독 카드 모달 ---------- */
 const modal = document.getElementById('modal');
 /* 러닝 팝업: 시점재고 + 신규품번 입고 기준 (현재고 실적).
    컬러 표의 기획 = 컬러별 기초재고 + 신규 기획량, 입고 = 기초재고 + 신규 입고량, 판매율은 현재고 기준 */
-function popupCard(s){
+function popupCard(s, extra=''){
   const st = s.popup.stat;
   const rate = st.rate==null ? 0 : Math.max(0, Math.min(100, st.rate));
   const rows = s.popup.colors.map(c=>`
@@ -608,7 +866,7 @@ function popupCard(s){
     </tr>`).join('');
   const w1t = s.popup.colors.reduce((a,c)=>a+(c.w1||0),0);
   const w2t = s.popup.colors.reduce((a,c)=>a+(c.w2||0),0);
-  return `<div class="card">
+  return `<div class="card${s.lots?' lotcard':''}">
     <div class="chead"><span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span></div>
     <div class="cname">${s.name||''}</div>
     <div class="thumb">
@@ -627,6 +885,7 @@ function popupCard(s){
       <div class="lb"><span>판매 진행률 (현재고 기준)</span><b>${pct(st.rate)}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
+    ${extra}
     <table>
       <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
       <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
@@ -647,7 +906,7 @@ function popupCard(s){
 /* 리오더 팝업 (26FW 신상): 본 카드는 최초 기획만, 팝업은 최초 + 리오더 기획 합산.
    판매율 = 누계 ÷ 기획량. 기본은 총 기획(최초+리오더) 기준, 팝업을 한 번 더 클릭하면 최초 기획 기준으로 바뀐다 */
 let RE_FIRST = false;                        // true = 최초 기획량 기준
-function rePopupCard(s){
+function rePopupCard(s, extra=''){
   const st = s.re.stat;
   const base = c => RE_FIRST ? (c.plan0||0) : (c.plan||0);
   const rt = c => base(c) ? (c.total||0) / base(c) * 100 : null;
@@ -660,7 +919,7 @@ function rePopupCard(s){
       <td>${n0(c.total)}</td><td>${pct(rt(c))}</td>
     </tr>`).join('');
   const label = RE_FIRST ? '최초 기획량 기준' : '총 기획량(최초+리오더) 기준';
-  return `<div class="card recard" title="클릭하면 판매율 기준이 바뀝니다">
+  return `<div class="card ${s.lots?'lotcard':'recard'}"${s.lots?'':' title="클릭하면 판매율 기준이 바뀝니다"'}>
     <div class="chead"><span class="code">${s.style}</span>
       <span class="tags"><em class="tag ro">${label}</em></span></div>
     <div class="cname">${s.name||''}</div>
@@ -680,6 +939,7 @@ function rePopupCard(s){
       <div class="lb"><span>판매 진행률 (${label})</span><b>${pct(rt(st))}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
+    ${extra}
     <table>
       <colgroup><col style="width:13%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:13%"><col style="width:12.5%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:13.5%"></colgroup>
       <thead><tr><th class="c">컬러</th><th${RE_FIRST?' class="on"':''}>최초</th><th>리오더</th><th${RE_FIRST?'':' class="on"'}>기획</th><th>입고</th>
@@ -690,23 +950,47 @@ function rePopupCard(s){
           <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td>${pct(rt(st))}</td></tr>
       </tbody>
     </table>
-    <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = 누계 ÷ ${RE_FIRST?'최초 기획량':'총 기획량'} · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜 · 리오더 입고 ${n0(st.inRe)}장</div>
+    <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = 누계 ÷ ${RE_FIRST?'최초 기획량':'총 기획량'}${s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`} · 리오더 입고 ${n0(st.inRe)}장</div>
   </div>`;
 }
 listEl.addEventListener('click', e=>{
-  if(e.target.closest('summary,.rv,.sortv')) return;   // 상세 토글 · 리뷰 비교 글 · 정렬값 줄은 눌러도 팝업이 안 뜬다
+  if(e.target.closest('summary,.rv,.sortv,.lotv,.chv,.chb,.lotline')) return;   // 상세 토글 · 리뷰 비교 글 · 정렬값 줄은 눌러도 팝업이 안 뜬다
   const el = e.target.closest('.card.has-sub');
   if(!el) return;
   const s = view.find(x=>x.style===el.dataset.style);
-  if(!s || !(s.popup || s.re)) return;
-  document.getElementById('mtitle').textContent = s.re ? `${s.style} · 리오더 합산` : s.altStyle ? `${s.style} + ${s.altStyle}` : s.style;
-  document.getElementById('msub').textContent = s.re ? '최초 기획 + 리오더 기획 · 총 기획량 기준' : '시점재고 + 신규품번 · 현재고 기준';
-  RE_FIRST = false; modal.dataset.style = s.style;
-  document.getElementById('mbody').innerHTML = s.re ? rePopupCard(s) : popupCard(s);
+  if(!s || !(s.popup || s.re || s.lots)) return;
+  const nre = (s.reN||[]).length;
+  document.getElementById('mtitle').textContent = s.altStyle ? `${s.style} + ${s.altStyle}` : (s.re ? `${s.style} · 리오더 합산` : s.style);
+  document.getElementById('msub').textContent = s.lots ? `차수별 입고·판매${nre?` · 리오더 ${nre}회`:''}${s.re?' · 최초+리오더 기획':' · 시점재고 + 신규품번'}` : (s.re ? '최초 기획 + 리오더 기획 · 총 기획량 기준' : '시점재고 + 신규품번 · 현재고 기준');
+  RE_FIRST = false; modal.dataset.style = s.style; POP = {style:s.style, sel:'all'};
+  renderPop();
+  LASTFOCUS = el;
   modal.classList.add('on');
+  (document.querySelector('#mbody .lchip.on') || document.getElementById('mclose')).focus({preventScroll:true});
 });
-const closeModal = ()=>modal.classList.remove('on');
-// 리오더 팝업 카드 클릭: 판매율 기준을 총 기획 <-> 최초 기획으로 토글
+let LASTFOCUS = null;
+const closeModal = ()=>{ modal.classList.remove('on'); if(LASTFOCUS && document.contains(LASTFOCUS)) LASTFOCUS.focus({preventScroll:true}); LASTFOCUS = null; };
+listEl.addEventListener('keydown', e=>{ if((e.key==='Enter' || e.key===' ') && e.target.classList && e.target.classList.contains('has-sub')){ e.preventDefault(); e.target.click(); } });
+modal.addEventListener('keydown', e=>{                          // Tab 이 팝업 밖(뒤쪽 페이지)으로 나가지 않게 팝업 안에서 돈다
+  if(e.key!=='Tab' || !modal.classList.contains('on')) return;
+  const f = [...modal.querySelectorAll('button,[tabindex="0"]')].filter(x=>x.offsetParent!==null); if(!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if(e.shiftKey && (i<=0)){ e.preventDefault(); f[f.length-1].focus(); }
+  else if(!e.shiftKey && (i<0 || i===f.length-1)){ e.preventDefault(); f[0].focus(); }
+});
+document.getElementById('mbody').addEventListener('keydown', e=>{
+  const c = e.target.closest && e.target.closest('.lchip'); if(!c || (e.key!=='ArrowLeft' && e.key!=='ArrowRight')) return;
+  const all = [...document.querySelectorAll('#mbody .lchip')], i = all.indexOf(c);
+  e.preventDefault(); all[(i + (e.key==='ArrowRight' ? 1 : all.length - 1)) % all.length].click();
+});
+// 차수 버튼 · 판매율 기준 버튼 (차수 자료가 있는 팝업)
+document.getElementById('mbody').addEventListener('click', e=>{
+  const lc = e.target.closest('[data-lot]');
+  if(lc){ POP.sel = lc.dataset.lot; renderPop(); const f = document.querySelector(`.lchip[data-lot="${POP.sel}"]`); if(f) f.focus({preventScroll:true}); return; }
+  const bc = e.target.closest('[data-base]');
+  if(bc){ RE_FIRST = bc.dataset.base==='first'; renderPop(); const f = document.querySelector('#mbody .bchip.on'); if(f) f.focus({preventScroll:true}); return; }
+});
+// 리오더 팝업 카드 클릭: 판매율 기준을 총 기획 <-> 최초 기획으로 토글 (차수 자료가 없을 때의 옛 팝업)
 document.getElementById('mbody').addEventListener('click', e=>{
   if(!e.target.closest('.recard')) return;
   const s = DATA.find(x=>x.style===modal.dataset.style);
@@ -731,25 +1015,186 @@ addEventListener('scroll', ()=>{
 }, {passive:true});
 
 
+/* ---------- 팝업: 차수 버튼 + 차수별 입고·판매 (MD 2026-10-19) ---------- */
+let POP = {style:'', sel:'all'};
+const ap = (l, L) => isApprox(l, L) ? '≈' : '';
+function lotChips(s){
+  const L = lotsOf(s);
+  const chips = [['all','전체']].concat(L.map(l=>[String(l.n), l.label + (l.state==='예정' && l.kind==='re' ? ' · 예정' : '')]));
+  return `<div class="lotchips" role="tablist" aria-label="차수 선택">${chips.map(([v,t])=>
+    `<button class="lchip${POP.sel===v?' on':''}${/예정/.test(t)?' pend':''}" role="tab" aria-selected="${POP.sel===v}" data-lot="${v}">${t}</button>`).join('')}</div>`;
+}
+/* 전체 화면: 차수별 요약표 (+ 메인 리오더 카드는 판매율 기준 버튼) */
+function lotSummary(s){
+  const L = lotsOf(s), est = anyReIn(L);
+  const tot = {ord:0, recv:0, sold:0, pend:0}, tot2 = {ord:0};
+  const rows = L.map(l=>{
+    const rate = lotRate(l), isB = l.kind==='base';
+    tot.recv += l.recv; tot.sold += l.sold; tot.pend += l.pend||0;
+    if(!isB){ tot.ord += l.ord; tot2.ord += l.ord; }
+    let sub = '';
+    if(isB) sub = '7/31 시점 · 구품번 판매(7/27주~)';
+    else if(l.kind==='first') sub = (l.rd ? esc(l.rd) + ' 입고' : '') + (l.state==='입고중' ? ' · 입고중' : '');
+    else sub = '투입 ' + esc(l.inv||'-') + (l.state==='예정' ? ' · 납기 ' + esc(l.due||'-') + ' 예정' : (l.rd ? ' · 입고 ' + esc(l.rd) : ''));
+    const a = ap(l, L);
+    return `<tr class="${l.state==='예정'?'pend':''}" data-lot="${l.n}"><td class="l"><b>${l.label}</b>${sub?`<small>${sub}</small>`:''}</td>
+      <td>${isB ? '<span class="dim">-</span>' : qty(l.ord)}</td>
+      <td>${qty(l.recv)}${l.pend?`<small>+예정 ${qty(l.pend)}</small>`:''}</td>
+      <td>${l.state==='예정' && l.recv===0 ? '<span class="dim">-</span>' : qty(l.sold) + (a ? '<small>≈</small>' : '')}</td>
+      <td>${rate==null ? '<span class="dim">-</span>' : rate.toFixed(1) + '%'}</td></tr>`;
+  }).join('');
+  const rate = tot.recv>0 ? tot.sold/tot.recv*100 : null;
+  const plan = s.re ? s.re.stat.plan : (s.popup ? (+s.ttl.plan||0) : null);       // 카드 기획과 시트 지시합이 다르면 밝힌다
+  const diff = plan==null ? 0 : Math.round(tot2.ord - plan);
+  const sw = s.re ? `<div class="basesw"><span>판매율 기준</span><button class="bchip${RE_FIRST?'':' on'}" data-base="all">총 기획</button><button class="bchip${RE_FIRST?' on':''}" data-base="first">최초 기획</button></div>` : '';
+  return `${sw}<div class="lotsum"><div class="lsh">차수별 입고·판매${est?'<em>판매는 추정(≈)</em>':''}<span>행을 누르면 그 차수만 봅니다</span></div>
+    <table class="lt"><thead><tr><th class="l">구분</th><th>지시</th><th>입고</th><th>판매${est?'≈':''}</th><th>판매율${est?'≈':''}<small>입고 기준</small></th></tr></thead><tbody>${rows}
+    <tr class="sum"><td class="l">합계</td><td>${qty(tot.ord)}</td><td>${qty(tot.recv)}</td><td>${qty(tot.sold)}</td><td>${rate==null?'-':rate.toFixed(1)+'%'}</td></tr></tbody></table>
+    ${diff ? `<div class="lsx">지시 합계가 위 기획(${qty(plan)})과 ${qty(Math.abs(diff))}장 ${diff>0?'많습니다':'적습니다'} — 차수별 지시는 입고스케줄 기준, 기획은 스타일맵 기준이라 집계가 다릅니다.</div>` : ''}</div>`;
+}
+function lotNote(s, l){
+  const L = lotsOf(s), m = s.lots.meta || {}, hasBase = L.some(x=>x.kind==='base'), est = anyReIn(L);
+  const out = [];
+  if(est){
+    out.push(`※ <b>판매≈는 추정</b>입니다. 판매 기록은 품번·컬러 단위로만 있어, 컬러별 누계 판매를 먼저 들어온 물량부터(초도 → 1차 → 2차 순) 팔렸다고 보고 나눈 값입니다. 실제로는 차수 구분 없이 섞여 팔리므로 참고용이며, 늦게 들어온 차수일수록 판매율이 낮게 나옵니다(차수 간 우열이 아닙니다).`);
+  }else{
+    out.push(L.some(x=>x.kind==='re') ? '※ 리오더 입고 전이라 판매는 전부 초도 몫입니다(추정 아님).' : '※ 리오더가 없어 판매는 전부 초도 몫입니다(추정 아님).');
+  }
+  if(hasBase) out.push('이월재고의 판매는 구품번 코드 판매 그대로입니다(추정 아님). 다만 주 단위 집계(7/27주부터)라 시점재고에 이미 반영된 7/27~7/31 판매가 일부 들어 있어 실제 8/1 이후보다 조금 많을 수 있습니다.');
+  out.push(`지시·입고·예정: 총 입고는 스타일맵, 차수별 지시·입고 쪼개기는 입고스케줄(${esc(s.lots.src||'')}) 기준입니다. 입고는 두 자료가 다르면 스타일맵을 따르고 입고 예정분은 판매·판매율에 넣지 않습니다.`);
+  out.push('입고일은 입고스케줄 기준입니다(카드 상세의 입고일은 스타일맵 초입고일이라 며칠 다를 수 있습니다).');
+  if(m.noSheet) out.push('⚠ 입고스케줄에 이 품번의 리오더 행이 없어 스타일맵의 리오더기획·입고를 차수 구분 없이 한 줄로 보여 줍니다.');
+  if((m.warnColors||[]).length) out.push(`⚠ 입고스케줄과 스타일맵의 리오더 입고가 다른 컬러: ${m.warnColors.map(esc).join(', ')} — 스타일맵 값 기준으로 표시했습니다.`);
+  if(m.over) out.push(`⚠ 스타일맵 판매가 입고보다 ${qty(m.over)}장 많아(입고 반영 시차) 마지막 입고 차수에 얹었습니다.`);
+  return `<div class="lotnote">${out.join('<br>')}</div>`;
+}
+function popHead(s, tag){
+  return `<div class="chead"><span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span>${tag?`<span class="tags">${tag}</span>`:''}</div>
+    <div class="cname">${esc(s.name||'')}</div>
+    <div class="thumb">
+      <img src="${s.img || IMG_BASE+encodeURIComponent((s.imgCodes||[s.style])[0])+'/cut_0.jpg'}" alt="${s.style}"
+           data-c="${s.img ? '' : (s.imgCodes||[s.style]).join(',')}" data-i="0" onerror="nextImg(this)">
+      <span class="noimg">NO IMAGE</span>
+    </div>`;
+}
+/* 팝업 카드가 없는 카드(입고스케줄에만 리오더가 있는 경우)용 기본 카드 */
+function lotOnlyCard(s){
+  const t = s.ttl || {};
+  return `<div class="card lotcard">${popHead(s, '')}<div class="stats"><div><b>${n0(t.plan)}</b><span>기획량</span></div><div><b>${n0(t.qtyIn)}</b><span>입고량</span></div><div><b>${n0(t.total)}</b><span>누계판매</span></div><div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div></div>${lotSummary(s)}</div>`;
+}
+/* 차수 하나를 눌렀을 때 */
+function lotDetail(s, l){
+  const L = lotsOf(s), a = ap(l, L), isB = l.kind==='base', rate = lotRate(l), left = l.recv - l.sold;
+  const bar = rate==null ? 0 : Math.max(0, Math.min(100, rate));
+  const tiles = isB
+    ? [['기초재고(7/31)', qty(l.recv)], ['구품번 판매(7/27주~)', qty(l.sold)], ['잔여', qty(left)], ['판매율', rate==null?'-':rate.toFixed(1)+'%', 1]]
+    : [['지시', qty(l.ord)], ['입고', qty(l.recv)], ['판매'+a, l.state==='예정'&&!l.recv ? '-' : qty(l.sold)], ['잔여'+a, l.state==='예정'&&!l.recv ? '-' : qty(left)], ['판매율'+a, rate==null?'-':rate.toFixed(1)+'%', 1]];
+  const info = isB ? '러닝 이월재고 — 구품번 26.07.31 시점재고와 구품번 7/27주 이후 주간 판매(추정 아님 · 주 단위 집계라 7/27~7/31 판매가 일부 포함)'
+    : l.kind==='first' ? `${l.rd?`입고 ${esc(l.rd)} · `:''}${l.state}${l.pend?` · 입고 예정 ${qty(l.pend)}장${l.pendDate?`(${esc(l.pendDate)})`:''}`:''}`
+    : `투입 ${esc(l.inv||'-')} · ${l.state==='예정' ? `납기 ${esc(l.due||'-')} 입고 예정 — 판매·판매율은 입고 후부터` : `입고 ${esc(l.rd||'-')} · ${l.state}${l.pend?` · 예정 ${qty(l.pend)}장`:''}`}`;
+  const cols = (l.colors||[]).filter(c=>c.ord || c.recv || c.sold);
+  const sum = cols.reduce((x,c)=>({ord:x.ord+c.ord, recv:x.recv+c.recv, sold:x.sold+c.sold}), {ord:0, recv:0, sold:0});
+  const rows = cols.map(c=>{
+    const r = c.recv>0 ? c.sold/c.recv*100 : null;
+    return `<tr${c.old?' class="oldc"':''}><td class="c cl">${esc(c.c)}<small>${esc(c.cn)}</small></td>
+      ${isB ? '' : `<td>${qty(c.ord)}</td>`}<td>${qty(c.recv)}</td><td>${c.recv===0 && l.state==='예정' ? '<span class="dim">-</span>' : qty(c.sold)}</td>
+      <td>${c.recv===0 && l.state==='예정' ? '<span class="dim">-</span>' : qty(c.recv - c.sold)}</td><td>${r==null?'<span class="dim">-</span>':r.toFixed(1)+'%'}</td></tr>`;
+  }).join('');
+  const pr = sum.recv>0 ? sum.sold/sum.recv*100 : null;
+  return `<div class="card lotcard">
+    ${popHead(s, `<em class="tag ro">${l.label}</em>`)}
+    <div class="stats${tiles.length===5?' s5':''}">${tiles.map(t=>`<div${t[2]?' class="hl"':''}><b>${t[1]}</b><span>${t[0]}</span></div>`).join('')}</div>
+    <div class="prog"><div class="lb"><span>${l.label} 판매 진행률 (입고 기준)</span><b>${rate==null?'-':rate.toFixed(1)+'%'}</b></div><div class="bar"><i style="width:${bar}%"></i></div></div>
+    <div class="lotinfo">${info}</div>
+    ${cols.length ? `<table class="lt lc"><thead><tr><th class="l">컬러</th>${isB?'':'<th>지시</th>'}<th>입고</th><th>판매${a}</th><th>잔여${a}</th><th>판매율${a}</th></tr></thead><tbody>${rows}
+      <tr class="sum"><td class="l">TTL</td>${isB?'':`<td>${qty(sum.ord)}</td>`}<td>${qty(sum.recv)}</td><td>${l.state==='예정'&&!sum.recv?'-':qty(sum.sold)}</td><td>${l.state==='예정'&&!sum.recv?'-':qty(sum.recv-sum.sold)}</td><td>${pr==null?'-':pr.toFixed(1)+'%'}</td></tr></tbody></table>` : ''}
+    ${lotNote(s, l)}
+  </div>`;
+}
+function renderPop(){
+  const s = DATA.find(x=>x.style===POP.style);
+  const body = document.getElementById('mbody');
+  if(!s){ body.innerHTML = ''; return; }
+  if(!s.lots){ body.innerHTML = s.re ? rePopupCard(s) : (s.popup ? popupCard(s) : ''); return; }     // 차수 자료가 없으면 지금 팝업 그대로
+  const L = lotsOf(s);
+  let h = L.length > 1 ? lotChips(s) : '';
+  if(POP.sel === 'all'){
+    h += (s.re ? rePopupCard(s, lotSummary(s)) : s.popup ? popupCard(s, lotSummary(s)) : lotOnlyCard(s)).replace(/<\/div>\s*$/, chBlock(s) + lotNote(s) + '</div>');
+  }else{
+    h += lotDetail(s, L.find(l=>String(l.n)===POP.sel) || L[0]);
+  }
+  body.innerHTML = h;
+}
+/* ---------- 아이템(품목)별 요약 — 지금 걸러진 목록을 품목별로 (품목 필터만 빼고 계산) ---------- */
+const itemEl = document.getElementById('itembar');
+let ITEM_OPEN = true;
+function renderItems(list){
+  const g = new Map();
+  for(const s of list){
+    const n = numsOf(s); if(!n) continue;
+    const k = s.item || '기타';
+    const a = g.get(k) || {k, styles:0, ord:0, recv:0, sold:0, est:false, reN:0, reOrd:0, reRecv:0, on:0, off:0, et:0, cn:0};
+    a.styles++; a.ord += n.ord; a.recv += n.recv; a.sold += n.sold; if(n.est) a.est = true;
+    const r = reAgg(s); if(r){ a.reN++; a.reOrd += r.ord; a.reRecv += r.recv; }
+    const cn = chNums(s); if(cn){ a.cn++; a.on += cn.on; a.off += cn.off; a.et += cn.et; }
+    g.set(k, a);
+  }
+  if(!g.size){ itemEl.innerHTML = ''; return; }
+  const keys = sortByOrder([...g.keys()], 'item');
+  const tot = {styles:0, ord:0, recv:0, sold:0, est:false, reN:0, reOrd:0, reRecv:0, on:0, off:0, et:0, cn:0};
+  keys.forEach(k=>{ const a = g.get(k); for(const f of ['styles','ord','recv','sold','reN','reOrd','reRecv','on','off','et','cn']) tot[f] += a[f]; if(a.est) tot.est = true; });
+  const lab = VIEW==='all' ? ['기획','판매'] : ['지시','판매'];
+  const row = (a, cls, attr) => {
+    const rate = a.recv>0 ? a.sold/a.recv*100 : null;
+    return `<tr class="${cls||''}"${attr||''}><td class="l">${a.k}</td><td>${qty(a.styles)}</td><td>${qty(a.ord)}</td><td>${qty(a.recv)}</td>
+      <td>${qty(a.sold)}${a.est?'<small>≈</small>':''}</td><td>${rate==null?'-':rate.toFixed(1)+'%'}</td><td>${qty(a.recv - a.sold)}</td>
+      ${HASLOTS ? `<td>${a.reN?qty(a.reN):'<span class="dim">-</span>'}</td><td>${a.reN?qty(a.reOrd):'<span class="dim">-</span>'}</td><td>${a.reN?qty(a.reRecv):'<span class="dim">-</span>'}</td>` : ''}${itemChanCells(a)}</tr>`;
+  };
+  itemEl.innerHTML = `<details class="itd"${ITEM_OPEN?' open':''}><summary>품목(아이템)별 보기 <small>${VIEW==='all'?'':viewLabel(VIEW)+' 기준(온라인·오프라인·리오더 열은 카드 전체 기준) · '}${CH==='all'?'':chanLabel(CH)+' 보기 · '}행을 누르면 그 품목만 봅니다</small></summary>
+    <div class="itwrap"><table class="it"><thead><tr><th class="l">품목</th><th>스타일</th><th>${lab[0]}</th><th>입고</th><th>${lab[1]}</th><th>판매율</th><th>입고−판매</th>${HASLOTS ? '<th>리오더 스타일</th><th>리오더 지시</th><th>리오더 입고</th>' : ''}${itemChanHead()}</tr></thead><tbody>${
+      keys.map(k=>row(g.get(k), sel.item===k?'sel':'', ` data-item="${k}"`)).join('')}${row(Object.assign({k:'합계'}, tot), 'sum')}</tbody></table></div></details>`;
+  const d = itemEl.querySelector('details'); d.addEventListener('toggle', ()=>{ ITEM_OPEN = d.open; });
+  itemEl.querySelectorAll('tr[data-item]').forEach(tr=>tr.addEventListener('click', ()=>{
+    const v = sel.item === tr.dataset.item ? '' : tr.dataset.item;       // 같은 행을 다시 누르면 품목 전체로
+    sel.item = v;
+    document.querySelectorAll('.chip[data-k="item"]').forEach(x=>x.classList.toggle('on', x.dataset.v === v));
+    render();
+  }));
+}
+function syncViewUI(){
+  const row = document.getElementById('viewrow'); if(!row) return;
+  row.innerHTML = viewGroupHTML() + chanGroupHTML();
+  row.querySelectorAll('.vchip').forEach(b=>b.addEventListener('click', ()=>{ VIEW = b.dataset.v; syncViewUI(); syncSortUI(); render(); const f = document.querySelector(`.vchip[data-v="${VIEW}"]`); if(f) f.focus({preventScroll:true}); }));
+  row.querySelectorAll('.cchip').forEach(b=>b.addEventListener('click', ()=>{ CH = b.dataset.c; syncViewUI(); render(); const f = document.querySelector(`.cchip[data-c="${CH}"]`); if(f) f.focus({preventScroll:true}); }));
+}
 /* 정렬 버튼: 기본순 + 묶음 메뉴(판매·재고·가격·할인·물량·매출) — 눌러서 펼친다 */
 function sortGroupHTML(){
   const grp = SGROUPS.map(([g,opts],gi)=>{
-    const hit = opts.find(o=>o[0]===SORT);
-    return `<span class="sgw"><button class="chip sgbtn${hit?' on':''}" aria-haspopup="true" aria-expanded="false">${hit ? hit[1] : g}</button><div class="smenu">${
-      opts.map(o=>`<button class="chip${o[0]===SORT?' on':''}" data-s="${o[0]}">${o[1]}</button>`).join('')}</div></span>`;
+    const hit = opts.find(o=>o[0]===SORT) || opts.find(o=>o[0]==='v:'+VIEW && VIEW!=='all');
+    return `<span class="sgw"><button class="chip sgbtn${hit?' on':''}" aria-haspopup="true" aria-expanded="false">${hit ? hit[1].replace('한 것만 보기','만').replace('만 보기','만') : g}</button><div class="smenu">${
+      opts.map(o=>o[0].startsWith('v:') ? `<button class="chip${VIEW===o[0].slice(2)?' on':''}" data-vs="${o[0].slice(2)}">${o[1]}</button>`
+                                         : `<button class="chip${o[0]===SORT?' on':''}" data-s="${o[0]}">${o[1]}</button>`).join('')}</div></span>`;
   }).join('');
   return `<div class="fgroup sortg"><span class="flabel">정렬</span><button class="chip${SORT===''?' on':''}" data-s="">기본순</button>${grp}</div>`;
 }
 function syncSortUI(){
   const box = document.getElementById('sortbox');
   box.innerHTML = sortGroupHTML();
-  box.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{ SORT = b.dataset.s; syncSortUI(); render(); }));
+  box.querySelectorAll('.chip[data-s]').forEach(b=>b.addEventListener('click',()=>{ SORT = b.dataset.s; syncSortUI(); render(); const f = document.querySelector('#sortbox .sgbtn.on') || document.querySelector('#sortbox .chip[data-s=""]'); if(f) f.focus({preventScroll:true}); }));
+  box.querySelectorAll('.chip[data-vs]').forEach(b=>b.addEventListener('click',()=>{ VIEW = (VIEW===b.dataset.vs ? 'all' : b.dataset.vs); syncViewUI(); syncSortUI(); render(); }));
   box.querySelectorAll('.sgbtn').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
     const w = b.parentElement, was = w.classList.contains('open');
     closeSortMenus();
-    if(!was){ w.classList.add('open'); b.setAttribute('aria-expanded','true'); }
+    if(!was){ w.classList.add('open'); b.setAttribute('aria-expanded','true'); fitMenu(w); }
   }));
+}
+function fitMenu(w){                                            // 메뉴가 화면 밖으로 나가면 반대쪽 끝에 맞춘다 (버튼 위치는 줄바꿈에 따라 달라진다)
+  const m = w.querySelector('.smenu'); if(!m || getComputedStyle(w).position === 'static') return;   // 760px 이하는 CSS 가 좌우 12px 로 맞춘다
+  m.style.left = ''; m.style.right = '';
+  const vw = document.documentElement.clientWidth; let r = m.getBoundingClientRect();
+  if(r.left < 4){ m.style.left = '0'; m.style.right = 'auto'; r = m.getBoundingClientRect(); }
+  if(r.right > vw - 4){ m.style.left = 'auto'; m.style.right = '0'; r = m.getBoundingClientRect(); if(r.left < 4){ m.style.left = Math.max(-w.getBoundingClientRect().left + 4, 0) + 'px'; m.style.right = 'auto'; } }
 }
 function closeSortMenus(){
   document.querySelectorAll('.sgw.open').forEach(x=>{ x.classList.remove('open'); const b = x.querySelector('.sgbtn'); if(b) b.setAttribute('aria-expanded','false'); });
@@ -869,8 +1314,9 @@ buildFilters();
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('reset').addEventListener('click',()=>{
   document.getElementById('q').value='';
-  SORT='';
+  SORT=''; VIEW='all'; CH='all';
   document.querySelectorAll('.chip[data-k]').forEach(b=>b.classList.toggle('on', b.dataset.v===''));
+  syncViewUI();
   syncSortUI();
   KEYS.forEach(([k])=>sel[k]='');
   render();

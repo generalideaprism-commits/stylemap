@@ -378,6 +378,10 @@ for code, s in styles.items():
     s['arrived'] = '입고' if sum(c['qtyIn'] or 0 for c in s['colors']) > 0 else '미입고'
     s['ttl'] = calc_ttl(s['colors'])
 
+# 차수(초도/리오더) 분해용 — 아래 리오더 루프가 컬러의 최초기획·리오더기획·리오더입고를 지우기 전에 복사해 둔다
+CO_SPLIT = {(code, c['color']): (c.get('plan0'), c.get('planRe'), c.get('inRe'))
+            for code, s in styles.items() for c in s['colors']}
+
 # ---- 리오더 (26FW 신상) ----
 # 리오더 기획 수량은 주간판매-26FW(CO) T열(컬러별 리오더기획)의 합. 26FW 신상만 본다 — 러닝은 항상 X.
 # CO 시트의 작지(R) = 최초기획(S) + 리오더기획(T) 이다. 러닝 카드와 같은 방식으로
@@ -480,6 +484,7 @@ if stock_sheet:
         openpyxl.utils.get_column_letter(i_style + 1), openpyxl.utils.get_column_letter(i_total + 1),
         openpyxl.utils.get_column_letter(i_color + 1) + '열' if i_color is not None else '없음'))
 
+LOTS_RUN = {}   # 러닝 카드 style -> 이월재고 컬러 목록 (차수 분해용)
 for s in data:
     if s['line'] != '러닝':
         continue
@@ -526,6 +531,19 @@ for s in data:
     stat['plan'] = base + (tt['plan'] or 0)          # 컬러 표 TTL 기획 = 기초재고 + 추가 기획량
     stat['colorBase'] = bool(base_code) and any(k[0] == base_code for k in point_stock_color)
     s['popup'] = {'stat': stat, 'colors': prows}
+    # 차수 분해용 이월재고(구품번 7/31 시점재고) — 컬러별 시점재고와 구품번 8/1~ 판매(구 = 합산 aug − 신규 aug)
+    _bl = []
+    for sc in sub['colors']:
+        mc = next((x for x in merged_colors if x['color'] == sc['color']), None) or sc
+        _bl.append({'color': sc['color'], 'cname': sc['cname'],
+                    'recv': int(point_stock_color.get((base_code, sc['color']), 0) if base_code else 0),
+                    'sold': int(max(0, (mc.get('aug') or 0) - (sc.get('aug') or 0)) if s.get('sub') else 0)})
+    for (bc, col), base_c in sorted(point_stock_color.items()):
+        if bc != base_code or col in new_cols or not base_c:
+            continue
+        mc = next((x for x in merged_colors if x['color'] == col), None) or {}
+        _bl.append({'color': col, 'cname': mc.get('cname', ''), 'recv': int(base_c), 'sold': int(mc.get('aug') or 0), 'old': True})
+    LOTS_RUN[s['style']] = [b for b in _bl if b['recv'] or b['sold']]
     # 본 카드는 신규품번 내용으로 표시 (메인 카드와 동일 레이아웃)
     if s.get('sub'):
         s['ttl'] = sub['ttl']
@@ -538,6 +556,86 @@ for s in data:
     s['arrived'] = '입고' if new_in > 0 else '미입고'
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
+
+# ---- 차수(초도 · 리오더 N차)별 입고·판매 (build/lots.py, MD 2026-10-19) ----
+# 총량은 스타일맵(CO) 값 그대로, 차수 쪼개기는 입고스케줄 '리오더' 탭, 판매는 컬러별 선입선출 추정. 못 읽으면 기존 팝업 그대로.
+import lots as LOTMOD
+_hub_data = os.environ.get('INTAKE_DIR') or os.path.join(os.path.dirname(ROOT), 'production-hub', 'tools', 'review-build', 'data')
+import datetime as _dt0
+_lot_today = _updated or _dt0.date.today().isoformat()      # 파일명에서 날짜를 못 읽으면 오늘 — 빈 값이면 파샬이 전부 '미래'가 된다
+try:
+    INTAKE_ROWS, INTAKE_SRC = LOTMOD.load_intake(HERE, _hub_data, _lot_today)
+except Exception as _e:
+    print('[경고] 입고스케줄 처리 실패 — 차수 정보 없이 진행: %s' % _e)
+    INTAKE_ROWS, INTAKE_SRC = [], ''
+print('입고스케줄: %d행 · %s' % (len(INTAKE_ROWS), INTAKE_SRC or '못 읽음 — 차수 정보 없이 진행'))
+_lot_bad = []
+if INTAKE_ROWS:
+    for s in data:
+        key = s.get('altStyle') or s['style']
+        is_run = s['line'] == '러닝'
+        has_re = bool(s.get('re')) or any(r.get('tab') == 're' and r.get('style') == key for r in INTAKE_ROWS)
+        if not (is_run or has_re):
+            continue
+        cols = []
+        for c in s['colors']:
+            p0, pr, ir = CO_SPLIT.get((key, c['color']), (None, None, None))
+            if p0 is None:
+                p0 = (c.get('plan') or 0) - (pr or 0)
+            cols.append({'color': c['color'], 'cname': c['cname'], 'p0': int(p0 or 0), 'pr': int(pr or 0), 'ir': int(ir or 0),
+                         'qtyIn': int(c['qtyIn'] or 0), 'total': int(c['total'] or 0)})
+        base = LOTS_RUN.get(s['style']) if is_run and s.get('popup') else None
+        try:
+            res = LOTMOD.make_lots(key, cols, INTAKE_ROWS, _lot_today, base=base, first_in_date=s.get('inDate') or '')
+        except Exception as _e:
+            print('[경고] 차수 분해 실패 — %s 는 기존 팝업으로 둠: %s' % (s['style'], _e))
+            continue
+        lots = res['lots']
+        # 합계 대조 — 입고·판매 합이 카드(러닝은 팝업 현재고·판매)와 같아야 한다
+        in_sum = sum(L['recv'] for L in lots)
+        sold_sum = sum(L['sold'] for L in lots)
+        in_card = s['popup']['stat']['stock'] if base is not None else (s['ttl']['qtyIn'] or 0)
+        sold_card = s['popup']['stat']['sales'] if base is not None else (s['ttl']['total'] or 0)
+        if abs(in_sum - in_card) > 0.5 or abs(sold_sum - sold_card) > 0.5:
+            # 합이 카드와 다르면 화면에 다른 숫자를 보이느니 이 카드는 차수 정보를 빼고 옛 팝업으로 둔다
+            _lot_bad.append('%s 입고 %s/%s 판매 %s/%s' % (s['style'], in_sum, in_card, sold_sum, sold_card))
+            continue
+        s['lots'] = {'list': lots, 'meta': res['meta'], 'src': INTAKE_SRC}
+        if any(L['kind'] == 're' for L in lots):
+            s['reorder'] = 'O'
+        s['reN'] = [L['n'] for L in lots if L['kind'] == 're']
+    _keys = {(s.get('altStyle') or s['style']) for s in data}
+    _lost = sorted({r.get('style') for r in INTAKE_ROWS if r.get('tab') == 're' and r.get('style') and r.get('style') not in _keys})
+    if _lost:
+        print('[참고] 입고스케줄 리오더 행이 있는데 카드에 없는 품번(차수 화면에 안 나옴): %s' % ', '.join(_lost))
+    _nl = sum(1 for s in data if s.get('lots'))
+    _nr = sum(1 for s in data if s.get('reN'))
+    print('차수 분해: %d장 (리오더 있는 카드 %d장)' % (_nl, _nr))
+    if _lot_bad:
+        print('[경고] 차수 합계가 카드와 달라 옛 팝업으로 둔 카드 %d장: %s' % (len(_lot_bad), ' | '.join(_lot_bad[:6])))
+
+# ---- 온라인/오프라인 판매 (build/chan.py, MD 2026-10-19) ----
+# 스타일맵에는 채널별 판매가 없어 허브 MARK 채널 자료(신상 판매 리뷰와 같은 팀 정의)를 쓴다. 기준일이 카드 마감일과 같을 때만 숫자가 맞는다.
+import chan as CHANMOD
+_ch_cards = {(s.get('altStyle') or s['style']): [c['color'] for c in s['colors']] for s in data}
+try:
+    CH_BY, CH_AT, CH_SRC = CHANMOD.load(HERE, _hub_data, DATA_END, _ch_cards)
+except Exception as _e:
+    print('[경고] 온/오프 판매 처리 실패 — 온/오프 없이 진행: %s' % _e)
+    CH_BY, CH_AT, CH_SRC = {}, '', ''
+for s in data:
+    v = CH_BY.get(s.get('altStyle') or s['style'])
+    if v:
+        s['ch'] = v
+print('온/오프 판매: %d장 · MARK 기준일 %s · %s' % (sum(1 for s in data if s.get('ch')), CH_AT or '-', CH_SRC or '못 읽음'))
+# 이전 산출물에는 차수·온/오프가 있었는데 이번 빌드엔 없다 = 다른 PC 에서 허브 폴더·스냅샷이 없어 기능이 조용히 사라지는 경우 — 크게 알린다
+try:
+    _prev_html = open(OUT_CARD, encoding='utf-8').read() if os.path.exists(OUT_CARD) else ''
+    for _what, _key, _n in (('차수(초도·리오더)', '"lots":', sum(1 for s in data if s.get('lots'))), ('온/오프 판매', '"ch":', sum(1 for s in data if s.get('ch')))):
+        if _key in _prev_html and _n == 0:
+            print('[경고] ★★ 이전 산출물에는 %s 정보가 있었는데 이번 빌드에는 없습니다 — 허브 폴더(INTAKE_DIR)·스냅샷 파일을 확인하세요. 이대로 허브에 올리면 해당 화면이 사라집니다.' % _what)
+except Exception:
+    pass
 
 # ---- 이미지 ----
 # 1순위: Supabase 갤러리 URL (파일 용량을 줄이려고 링크로 사용)
@@ -1305,7 +1403,7 @@ def render(tpl_name, out_path, **repl):
 
 
 render('salecards_template.html', OUT_CARD,
-       **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END})
+       **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END, '__CHAT__': CH_AT})
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
