@@ -362,11 +362,12 @@
     <div id="sortbox"></div>
   </div>
 </header>
+<div id="basisnote" style="color:#d92d20;font-weight:700;font-size:13px;margin:8px 16px 0">※ 현재고 수량은 가용재고 온라인+오프라인+매장재고 수량입니다 (조조타운,풀필먼트 수량 제외)</div>
 <div id="sumbar"></div>
 <div id="itembar"></div>
 <main id="list"></main>
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle"><div class="box">
-  <div class="mhead"><b id="mtitle"></b><span id="msub">시점재고 + 신규품번 · 현재고 기준</span>
+  <div class="mhead"><b id="mtitle"></b><span id="msub">시점재고 + 신규품번</span>
     <button class="x" id="mclose">×</button></div>
   <div id="mbody"></div>
 </div></div>
@@ -618,7 +619,8 @@ function chRow(s){
     ${n.all>0 ? `<div class="chbar"><u style="width:${on}%"></u><u class="f" style="width:${off}%"></u></div>` : ''}</div>`;
 }
 // 정렬 — 값이 없는 스타일은 항상 뒤로 (MD 2026-10-19 확대: 재고·가격·할인율·전주 판매 …)
-// 재고 = 남은 수량. 신상 = 입고 − 누계판매 / 러닝 = (시점재고+신규입고) − (구품번 8/1~ 판매 + 신규 누계판매) (러닝 팝업의 현재고 − 판매)
+// 재고 = 신상 판매 리뷰의 현재고(리오더 체크와 같은 기준: 창고 가용 + 매장, style-lookup.json) — 러닝은 신+구 합계(tstock). 보유재고(물류+채널)는 hstock·hpstock. (MD 2026-10-19 '현재고 전부 리뷰 기준으로')
+// 리뷰 자료를 못 읽었을 때만 예전 계산: 신상 = 입고 − 누계판매 / 러닝 = (시점재고+신규입고) − 판매(스타일맵 스냅샷)
 // 재고금액 = 재고 × 실판가(없으면 TAG가) · 재고원가 = 재고 × 원가(VAT 포함)
 const SGROUPS = [
   ['판매', [['rateDesc','판매율 높은순'],['rateAsc','판매율 낮은순'],['salesDesc','누계판매 많은순'],['salesAsc','누계판매 적은순'],
@@ -638,7 +640,14 @@ const nz = v => (v==null || v==='' || isNaN(+v)) ? null : +v;
 const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
 const qin  = s => (s.ttl && +s.ttl.qtyIn) || 0;
 const sold = s => (s.ttl && +s.ttl.total) || 0;
-const stockLeft = s => s.popup ? ((+s.popup.stat.stock||0) - (+s.popup.stat.sales||0)) : (qin(s) - sold(s));
+const lookStock = s => {                 // 리뷰(style-lookup.json) 보유재고 — 러닝은 신품번 + 구품번. 값이 없으면 null
+  const r = (typeof LOOK !== 'undefined' && LOOK) ? LOOK[s.altStyle || s.style] : null;
+  if(!r || r.stock == null) return null;
+  if(s.popup && r.tstock == null && r.pstock == null) return null;
+  return s.popup ? (+(r.tstock != null ? r.tstock : r.pstock) || 0) : (+r.stock || 0);   // 러닝 = 신+구 합계(tstock). 옛 lookup 은 pstock 이 이미 신+구 합계였다 — 신품번을 또 더하면 두 번 센다
+};
+const stockLeft = s => { const v = lookStock(s); if(v != null) return v;
+  return s.popup ? ((+s.popup.stat.stock||0) - (+s.popup.stat.sales||0)) : (qin(s) - sold(s)); };
 const unitReal  = s => (+s.real > 0) ? +s.real : ((+s.tag > 0) ? +s.tag : null);
 const w1Of  = s => (s.ttl && s.ttl.w1 != null) ? +s.ttl.w1 : null;
 const chgOf = s => (s.ttl && +s.ttl.w2 > 0) ? (+s.ttl.w1||0) / (+s.ttl.w2) - 1 : null;
@@ -687,15 +696,17 @@ const sgn = v => (v>0?'+':'') + (v*100).toFixed(0) + '%';
 function sortNote(s){
   const t = s.ttl || {};
   if(!hasIn(s) && /^(sales|w1|stock|qtyIn)/.test(SORT)) return '입고 전(입고 0) — 값 없음, 맨 뒤로 정렬';
-  const rn = s.popup ? ' · 러닝은 팝업 기준 재고(신상 판매 리뷰 보유재고와 정의가 달라 값이 다를 수 있음)' : '';
+  const rn = (s.popup && lookStock(s) == null) ? ' · 리뷰 자료를 못 읽어 팝업 기준 추정값(신상 판매 리뷰 보유재고와 다를 수 있음)' : '';
   switch(SORT){
     case 'rateDesc': case 'rateAsc': return `판매율 ${pct(rateOf(s))}`;
     case 'salesDesc': case 'salesAsc': return `누계판매 ${qty(sold(s))}장`;
     case 'w1Desc': case 'w1Asc': return `전주 ${qty(t.w1||0)}장 (2주전 ${qty(t.w2||0)}장)`;
     case 'chgDesc': case 'chgAsc': { const c = chgOf(s); return c==null ? '2주전 판매 없음' : `전주 ${qty(t.w1||0)}장 ↔ 2주전 ${qty(t.w2||0)}장 (${sgn(c)})`; }
-    case 'stockDesc': case 'stockAsc':
+    case 'stockDesc': case 'stockAsc': {
+      const lv = lookStock(s), lr = lv != null ? LOOK[s.altStyle || s.style] : null;
+      if(lv != null) return `재고 ${qty(lv)}장 = 신상 판매 리뷰 현재고(리오더 체크 기준 · 창고 가용 + 매장)` + (s.popup ? ` · 신품번 ${qty(lr.stock)} + 구품번 ${qty(lr.tstock != null ? lr.pstock : (lr.pstock - lr.stock))}` : '');
       return s.popup ? `재고 ${qty(stockLeft(s))}장 = (기초+입고) ${qty(s.popup.stat.stock)} − 판매 ${qty(s.popup.stat.sales)}${rn}`
-                     : `재고 ${qty(stockLeft(s))}장 = 입고 ${qty(qin(s))} − 누계판매 ${qty(sold(s))}`;
+                     : `재고 ${qty(stockLeft(s))}장 = 입고 ${qty(qin(s))} − 누계판매 ${qty(sold(s))}`; }
     case 'stockAmtDesc': case 'stockAmtAsc': { const u = unitReal(s); return u==null ? '실판가·TAG가 없음' : `재고금액 ${eok(stockAmt(s))} = ${qty(stockLeft(s))}장 × ${s.real>0?'실판가':'TAG가'} ${won(u)}${rn}`; }
     case 'stockCostDesc': case 'stockCostAsc': { const c = costVat(s); return c>0 ? `재고원가 ${eok(stockCostV(s))} = ${qty(stockLeft(s))}장 × 원가(VAT 포함) ${won(c)}${rn}` : '원가 없음'; }
     case 'realDesc': case 'realAsc': return `판매가(실판가) ${won(s.real)} · TAG ${won(s.tag)}`;
@@ -852,10 +863,12 @@ function render(){
 
 /* ---------- 카드 클릭 -> CU 품번 단독 카드 모달 ---------- */
 const modal = document.getElementById('modal');
-/* 러닝 팝업: 시점재고 + 신규품번 입고 기준 (현재고 실적).
-   컬러 표의 기획 = 컬러별 기초재고 + 신규 기획량, 입고 = 기초재고 + 신규 입고량, 판매율은 현재고 기준 */
+/* 러닝 팝업: 시점재고 + 신규품번 입고 기준.
+   컬러 표의 기획 = 컬러별 기초재고 + 신규 기획량, 입고 = 기초재고 + 신규 입고량, 판매율은 (기초재고+입고) 대비.
+   현재고 칸 = 신상 판매 리뷰 현재고(리오더 체크 기준: 창고 가용 + 매장, 신품번+구품번) — 예전엔 기초+입고를 '현재고'로 적어 판매가 안 빠져 있었다(2026-10-19). */
 function popupCard(s, extra=''){
   const st = s.popup.stat;
+  const lv = lookStock(s), lr = lv != null ? LOOK[s.altStyle || s.style] : null;   // 현재고 = 리뷰 보유재고(신+구)
   const rate = st.rate==null ? 0 : Math.max(0, Math.min(100, st.rate));
   const rows = s.popup.colors.map(c=>`
     <tr${c.old?' class="oldc"':''}>
@@ -878,11 +891,11 @@ function popupCard(s, extra=''){
       <div><b>${n0(st.base)}</b><span>기초재고</span></div>
       <div><b>${n0(st.addPlan)}</b><span>추가 기획량</span></div>
       <div><b>${n0(st.newIn)}</b><span>입고량</span></div>
-      <div><b>${n0(st.stock)}</b><span>현재고</span></div>
+      <div title="${lv != null ? '신상 판매 리뷰 현재고(리오더 체크 기준 · 창고 가용 + 매장) · 신품번+구품번 합계' : '리뷰 자료를 못 읽어 (기초+입고)−판매로 추정'}"><b>${n0(lv != null ? lv : ((+st.stock||0) - (+st.sales||0)))}</b><span>현재고${lv != null ? '' : ' (추정)'}</span></div>
       <div class="hl"><b>${pct(st.rate)}</b><span>판매율</span></div>
     </div>
     <div class="prog">
-      <div class="lb"><span>판매 진행률 (현재고 기준)</span><b>${pct(st.rate)}</b></div>
+      <div class="lb"><span>판매 진행률 (기초재고+입고 대비)</span><b>${pct(st.rate)}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
     ${extra}
@@ -961,7 +974,7 @@ listEl.addEventListener('click', e=>{
   if(!s || !(s.popup || s.re || s.lots)) return;
   const nre = (s.reN||[]).length;
   document.getElementById('mtitle').textContent = s.altStyle ? `${s.style} + ${s.altStyle}` : (s.re ? `${s.style} · 리오더 합산` : s.style);
-  document.getElementById('msub').textContent = s.lots ? `차수별 입고·판매${nre?` · 리오더 ${nre}회`:''}${s.re?' · 최초+리오더 기획':' · 시점재고 + 신규품번'}` : (s.re ? '최초 기획 + 리오더 기획 · 총 기획량 기준' : '시점재고 + 신규품번 · 현재고 기준');
+  document.getElementById('msub').textContent = s.lots ? `차수별 입고·판매${nre?` · 리오더 ${nre}회`:''}${s.re?' · 최초+리오더 기획':' · 시점재고 + 신규품번'}` : (s.re ? '최초 기획 + 리오더 기획 · 총 기획량 기준' : '시점재고 + 신규품번');
   RE_FIRST = false; modal.dataset.style = s.style; POP = {style:s.style, sel:'all'};
   renderPop();
   LASTFOCUS = el;
@@ -1236,7 +1249,7 @@ function rvHTML(s){
     return head + `<div class="rvx">${why}<br>카드 기준 — 입고 ${qty(qin(s))} · 누계판매 ${qty(sold(s))}</div>`;
   }
   const cIn = qin(s), cSale = sold(s), cStock = cIn - cSale;
-  const dIn = (+r.inq||0) - cIn, dSale = (+r.sale||0) - cSale, dStock = (+r.stock||0) - cStock;
+  const dIn = (+r.inq||0) - cIn, dSale = (+r.sale||0) - cSale, rHold = (r.hstock != null ? +r.hstock : +r.stock) || 0, dStock = rHold - cStock;
   const cRate = rateOf(s), rRate = r.rate != null ? +r.rate : null;
   const cRate1 = cRate == null ? null : Math.round(cRate*10)/10;          // 화면에 보이는 소수 1자리끼리 비교
   const dRate = (cRate1 != null && rRate != null) ? Math.round((rRate - cRate1)*10)/10 : null;
@@ -1245,7 +1258,7 @@ function rvHTML(s){
     row('입고', qty(cIn), qty(r.inq), sd(dIn)) +
     row('누계 판매', qty(cSale), qty(r.sale), sd(dSale)) +
     row('판매율', cRate==null?'-':cRate.toFixed(1)+'%', rRate==null?'-':rRate.toFixed(1)+'%', dRate==null?'-':(dRate===0?'<span class="dim">같음</span>':`<b class="${dRate>0?'up':'down'}">${dRate>0?'+':'−'}${Math.abs(dRate).toFixed(1)}%p</b>`)) +
-    row('재고', qty(cStock) + '<small>입고−판매</small>', qty(r.stock) + '<small>보유재고</small>', sd(dStock)) + `</div>`;
+    row('재고', qty(cStock) + '<small>입고−판매</small>', qty(rHold) + '<small>보유재고</small>', sd(dStock)) + `</div>`;
   const cw = cardWeek();
   // 카드 전주와 리뷰 전주가 같은 주인지 — 달라지면(월요일 자동 갱신 뒤 새 스타일맵 전) 주 단위 설명은 하지 않는다
   const sameWeek = !cw || !cw.exact || !LOOKW1 || cw.iso === LOOKW1;
@@ -1291,8 +1304,8 @@ function rvHTML(s){
   }
   if(s.popup && r.psale != null){
     // 리뷰의 psale = 구품번 + 신품번 8월 1주(8/3)~ 합산 → 신규 단독은 r.sale 이므로 빼면 구품번분
-    const aug = +s.augSales || 0, cm = +s.popup.stat.sales || 0, rOld = (+r.psale||0) - (+r.sale||0), dm = (+r.psale||0) - cm, dOld = rOld - aug;
-    let line = `<b>러닝 구품번 포함 합산 판매</b> — 카드 팝업 ${qty(cm)}장(구품번 8/1~ ${qty(aug)} + 신규 ${qty(cSale)}) ↔ 리뷰 ${qty(r.psale)}장(구·신품번 8월 1주~ 합산)`;
+    const aug = +s.augSales || 0, cm = +s.popup.stat.sales || 0, rTot = r.tsale != null ? (+r.tsale||0) : (+r.psale||0), rOld = r.tsale != null ? (+r.psale||0) : (rTot - (+r.sale||0)), dm = rTot - cm, dOld = rOld - aug;
+    let line = `<b>러닝 구품번 포함 합산 판매</b> — 카드 팝업 ${qty(cm)}장(구품번 8/1~ ${qty(aug)} + 신규 ${qty(cSale)}) ↔ 리뷰 ${qty(rTot)}장(구·신품번 8월 1주~ 합산)`;
     if(dm === 0) line += ' — 같음.';
     else{
       line += ` — ${qty(Math.abs(dm))}장 차이(${dm>0?'리뷰':'카드'}가 많음) = 신규 품번 ${sgS(dSale)} + 구품번 ${sgS(dOld)} (구품번 카드 ${qty(aug)} ↔ 리뷰 ${qty(rOld)}).`;
@@ -1307,7 +1320,7 @@ const paintRv = all => document.querySelectorAll(all ? '.rv[data-k]' : '.rv[data
   const s = BYSTYLE.get(el.dataset.k); if(s){ el.innerHTML = rvHTML(s); el.dataset.p = '1'; }
 });
 fetch('style-lookup.json', {cache:'no-store'}).then(r=>r.ok ? r.json() : Promise.reject())
-  .then(j=>{ LOOK = j.styles || null; LOOKAT = j.at || ''; LOOKW1 = j.w1d || ''; LOOKSTATE = 'ok'; paintRv(true); })
+  .then(j=>{ LOOK = j.styles || null; LOOKAT = j.at || ''; LOOKW1 = j.w1d || ''; LOOKSTATE = 'ok'; paintRv(true); render(); })
   .catch(()=>{ LOOKSTATE = 'fail'; paintRv(true); });
 
 buildFilters();
