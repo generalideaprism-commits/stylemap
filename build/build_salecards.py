@@ -31,6 +31,7 @@ else:
 print('원본:', os.path.basename(SRC))
 OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html')
 OUT_SUM = os.path.join(SHARE_DIR, '26fw-season-summary.html')
+OUT_SUM2 = os.path.join(SHARE_DIR, '26fw-season-summary-v2.html')      # 그래프 중심 제안안 (기존 집계표는 그대로)
 OUT_CMP = os.path.join(SHARE_DIR, '26fw-season-compare.html')
 
 # ---- 택가 정본: MDP 최종TAG (production-hub/fw-intake/tagmap.json) ----
@@ -1406,6 +1407,8 @@ render('salecards_template.html', OUT_CARD,
        **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END, '__CHAT__': CH_AT})
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
+       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
+render('summary_v2_template.html', OUT_SUM2,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
