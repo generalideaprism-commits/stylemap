@@ -1315,6 +1315,7 @@ if _back and PY_EXCLUDE_CODES:
             if _d['season'] == _se and _d['cat'] == _cat:
                 _gift_sub(_d.get('py'), _v)
         print('25FW 제외: %s %s (%s %s %s) — 입고 %s · 누계 %s · 주간 %s' % (_code, txt(_r[_si + 1]), _se, _grp, _cat, int(_qty_in), int(_v['sales']), int(_v['wkQty'])))
+        SUM.setdefault('pyExcl', []).append({'code': _code, 'name': txt(_r[_si + 1]).replace('제너럴아이디어 ', ''), 'qtyIn': int(_qty_in), 'costV': round(_v['cost'] * 1.1)})
 
 # ---- 25FW 러닝 입고 = 이월 포함 (사용자 지시 2026-10-12) ----
 # 종합 시트 AL19/AL20 의 25FW 러닝 입고 수식은 전년비교BACK 생산(이월 포함)에서 25.07.31 시점재고를 빼도록 바뀌어
@@ -1408,8 +1409,69 @@ render('salecards_template.html', OUT_CARD,
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
+# 연간(SS+FW) 탭 — 26SS 스타일맵(NAS)과 25SS 동시점. 겹치는 러닝 품번을 알려 주려고 26FW 러닝 목록(구품번)을 넘긴다.
+import ss_data
+try:
+    # A열 = 기존품번 36개 뒤에 신품번 36개가 다시 이어져 있다(B열 = 신규러닝품번) — A열에서 B열(신품번)을 뺀 것이 구품번이다
+    _fwr = [r for r in wb['26FW 러닝스타일 리스트'].iter_rows(min_row=2, max_row=300, max_col=2, values_only=True) if r and r[0]]
+    _fw_run_old = sorted({txt(r[0]) for r in _fwr} - {txt(r[1]) for r in _fwr if len(r) > 1 and r[1]})
+except Exception as _e:
+    print('[경고] 26FW 러닝스타일 리스트를 읽지 못했습니다:', _e)
+    _fw_run_old = []
+SS = ss_data.load(fw_codes=_fw_run_old)
+# 온·오프 탭 — 판매 카드의 채널 판매(허브 MARK 채널 자료)를 시즌(가을·겨울·러닝)×복종으로 합친다.
+# 러닝은 카드가 신품번 기준이라 신품번 판매만(구품번 이월 판매는 채널 자료가 없다). 판매 원가 = 스타일 원가(VAT 포함) × 판매량 — 채널에 따라 달라지지 않는 단가라 정확하다.
+def _bok_of(it):
+    it = str(it or '')
+    return 'TOP' if it.startswith(('KNIT', 'INNER')) else ('OUTER' if it == 'OUTER' else 'BOTTOM' if it == 'BOTTOM' else 'ACC')
+
+
+_chn = {}
+for _c in data:
+    _g = '러닝' if _c.get('line') == '러닝' else _c['season']
+    _a = _chn.setdefault((_g, _bok_of(_c.get('item'))), dict(cards=0, chCards=0, miss=0, sales=0.0, wk=0.0, on=0, onW=0, off=0, offW=0, etc=0, etcW=0, cost=0.0, costOn=0.0, costOff=0.0, costEtc=0.0))
+    _ttl = (_c.get('ttl') or {}).get('total') or 0
+    _u = _c.get('costV') or 0
+    _a['cards'] += 1
+    _a['sales'] += _ttl
+    _a['wk'] += (_c.get('ttl') or {}).get('w1') or 0                       # 스타일맵 주간판매량(최근 1주) — 채널 합과의 차이를 설명하는 데 쓴다
+    _a['cost'] += _u * _ttl
+    _v = _c.get('ch')
+    if not _v and _ttl > 0:
+        _a['miss'] += 1                                                    # 판매는 있는데 채널 자료가 없는 카드
+    if _v:
+        _t = _v['t']
+        _a['chCards'] += 1
+        for _k, _i in (('on', 0), ('onW', 1), ('off', 2), ('offW', 3), ('etc', 4), ('etcW', 5)):
+            _a[_k] += _t[_i]
+        _a['costOn'] += _u * _t[0]
+        _a['costOff'] += _u * _t[2]
+        _a['costEtc'] += _u * _t[4]
+# 원가 미입력 — 입고(또는 판매)가 있는데 원천 원가가 비어 있는 스타일. 원가 총액·판매 원가가 그만큼 적게 나오므로 화면에 밝힌다.
+_noc = {}
+for _c in data:
+    if _c.get('costV'):
+        continue
+    _g = '러닝' if _c.get('line') == '러닝' else _c['season']
+    _x = _noc.setdefault(_g, dict(inN=0, inQty=0, saN=0, saQty=0, planN=0, planQty=0))
+    _qi, _qs = int((_c.get('ttl') or {}).get('qtyIn') or 0), int((_c.get('ttl') or {}).get('total') or 0)
+    _qp = int((_c.get('ttl') or {}).get('plan') or 0)
+    if _qp > 0:
+        _x['planN'] += 1
+        _x['planQty'] += _qp
+    if _qi > 0:
+        _x['inN'] += 1
+        _x['inQty'] += _qi
+    if _qs > 0:
+        _x['saN'] += 1
+        _x['saQty'] += _qs
+SUM['noCost'] = _noc
+print('원가 미입력(입고 있음 / 기획만):', {k: ((v['inN'], v['inQty']), (v['planN'], v['planQty'])) for k, v in _noc.items()})
+CHN = {'at': CH_AT, 'src': CH_SRC, 'end': DATA_END,
+       'rows': [dict(g=_k[0], bok=_k[1], **{_x: (round(_y) if isinstance(_y, float) else _y) for _x, _y in _v.items()}) for _k, _v in sorted(_chn.items())]}
+print('온·오프 탭: %d행 · 채널 판매 합 %d장 (카드 판매 %d장)' % (len(CHN['rows']), sum(r['on'] + r['off'] + r['etc'] for r in CHN['rows']), sum(r['sales'] for r in CHN['rows'])))
 render('summary_v2_template.html', OUT_SUM2,
-       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
+       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
     print('removed:', OUT_CMP)
