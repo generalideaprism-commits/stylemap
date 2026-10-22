@@ -48,6 +48,9 @@ PREV = dict(qtyIn='AF', sales='AG', sellRate='AH', salesTag='AI', salesAmt='AJ',
 # 전년비교BACK 시트(0-based 열): 기획 34~36(수량·TAG금액·원가금액) · 생산(입고) 43~45 · 판매(최근=주간) 56~59 · 판매(기간=누계) 60~63
 BK = dict(plan=34, planCost=36, qtyIn=43, tag=44, cost=45, wkQty=56, wkAmt=58, sales=60, salesTag=61, salesAmt=62, salesCost=63)
 ITEMS = ('OUTER', 'TOP', 'BOTTOM', 'ACC')
+GIFT_EXTRA_25SS = ('WBE1L95512',)         # 25SS 삭스 세트(판매금액 0원) — MD 지시 2026-10-22 로 사은품과 같이 뺀다
+SS_EXCLUDE_CODES = ('QBF1U98001',)        # 26SS 현재 값에서 뺄 사은품성 품번: GNRL 2026 다이어리(U98 + 판매금액 0원) — MD 지시 2026-10-22
+SUB_KEYS = ('styles', 'sku', 'plan', 'inM', 'inSku', 'qtyIn', 'planCost', 'cost', 'tag', 'sales', 'salesTag', 'salesAmt', 'salesCost', 'wkQty', 'wkAmt')
 
 
 def derive(v):
@@ -78,6 +81,35 @@ def find_latest(folder=SS_DIR):
         return os.path.join(folder, sorted(cands)[-1][2])
     except OSError:
         return None
+
+
+def exclude_current(wb, block1, codes):
+    """26SS 종합 시트 합계에서 사은품성 품번의 값을 뺀다. 값은 스타일별 시트 '생,판,재'(칼라 단위 행)에서 합쳐 읽고,
+    해당 복종 행 · 시즌 TTL · 신상품 TTL · 전체 TTL 에서 차감한다(카테고리 행은 화면에서 쓰지 않아 건드리지 않는다)."""
+    per = {}
+    for r in wb['생,판,재'].iter_rows(min_row=4, max_row=1200, max_col=86, values_only=True):
+        if len(r) > 74 and txt(r[23]) in codes and str(r[13]) == '2026':
+            a = per.setdefault(txt(r[23]), dict(season=txt(r[14]), item=txt(r[17]), name=txt(r[24]), styles=1, sku=0, inM=0, inSku=0, plan=0.0, planCost=0.0,
+                                                qtyIn=0.0, tag=0.0, cost=0.0, sales=0.0, salesTag=0.0, salesAmt=0.0, salesCost=0.0, wkQty=0.0, wkAmt=0.0))
+            for k, j in (('plan', 45), ('planCost', 47), ('qtyIn', 54), ('tag', 55), ('cost', 56), ('wkQty', 67), ('wkAmt', 69), ('sales', 71), ('salesTag', 72), ('salesAmt', 73), ('salesCost', 74)):
+                a[k] += num(r[j]) or 0.0
+            a['sku'] += 1 if (num(r[45]) or 0) > 0 else 0
+            a['inSku'] += 1 if (num(r[54]) or 0) > 0 else 0
+    done = []
+    for code, v in per.items():
+        v['inM'] = 1 if v['qtyIn'] > 0 else 0
+        hit = 0
+        for rec in block1:
+            se, it = v['season'], v['item']
+            if (rec['mode'] == 'new' and ((rec['season'] == se and rec['item'] == it and rec.get('kind') == '항목') or rec.get('kind') in ('%s TTL' % se, '신상품 TTL'))) or rec.get('kind') == '전체 TTL':
+                c = rec['cur']
+                for k in SUB_KEYS:
+                    if c.get(k) is not None and v.get(k):
+                        c[k] -= v[k]
+                derive(c)
+                hit += 1
+        done.append({'code': code, 'name': v['name'], 'season': v['season'], 'qtyIn': round(v['qtyIn']), 'costV': round(v['cost'] * 1.1), 'rows': hit})
+    return done
 
 
 def run_overlap(wb, ss_list, fw_codes, end_iso, since='2026-07-27'):
@@ -136,7 +168,7 @@ def parse(path, fw_codes=None):
     for r in bs.iter_rows(min_row=4, max_row=1200, max_col=71, values_only=True):
         if not r[14] or str(r[4]) != '2025' or txt(r[5]) not in ('봄', '여름') or txt(r[0]) not in ITEMS:
             continue
-        gift = 'U98' in txt(r[14]) and not (num(r[BK['salesAmt']]) or 0)           # 사은품 — 판매금액이 0원인 U98 품번
+        gift = ('U98' in txt(r[14]) and not (num(r[BK['salesAmt']]) or 0)) or txt(r[14]) in GIFT_EXTRA_25SS      # 사은품 — 판매금액이 0원인 U98 품번 + 지정 품번
         if gift and (num(r[BK['qtyIn']]) or 0) > 0:
             gifts.append('%s %s' % (txt(r[14]), txt(r[15])))
             gsum['n'] += 1
@@ -196,6 +228,7 @@ def parse(path, fw_codes=None):
         elif rec['mode'] == 'run':
             rec['py'] = derive({k: v for k, v in sprev.items() if v is not None}) if any(v for v in sprev.values()) else None
         block1.append(rec)
+    gifts26 = exclude_current(wb, block1, SS_EXCLUDE_CODES)
 
     # --- 복종·카테고리 현재값(전년 없음) — 신상품 전체(30~64행), 봄·여름 시즌별(71~144행) ---
     def cats(r0, r1, season=None):
@@ -226,7 +259,7 @@ def parse(path, fw_codes=None):
             run_list.append(str(r[2]).strip())
 
     run = run_overlap(wb, run_list, fw_codes or [], iso(end))
-    return {'file': os.path.basename(path), 'end': iso(end), 'prevEnd': iso(prev_end), 'gifts25': gifts, 'gifts25Sum': {k: round(v) for k, v in gsum.items()},
+    return {'file': os.path.basename(path), 'end': iso(end), 'prevEnd': iso(prev_end), 'gifts25': gifts, 'gifts25Sum': {k: round(v) for k, v in gsum.items()}, 'gifts26': gifts26,
             'block1': block1, 'newCat': new_cat, 'seasonCat': season_cat, 'runList': run_list, 'run': run, 'check': check}
 
 
@@ -242,6 +275,8 @@ def load(path=None, quiet=False, fw_codes=None):
                 print('26SS: %s (기준일 %s · 전년 %s) · 종합 %d행 · 카테고리 %d+%d행 · 러닝 품번 %d (FW 목록과 겹침 %s품번 · 겹침 판매 %s장)' % (
                     data['file'], data['end'], data['prevEnd'], len(data['block1']), len(data['newCat']), len(data['seasonCat']), len(data['runList']),
                     (data.get('run') or {}).get('overlap'), (data.get('run') or {}).get('overlapQty')))
+                if data.get('gifts26'):
+                    print('  26SS 현재 값에서 사은품성 품번 제외:', ', '.join('%s %s(입고 %s장)' % (g['code'], g['name'], g['qtyIn']) for g in data['gifts26']))
                 if data.get('gifts25'):
                     print('  25SS 사은품 %d품번을 전년 합에서 제외: %s' % (len(data['gifts25']), ', '.join(data['gifts25'])))
                 if data['check']:

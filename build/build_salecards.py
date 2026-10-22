@@ -1281,7 +1281,7 @@ if GIFT or _gn:
 # ---- 25FW 동시점에서 빼는 품번 ----
 # 25FW 사은품이 기타액세서리로 들어와 전년 입고가 5만 장 부풀었다(QBE3U98007 드레스퍼퓸, 사용자 확인 2026-10-06).
 # '전년비교BACK(~동시점,생판재)' 시트에서 해당 품번 행을 읽어 25FW(py) 상위 합계에서 뺀다. 26FW 쪽은 건드리지 않는다.
-PY_EXCLUDE_CODES = ['QBE3U98007']
+PY_EXCLUDE_CODES = ['QBE3U98007', 'SBE3U92099']     # SBE3U92099 리유저블백(25FW 가을 ACC, 입고 6,000장 · 판매 0) — MD 지시 2026-10-22
 _back = next((nm for nm in wb.sheetnames if '전년비교' in nm), None)
 if _back and PY_EXCLUDE_CODES:
     _ws = wb[_back]
