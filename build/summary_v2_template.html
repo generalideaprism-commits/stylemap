@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>26FW 시즌 집계표 · 제안안</title>
+<title>26 시즌 집계표 · 제안안</title>
 <style>
   :root{
     color-scheme:light;
@@ -40,6 +40,8 @@
   .tab{border:0;background:transparent;color:var(--sub);border-radius:999px;padding:7px 16px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
   .tab:hover{color:var(--ink)}
   .tab.on{background:#111827;color:#fff}
+  .seg.period .opt{font-size:13px;padding:7px 17px}
+  .hd2.tabsrow{margin-top:8px} .hd2.tabsrow .tabs{margin-left:0}
   .hd3{margin-top:7px;font-size:11px;line-height:1.55;color:var(--sub);background:var(--soft);border-radius:8px;padding:6px 10px}
   .hd3 b{color:var(--ink)}
 
@@ -92,6 +94,8 @@
   .kpi .kd.alt .nm{white-space:normal}
   .kpi .kd .dv{white-space:nowrap;margin-left:auto}
   .kpi .kd .nm{white-space:nowrap}
+  .kpi .kd.main .nm{white-space:normal}
+  .kpi .kd .nm,.st-cap,table.ct th.nm,.pc-name{word-break:keep-all}                            /* 숫자와 단위·한글 낱말이 줄 중간에서 갈라지지 않게 */                      /* 신상품만 값 · 전년 값이 한 줄에 길어지면 줄바꿈 */
   .up{color:var(--red)} .down{color:var(--blue)} .flat{color:var(--muted)}
 
   /* ---------- 막대 비교 (이번 vs 비교) ---------- */
@@ -136,6 +140,7 @@
   .st-bar span{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;min-width:0;overflow:hidden}
   .st-bar span:first-child{border-radius:4px 0 0 4px} .st-bar span:last-child{border-radius:0 4px 4px 0}
   .st-bar .ch-on,.ch-onb{background:#0e7490} .st-bar .ch-off,.ch-offb{background:#6d4aa5} .st-bar .ch-etc,.ch-etcb{background:#6b7280}
+  .st-bar .sp5,.sp5b{background:#6d4aa5}
   .st-bar .sp1,.sp1b{background:#2f7d54} .st-bar .sp2,.sp2b{background:#9a6700} .st-bar .sp3,.sp3b{background:#c2410c} .st-bar .sp4,.sp4b{background:#3b5b92}
   .st-bar .g1{background:var(--g1)} .st-bar .g2{background:var(--g2)} .st-bar .c26{background:var(--c26)} .st-bar .c25{background:var(--c25);color:#1f2937}
   .st-cap{grid-column:2;font-size:11px;color:var(--sub);margin-top:-2px}
@@ -212,7 +217,7 @@
     @page{size:A4 landscape;margin:10mm}
     body{background:#fff}
     .hd{position:static;box-shadow:none;padding:0 0 6px}
-    #segBasis,#segRun,#tabs,.oldlink,.chips,.swipe,details.tv,.hd1 .rng{display:none!important}
+    #segPeriod,#segBasis,#segRun,#tabs,.tabsrow,.oldlink,.chips,.swipe,details.tv,.hd1 .rng{display:none!important}
     main{max-width:none;padding:0}
     .card,.kpi,.headline,.sec>.card,.panel{break-inside:avoid;box-shadow:none}
     .tw{overflow:visible}
@@ -341,17 +346,19 @@
 <body>
 <header class="hd"><div class="hdin">
   <div class="hd1">
-    <h1>26FW 시즌 집계표<span class="pill">제안안</span></h1>
+    <h1><span id="ttlt">26 시즌 집계표</span><span class="pill">제안안</span></h1>
     <span class="rng" id="rng"></span>
     <a class="oldlink" href="26fw-season-summary.html">기존 집계표(표 전체) 보기 →</a>
   </div>
   <div class="hd2">
+    <div class="seg period" id="segPeriod" role="group" aria-label="기간"><span class="flabel">기간</span>
+      <button class="opt on" data-period="annual" title="26SS + 26FW 합계 — 러닝은 SS·FW 겹침을 뺀 값을 더해 볼 수 있습니다">연간 (SS+FW)</button><button class="opt" data-period="ss" title="26SS(봄·여름) 스타일맵 — 러닝은 SS 러닝만">26SS</button><button class="opt" data-period="fw" title="26FW(가을·겨울) 스타일맵 — 전주 대비 · 시점재고 합산 · 기존 전체 표">26FW</button></div>
     <div class="seg" id="segBasis" role="group" aria-label="비교 기준"><span class="flabel">비교</span>
       <button class="opt on" data-basis="yr">전년 동시점 대비</button><button class="opt" data-basis="wk">전주 대비</button></div>
     <div class="seg" id="segRun" role="group" aria-label="러닝 기준"><span class="flabel">러닝</span>
       <button class="opt on" data-run="0">26FW 신품번만</button><button class="opt" data-run="1">시점재고 합산</button></div>
-    <div class="tabs" id="tabs" role="group" aria-label="화면"></div>
   </div>
+  <div class="hd2 tabsrow"><span class="flabel">화면</span><div class="tabs" id="tabs" role="group" aria-label="화면"></div></div>
   <div class="hd3" id="basisnote"></div>
 </div></header>
 <main id="view"></main>
@@ -375,8 +382,9 @@ const TERMS = {
   newer:'신상품(가을+겨울)',
   flag: '기준 다름',
 };
-const DEFAULTS = {tab:'overview', basis:'yr', runStk:true, season:'가을', metric:'costV', scope:'전체', group:'cost', heat:'sellRate', ascope:'연간', ametric:'costV', aheat:'costV'};
-const TABS = [['overview','한눈에 보기'], ['onoff','온 · 오프'], ['annual','연간 (SS+FW)'], ['season','시즌 · 복종'], ['gender','성별'], ['run','러닝'], ['all','전체 표']];
+const DEFAULTS = {period:'annual', tab:'overview', basis:'yr', runStk:true, season:'가을', metric:'costV', scope:'전체', group:'cost', heat:'sellRate', ascope:'연간', ametric:'costV', aheat:'costV'};
+const TABS = [['overview','한눈에 보기'], ['season','시즌 · 복종'], ['gender','성별'], ['run','러닝'], ['onoff','온 · 오프'], ['all','전체 표']];
+const PERIODS = [['annual','연간 (SS+FW)'], ['ss','26SS'], ['fw','26FW']];
 const MET = {          // 지표 정의 — label(이름) · fmt(표기) · unit(단위) · rate(비율, 증감은 %p) · ratio(배수, 증감은 배)
   sales:    {label:'누계판매량',   fmt:v => fmtN(v),  unit:'장'},
   wkQty:    {label:'주간판매량',   fmt:v => fmtN(v),  unit:'장'},
@@ -402,10 +410,12 @@ const TG = {           // 비교표에서 한 번에 보는 지표 3개씩 묶�
   wk:    {label:'이번 주',     keys:['wkQty','wkAmt','disc']},
   price: {label:'가격·마크업', keys:['disc','mu','muReal']},
 };
-const SEASONS = {'가을':'가을', '겨울':'겨울', '신상':'신상품 전체'};
+const SEASON_KEYS = ['가을', '겨울', '신상', '봄', '여름', '전체', '러닝'];      // 시즌·복종 탭의 범위 키(기간마다 쓰는 것이 다르다 — seasonsMap)
 
-const SUM = /*__SUM__*/{};
+const SUM_FW = /*__SUM__*/{};   // 26FW 집계표 자료(스타일맵 종합 시트) — 빌더가 박는다
+let SUM = SUM_FW;               // 지금 기간의 자료: 26FW 는 SUM_FW, 26SS·연간은 같은 모양으로 만든 SUM_SS·SUM_AN (setPeriod)
 const CHN = /*__CHN__*/{};      // 온·오프 탭 — 판매 카드의 채널 판매(허브 MARK)를 시즌×복종으로 합친 것. 빌더가 만든다
+const RUNY = /*__RUNY__*/{};   // 연간 러닝 중복 제거 자료(겹치는 구품번 · 두 파일 대조 · FW 이월 몫) — 빌더가 run_annual.py 로 만든다
 const SS = /*__SS__*/{};       // 26SS 스타일맵(NAS) 종합 + 25SS 동시점 — 연간(SS+FW) 탭용. ss_data.py 가 만든다
 
 /* 데이터 기준 기간 — 스타일맵 파일 날짜(월요일)의 전날 일요일까지가 26FW,
@@ -775,7 +785,7 @@ function renderSum(){
 /* ---------- 상태 ---------- */
 let BASIS = DEFAULTS.basis;     // 'yr' = 전년(25FW) 동시점 · 'wk' = 직전 스타일맵(전주)
 let TAB = DEFAULTS.tab;
-let SEASON = DEFAULTS.season;   // 시즌·복종 탭의 범위
+let SEASON = '';                // 시즌·복종 탭의 범위 — 비어 있으면 기간에 맞는 기본값(26FW=가을, 연간=신상품+러닝, 26SS=신상품)
 let METRIC = DEFAULTS.metric;   // 그래프 지표
 let ITEMSCOPE = DEFAULTS.scope; // 한눈에 보기의 복종 그래프 범위
 let TGROUP = DEFAULTS.group;    // 비교표 지표 묶음
@@ -787,12 +797,110 @@ let OMET = 'sales';             // 온·오프 탭의 지표(sales/wk/cost)
 let ASCOPE = DEFAULTS.ascope;   // 연간 탭의 범위(연간 / 26SS / 26FW)
 let AMET = DEFAULTS.ametric;    // 연간 탭의 그래프 지표
 let AHM = DEFAULTS.aheat;       // 연간 탭의 히트맵 지표
+let INCRUN = true;              // 연간: 러닝 포함(중복 제거) — 기본 켬
+let PERIOD = DEFAULTS.period;   // 기간: 'annual'(연간 SS+FW) · 'ss'(26SS) · 'fw'(26FW) — 화면 맨 위 선택
+
+/* =====================================================================
+   기간 — 연간(SS+FW) / 26SS / 26FW. 한눈에 보기·시즌·복종·성별·러닝은 선택한 기간을 그대로 따라간다.
+   · 26FW 는 기존 SUM 그대로. 26SS · 연간은 같은 모양의 자료(SUM_SS · SUM_AN)를 만들어 SUM 자리에 끼워 같은 화면 코드가 쓴다.
+   · 전주 대비(전주 스냅샷) · 러닝 시점재고 합산 · 전체 표(기존 표) · 채널별(온·오프) 판매는 26FW 에만 있다.
+   · 연간 러닝은 SS·FW 기준이 달라 합치지 않는다(합계는 신상품만).
+   ===================================================================== */
+let SUM_SS = null, SUM_AN = null, FWSAVE = null;
+const SEASON_BY = {};                                              // 기간별로 마지막에 보던 시즌·복종 범위
+const SEASON_NAMES = ['봄', '여름', '가을', '겨울'];
+const isSeasonName = x => SEASON_NAMES.includes(x);
+const P_ITEMS = ['OUTER', 'TOP', 'BOTTOM', 'ACC'];
+const grpOf = it => String(it || '').startsWith('ACC') ? 'ACC' : String(it || '');
+function withSUM(o, fn){ const keep = SUM; SUM = o; try{ return fn(); } finally{ SUM = keep; } }
+function seasonsMap(){
+  return PERIOD === 'fw' ? {'가을':'가을', '겨울':'겨울', '신상':'신상품 전체'}
+    : PERIOD === 'ss' ? {'봄':'봄', '여름':'여름', '신상':'26SS 신상품 전체'}
+    : Object.assign(hasRunY() ? {'전체':'신상품+러닝(중복 제거)'} : {}, {'신상':'연간 신상품 전체'}, hasRunY() ? {'러닝':'러닝(중복 제거)'} : {}, {'봄':'봄', '여름':'여름', '가을':'가을', '겨울':'겨울'});
+}
+let SCOPE_LAB = null;                                              // 시즌·복종 탭에서 고른 시즌에 맞춘 이름표(봄·여름 = 26SS/25SS, 가을·겨울 = 26FW/25FW)
+const PL = () => SCOPE_LAB ? Object.assign(PL0(), SCOPE_LAB) : PL0();
+function scopeLab(sc){
+  if(PERIOD === 'fw') return null;
+  if(sc === '봄' || sc === '여름') return {cur:'26SS', prev:'25SS', yr:'25SS 동시점', newer:'신상품(봄+여름)', rngCur: SS_END() ? `~ ${SS_END()}` : '', rngPrev: SS_PREV_END() ? `~ ${SS_PREV_END()}` : ''};
+  if(sc === '가을' || sc === '겨울') return {cur:'26FW', prev:'25FW', yr:TERMS.yr, newer:TERMS.newer, rngCur:RNG_CUR, rngPrev:RNG_PREV};
+  if(sc === '러닝') return {cur:'러닝(중복 제거)', rngCur:''};
+  return null;
+}
+function PL0(){                                                    // 기간별 이름표 — 화면 문구가 이걸 쓴다
+  if(PERIOD === 'ss') return {cur:'26SS', prev:'25SS', yr:'25SS 동시점', newer:'신상품(봄+여름)', rngCur: SS_END() ? `~ ${SS_END()}` : '', rngPrev: SS_PREV_END() ? `~ ${SS_PREV_END()}` : ''};
+  if(PERIOD === 'annual'){
+    const same = SS_END() === (RNG_CUR || '').replace('~ ', '');
+    return {cur:'26SS+26FW', prev:'25SS+25FW', yr:'25SS+25FW 동시점', newer:'신상품(봄·여름·가을·겨울)', rngCur: same ? RNG_CUR : `SS ~ ${SS_END()} · FW ${RNG_CUR}`, rngPrev: `SS ~ ${SS_PREV_END()} · FW ${RNG_PREV}`};
+  }
+  return {cur:'26FW', prev:'25FW', yr:TERMS.yr, newer:TERMS.newer, rngCur:RNG_CUR, rngPrev:RNG_PREV};
+}
+const flat = (meta, cur, py) => Object.assign({}, meta, cur, {py: py || null});      // 26FW 의 SUM 행처럼 지표를 맨 위에 둔 행
+function mkNewItems(b1){
+  const out = P_ITEMS.map(it => {
+    const rows = b1.filter(d => d.mode === 'new' && d.kind === '항목' && d.item === it);
+    return rows.length ? flat({item: it}, sumRows(rows.map(d => d.cur)), cmpSumK(rows, 'py')) : null;
+  }).filter(Boolean);
+  const t = b1.find(d => d.kind === '신상품 TTL');
+  if(t) out.push(flat({item: 'TOTAL'}, t.cur, t.py));
+  return out;
+}
+function mkRunItems(b1){
+  const rows = b1.filter(d => d.mode === 'run');
+  const out = rows.filter(d => d.kind === '항목').map(d => flat({item: d.item}, d.cur, d.py));
+  const t = rows.find(d => d.kind === '러닝 TTL');
+  if(t) out.push(flat({item: 'TOTAL'}, t.cur, t.py));
+  return out;
+}
+function mergeRecs(parts, keyOf, metaOf){            // 같은 (복종·카테고리 등) 행끼리 이번 값은 합하고, 전년은 둘 다 있을 때만 합한다
+  const map = new Map(), order = {OUTER:0, TOP:1, BOTTOM:2, ACC:3};
+  parts.forEach(r => { const k = keyOf(r); if(!map.has(k)) map.set(k, []); map.get(k).push(r); });
+  const out = [];
+  map.forEach(recs => { const py = recs.length === 1 ? recs[0].py : (recs.every(r => r.py) ? cmpSumK(recs, 'py') : null); out.push(flat(metaOf(recs[0]), sumRows(recs.map(r => r.cur || r)), py)); });
+  return out.sort((a, b) => (order[grpOf(a.item)] ?? 9) - (order[grpOf(b.item)] ?? 9));
+}
+function buildPeriods(){
+  if(!hasSS()){ SUM_SS = null; SUM_AN = null; return; }
+  const flatList = (list, keys) => (list || []).map(r => flat(keys.reduce((o, k) => { if(r[k] !== undefined) o[k] = r[k]; return o; }, {}), r.cur || r, r.py));
+  const sb = SS.block1;
+  SUM_SS = {block1: sb, newItem: mkNewItems(sb), newCat: flatList(SS.newCat, ['item', 'cat', 'code']), seasonCat: flatList(SS.seasonCat, ['season', 'item', 'cat', 'code']),
+            runItem: mkRunItems(sb), runCat: [], genderItem: flatList(SS.genderItem, ['gender', 'item']), genderCat: flatList(SS.genderCat, ['gender', 'item', 'cat', 'code']), noCost: {}, pyExcl: []};
+  const all = sb.filter(d => d.mode === 'new' && d.kind !== '신상품 TTL').concat(SUM_FW.block1.filter(d => d.mode === 'new' && d.kind !== '신상품 TTL'));
+  const tt = SEASON_NAMES.map(x => all.find(d => d.season === x && d.item === 'TTL'));
+  if(tt.every(Boolean)) all.push({season:'', item:'TTL', mode:'new', kind:'신상품 TTL', cur: sumRows(tt.map(d => d.cur)), py: cmpSumK(tt, 'py')});
+  const fwFlat = list => (list || []).map(r => r);                               // 26FW 행은 이미 지표가 맨 위에 있다
+  const gi = new Map();
+  (SUM_SS.genderItem.concat(fwFlat(SUM_FW.genderItem))).forEach(d => { const k = d.gender + '|' + d.item; if(!gi.has(k)) gi.set(k, []); gi.get(k).push(d); });
+  const genderItem = []; gi.forEach(recs => genderItem.push(flat({gender: recs[0].gender, item: recs[0].item}, sumRows(recs.map(r => r.cur || r)), null)));
+  SUM_AN = {block1: all, newItem: mkNewItems(all),
+            newCat: mergeRecs(SUM_SS.newCat.concat(fwFlat(SUM_FW.newCat)), r => grpOf(r.item) + '|' + r.cat, r => ({item: r.item, cat: r.cat, code: r.code || ''})),
+            seasonCat: SUM_SS.seasonCat.concat(fwFlat(SUM_FW.seasonCat)), runItem: [], runCat: [],
+            genderItem, genderCat: mergeRecs(SUM_SS.genderCat.concat(fwFlat(SUM_FW.genderCat)), r => r.gender + '|' + grpOf(r.item) + '|' + r.cat, r => ({gender: r.gender, item: r.item, cat: r.cat, code: r.code || ''})).map(d => Object.assign(d, {py: null})),
+            noCost: SUM_FW.noCost, pyExcl: SUM_FW.pyExcl};
+}
+function setPeriod(p, keepSeason){
+  if(!PERIODS.some(x => x[0] === p)) p = 'annual';
+  if(PERIOD !== p && !keepSeason){ SEASON_BY[PERIOD] = SEASON; SEASON = SEASON_BY[p] || ''; }       // 기간을 오가도 그 기간에서 보던 범위로 돌아온다(주소에서 불러올 때는 주소 값 유지)
+  if(p === 'fw'){
+    if(PERIOD !== 'fw' && FWSAVE){ BASIS = FWSAVE.BASIS; RUNSTK = FWSAVE.RUNSTK; RUN_TOUCHED = FWSAVE.RUN_TOUCHED; }      // 26FW 로 돌아오면 비교·러닝 선택을 그대로 되살린다
+    FWSAVE = null;
+  }else{
+    if(PERIOD === 'fw' || !FWSAVE) FWSAVE = {BASIS, RUNSTK, RUN_TOUCHED};
+    BASIS = 'yr'; RUNSTK = false; RUN_TOUCHED = false;                  // 26SS·연간은 전년 동시점 · 러닝 합산 없음
+  }
+  PERIOD = p;
+  SUM = p === 'ss' ? (SUM_SS || SUM_FW) : p === 'annual' ? (SUM_AN || SUM_FW) : SUM_FW;
+  ASCOPE = p === 'ss' ? '26SS' : p === 'annual' ? '연간' : '26FW';
+  if(!SEASON || !own(seasonsMap(), SEASON)) SEASON = p === 'fw' ? '가을' : (p === 'annual' && hasRunY()) ? '전체' : '신상';
+  DRILL = '';
+}
+const noSsView = () => `<div class="sec"><div class="headline warn">26SS 스타일맵 자료를 읽지 못해 이 기간은 표시할 수 없습니다 — 빌드 PC 에서 NAS(4.26SS/04. 스타일맵 (주별 판매))가 열리는지 확인하세요. <button class="chip" data-period="fw">26FW 로 보기</button></div></div>`;
 
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const esc2 = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mv = (o, k) => o == null ? null : (k === 'inRate' ? inRateOf(o) : (k === 'disc' && !o.salesAmt && (o.sales || 0) > 0) ? null : get(o, k));      // 판매는 있는데 금액이 0 이면(원천 이상) 할인율을 100% 로 만들지 않는다
-const cmpName = () => BASIS === 'yr' ? TERMS.yr : TERMS.wk;
-const cmpShort = () => BASIS === 'yr' ? '25FW' : '지난주';
+const cmpName = () => BASIS === 'yr' ? PL().yr : TERMS.wk;
+const cmpShort = () => BASIS === 'yr' ? PL().prev : '지난주';
 const fmtMV = (k, v) => v == null ? '-' : MET[k].fmt(v);
 
 /* 한 행의 ‘이번’과 ‘비교’ — 기존 표의 cmpOf/cmpRun/withStk 규칙과 같다 */
@@ -834,6 +942,7 @@ const totals = () => totalsFor(RUNSTK);
 /* ---------- 비교 가능성 — 25FW 러닝은 기획량 + 이월재고 기준이라 일부 지표는 같은 잣대가 아니다 ---------- */
 // 'hide' = 기준이 달라 비교하지 않음 · 'dim' = 값은 보이되 ※ 로 흐리게(러닝을 신품번만 보면 25FW 와 정의가 다름)
 function flagMode(key, kind, forceYr){            // forceYr = 전주 보기에서도 25FW 줄(KPI)은 전년 규칙으로 판단
+  if(PERIOD !== 'fw') return null;                // 25FW 러닝 기준 주의는 26FW 에만 해당
   if((BASIS !== 'yr' && !forceYr) || !kind) return null;
   if(!RUNSTK) return 'dim';
   if(key === 'plan' || key === 'inRate') return 'hide';
@@ -924,7 +1033,9 @@ function kpiNote(){
   const n = [];
   if(BASIS === 'wk' && !RUNSTK) n.push('‘이번 주 판매량’은 주간판매량 집계라 위 한 줄 요약의 누계 증가분과 조금 다를 수 있습니다(차이 원인 미확인).');
   if(RUNSTK) n.push(SELL_NOTE_S + ' 신품번만의 값은 카드 아래 줄에 함께 적었습니다.');
-  n.push('원가 총액 = 입고량 기준 생산원가 합(VAT 포함, 원천 ×1.1). 러닝 시점재고(구품번 이월분)의 원가는 자료가 없어 ‘시점재고 합산’을 켜도 원가에는 26FW 신품번 입고분만 들어갑니다(판매 원가도 신품번분).');
+  n.push('원가 총액 = 입고량 기준 생산원가 합(VAT 포함, 원천 ×1.1). 러닝 시점재고(구품번 이월분)의 재고 원가는 종합 시트에 없어(시점재고 시트에는 있습니다) 이 화면의 원가에는 ‘시점재고 합산’을 켜도 26FW 신품번 입고분만 들어갑니다(판매 원가도 신품번분) — 연간 기간의 러닝에는 이월분 원가까지 더했습니다.');
+  if(RUNSTK && hasRunY()) n.push(`⚠ 구품번 이월 ${RUNY.checks.fwOldN}개 중 ${RUNY.checks.overlapN + RUNY.checks.overlapNewN}개(재고 ${fmtN((RUNY.checks.carryOverlap.qtyIn || 0) + (RUNY.checks.carryOverlapNew.qtyIn || 0))}장 · 8/1~ 판매 ${fmtN((RUNY.checks.carryOverlap.sales || 0) + (RUNY.checks.carryOverlapNew.sales || 0))}장)는 26SS 쪽에도 들어 있어 26SS 화면과 더하면 두 번 셉니다 — 합쳐 보려면 ‘연간’ 기간을 쓰세요(겹침을 뺀 합계).`);
+  if(BASIS === 'yr' && (SUM_FW.pyExcl || []).length) n.push(`25FW 전년 값은 사은품 ${SUM_FW.pyExcl.length}품번(${SUM_FW.pyExcl.map(x => esc2(x.name) + ' ' + fmtN(x.qtyIn) + '장').join(' · ')})을 뺀 값입니다.`);
   if(BASIS === 'yr'){ const g = costTtlGap(); if(g) n.push(g); }
   n.push('▲ 빨강 = 늘어남, ▼ 파랑 = 줄어듦 (기존 집계표와 같은 색 — 좋고 나쁨이 아니라 방향입니다)');
   return noCostHtml(['가을', '겨울'], true) + n.map(x => `<div class="note">${x}</div>`).join('');
@@ -943,12 +1054,12 @@ function costTtlGap(mode){
   if(Math.abs(g) < 10000000) return '';
   const a = fmtW(mv(sm.cmp, 'costV')), b = fmtW(mv(n.py, 'costV')), d = fmtW(Math.abs(g)), mo = g > 0 ? '많습니다' : '적습니다';
   const why = '종합 시트 48행의 집계식이 열마다 달라(AL열은 132행, AO열은 133행을 참조) 어긋난 것으로 보이며, 시트 담당 확인이 필요합니다.';
-  if(mode === 'season') return `ⓘ 이 화면의 25FW 신상품 전체는 종합 시트 합계 행(사은품 제외 후 ${b})이라, 연간 탭의 가을+겨울 합(${a})보다 ${d} ${mo}. 표의 기획 원가 등 다른 열도 같은 이유로 시즌 합과 조금 다릅니다. ${why}`;
+  if(mode === 'season') return `ⓘ 이 화면의 25FW 신상품 전체는 종합 시트 합계 행(사은품 제외 후 ${b})이라, 연간 기간의 가을+겨울 합(${a})보다 ${d} ${mo}. 표의 기획 원가 등 다른 열도 같은 이유로 시즌 합과 조금 다릅니다. ${why}`;
   return `ⓘ 25FW 신상품 원가는 가을+겨울 시즌 합(${a}) 기준입니다 — 스타일맵 종합 시트의 신상품 TTL 행(사은품 제외 후)은 ${b}이어서 시즌 합보다 ${d} ${mo}. ${why}`;
 }
 /* 원가가 비어 있는 스타일 — 입고·판매는 있는데 원천에 원가가 없으면 원가 총액이 그만큼 적게 나온다(빌더가 센 값) */
 function noCostHtml(seasons, withRun){
-  const nc = SUM.noCost || {}, out = [];
+  const nc = SUM_FW.noCost || {}, out = [];
   (withRun ? seasons.concat(['러닝']) : seasons).forEach(g => {
     const x = nc[g]; if(!x || !x.inN) return;
     out.push(`${g} ${fmtN(x.inN)}품번(입고 ${fmtN(x.inQty)}장)`);
@@ -986,7 +1097,7 @@ function pairChart(rows, key, opts){
   const anyCmp = rows.some(r => r.cmp);
   const legend = opts.curLabel
     ? `<div class="legend"><span><i style="background:var(--c26)"></i>${esc2(opts.curLabel)}${opts.rngCur ? ` (${esc2(opts.rngCur)})` : ''}</span>${anyCmp ? `<span><i style="background:var(--c25)"></i>${esc2(opts.cmpLabel)}${opts.rngCmp ? ` (${esc2(opts.rngCmp)})` : ''}</span>` : ''}</div>`
-    : `<div class="legend"><span><i style="background:var(--c26)"></i>26FW 이번 ${RNG_CUR ? `(${RNG_CUR})` : ''}</span>${anyCmp ? `<span><i style="background:var(--c25)"></i>${cmpName()}${BASIS === 'yr' && RNG_PREV ? ` (${RNG_PREV})` : ''}</span>` : ''}</div>`;
+    : `<div class="legend"><span><i style="background:var(--c26)"></i>${PL().cur} 이번 ${PL().rngCur ? `(${PL().rngCur})` : ''}</span>${anyCmp ? `<span><i style="background:var(--c25)"></i>${cmpName()}${BASIS === 'yr' && PL().rngPrev ? ` (${PL().rngPrev})` : ''}</span>` : ''}</div>`;
   let flagged = false;
   const body = rows.map(r => {
     const a = mv(r.cur, key), b = r.cmp ? mv(r.cmp, key) : null, d = dltR(key, a, b, r.cmp), fm = flagMode(key, r.kind);
@@ -1008,9 +1119,9 @@ function pairChart(rows, key, opts){
   }).join('');
   const tv = `<details class="tv"><summary>표로 보기</summary><div class="tvw"><table class="tvt"><thead><tr><th>구분</th><th>이번</th><th>${opts.cmpLabel ? esc2(opts.cmpLabel) : cmpName()}</th><th>증감</th></tr></thead><tbody>${
     rows.map(r => { const a = mv(r.cur, key), b = r.cmp ? mv(r.cmp, key) : null; return `<tr><td>${esc2(r.name)}</td><td>${fmtMV(key, a)}</td><td>${fmtMV(key, b)}</td><td>${dHtml(dltR(key, a, b, r.cmp), flagMode(key, r.kind))}</td></tr>`; }).join('')}</tbody></table></div></details>`;
-  const costNote = (['costV', 'salesCostV'].includes(key) && !opts.curLabel && BASIS === 'yr' && rows.some(r => r.kind === 'run' || r.kind === 'total')) ? '<div class="note">25FW 러닝은 원가 자료가 없어(종합 시트 공란) 러닝·합계의 원가는 전년 비교를 표시하지 않습니다 — 신상품(가을·겨울)만 비교됩니다.</div>' : '';
+  const costNote = (['costV', 'salesCostV'].includes(key) && !opts.curLabel && PERIOD === 'fw' && BASIS === 'yr' && rows.some(r => r.kind === 'run' || r.kind === 'total')) ? '<div class="note">25FW 러닝은 원가 자료가 없어(종합 시트 공란) 러닝·합계의 원가는 전년 비교를 표시하지 않습니다 — 신상품(가을·겨울)만 비교됩니다.</div>' : '';
   const notes = costNote + (flagged ? `<div class="note">${flagNote()}</div>` : '') + (key === 'sellRate' && RUNSTK && rows.some(r => r.kind === 'run' || r.kind === 'total') ? `<div class="note">${SELL_NOTE_S}</div>` : '') + (opts.footnote ? `<div class="note">${opts.footnote}</div>` : '')
-    + (anyCmp ? '' : opts.curLabel ? '<div class="note">전년 동시점에 이 구분의 자료가 없어 비교 막대가 없습니다.</div>' : `<div class="note">${BASIS === 'yr' ? '25FW에는 이 구분의 자료가 없어 비교 막대가 없습니다 — 위 ‘전주 대비’로 바꾸면 이번 주 변화를 볼 수 있습니다.' : RUNSTK && rows.some(r => r.kind === 'run' || r.kind === 'total') ? `시점재고 합산 중에는 전주 대비를 계산하지 않습니다 ${FIXRUN_BTN}` : '지난주 스냅샷에 이 구분의 자료가 없습니다.'}</div>`);
+    + (anyCmp ? '' : (opts.curLabel || PERIOD !== 'fw') ? '<div class="note">전년 동시점에 이 구분의 자료가 없어 비교 막대가 없습니다.</div>' : `<div class="note">${BASIS === 'yr' ? '25FW에는 이 구분의 자료가 없어 비교 막대가 없습니다 — 위 ‘전주 대비’로 바꾸면 이번 주 변화를 볼 수 있습니다.' : RUNSTK && rows.some(r => r.kind === 'run' || r.kind === 'total') ? `시점재고 합산 중에는 전주 대비를 계산하지 않습니다 ${FIXRUN_BTN}` : '지난주 스냅샷에 이 구분의 자료가 없습니다.'}</div>`);
   return legend + `<div class="${anyCmp ? 'pc' : 'pc nocmp'}">` + (body || '<div class="empty">표시할 자료가 없습니다</div>') + '</div>' + notes + (opts.noTable ? '' : tv);
 }
 const chipB = (on, attr, val, label, extra) => `<button class="chip${on ? ' on' : ''}" aria-pressed="${!!on}" ${attr}="${val}"${extra || ''}>${label}</button>`;
@@ -1039,23 +1150,40 @@ function rowsItemsAll(){
     return {name:it, kind:'total', cur, cmp};
   }).filter(Boolean).filter(nonZero);
 }
+/* 연간 — 러닝(중복 제거)·전체(신상품+러닝) 범위: 복종별(카테고리 자료는 없다), 전년 비교 없음 */
+const annRunScope = scope => PERIOD === 'annual' && (scope === '러닝' || scope === '전체') && hasRunY();
+function annScopeRows(scope){
+  return P_ITEMS.map(it => {
+    const rp = annRunParts(it), n = SUM.newItem.find(d => d.item === it);
+    if(scope === '러닝') return rp ? {name: it, kind: null, cur: rp.cur, cmp: null} : null;
+    return {name: it, kind: null, cur: withRunSum(n || {}, rp ? rp.cur : {}), cmp: null};
+  }).filter(Boolean).filter(nonZero);
+}
 function rowsItems(scope){
+  if(annRunScope(scope)) return annScopeRows(scope);
   if(scope === '전체') return rowsItemsAll();
   let src, run = false;
   if(scope === '러닝'){ src = SUM.runItem.filter(d => d.item !== 'TOTAL'); run = true; }
-  else if(scope === '가을' || scope === '겨울') src = SUM.block1.filter(d => d.mode === 'new' && d.season === scope && d.item !== 'TTL');
+  else if(isSeasonName(scope)) src = SUM.block1.filter(d => d.mode === 'new' && d.season === scope && d.item !== 'TTL');
   else src = SUM.newItem.filter(d => d.item !== 'TOTAL');
   return src.map(d => Object.assign({name:d.item, kind: run ? 'run' : null}, nrm(d, run))).filter(nonZero);
 }
 function rowTotalOf(scope){
+  if(annRunScope(scope)){
+    const rt = annRunParts('TOTAL');
+    if(scope === '러닝') return {name:'러닝 합계 (중복 제거)', ttl:true, cur: rt.cur, cmp: null};
+    const nt = SUM.newItem.find(d => d.item === 'TOTAL') || {};
+    return {name:'연간 전체 합계 (신상품+러닝)', ttl:true, cur: withRunSum(nt, rt.cur), cmp: null};
+  }
   if(scope === '전체'){ const T = totals(); return {name:'전체 합계', kind:'total', sub:'신상품+러닝', ttl:true, cur:T.cur, cmp: BASIS === 'yr' ? T.yr : T.wk}; }
   if(scope === '러닝'){ const d = rowRunTtl(); return Object.assign({name:'러닝 합계', kind:'run', ttl:true}, nrm(d, true)); }
-  if(scope === '가을' || scope === '겨울'){ const d = rowSeasonTtl(scope); return Object.assign({name:scope + ' 합계', ttl:true}, nrm(d)); }
-  return Object.assign({name:TERMS.newer + ' 합계', ttl:true}, nrm(rowNewTtl()));
+  if(isSeasonName(scope)){ const d = rowSeasonTtl(scope); return Object.assign({name:scope + ' 합계', ttl:true}, nrm(d)); }
+  return Object.assign({name:PL().newer + ' 합계', ttl:true}, nrm(rowNewTtl()));
 }
 function catsSrc(scope, item){
+  if(annRunScope(scope)) return {src: [], run: false};
   if(scope === '러닝') return {src: SUM.runCat.filter(x => matchItem(x.item, item)), run: true};
-  if(scope === '가을' || scope === '겨울') return {src: SUM.seasonCat.filter(x => x.season === scope && matchItem(x.item, item)), run: false};
+  if(isSeasonName(scope)) return {src: SUM.seasonCat.filter(x => x.season === scope && matchItem(x.item, item)), run: false};
   return {src: SUM.newCat.filter(x => matchItem(x.item, item)), run: false};
 }
 function rowsCats(scope, item){
@@ -1180,10 +1308,14 @@ function ctTable(spec){
   const priceNote = TGROUP === 'price' && RUNSTK && spec.nodes.some(x => x.run) ? '<div class="note">시점재고 합산 중 러닝의 할인율은 이월 판매를 더한 값이고, 마크업(실판)은 이월분의 원가가 없어 26FW 신품번 값입니다 — 두 기준이 한 줄에 섞여 있으니 참고용으로 보세요.</div>' : '';
   const sellNote = keys.includes('sellRate') && RUNSTK && spec.nodes.some(x => x.run) ? `<div class="note">${SELL_NOTE_S}</div>` : '';
   return `${grpChips}${priceNote}<div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct${hasCmp ? '' : ' nocmp'}"><thead>${head1}${head2}</thead><tbody>${rows.join('')}</tbody></table></div>
-    <div class="note">행을 누르면 하위 카테고리가 펼쳐집니다 · 증감 색: 빨강 ▲ = 늘어남, 파랑 ▼ = 줄어듦(기존 집계표와 같은 색)${hasCmp ? '' : ` · ${BASIS === 'yr' ? '25FW에는 이 구분의 자료가 없어 이번 값만 보입니다(전주 대비로 바꾸면 비교가 나옵니다)' : (RUNSTK && spec.nodes.some(x => x.run) ? `시점재고 합산 중에는 전주 대비를 계산하지 않습니다 ${FIXRUN_BTN}` : '지난주 스냅샷에 이 구분의 자료가 없습니다')}`}</div>${flagged ? `<div class="note">${flagNote()}</div>` : ''}${sellNote}`;
+    <div class="note">행을 누르면 하위 카테고리가 펼쳐집니다 · 증감 색: 빨강 ▲ = 늘어남, 파랑 ▼ = 줄어듦(기존 집계표와 같은 색)${hasCmp ? '' : ` · ${PERIOD !== 'fw' ? '전년 동시점에 이 구분의 자료가 없어 이번 값만 보입니다' : BASIS === 'yr' ? '25FW에는 이 구분의 자료가 없어 이번 값만 보입니다(전주 대비로 바꾸면 비교가 나옵니다)' : (RUNSTK && spec.nodes.some(x => x.run) ? `시점재고 합산 중에는 전주 대비를 계산하지 않습니다 ${FIXRUN_BTN}` : '지난주 스냅샷에 이 구분의 자료가 없습니다')}`}</div>${flagged ? `<div class="note">${flagNote()}</div>` : ''}${sellNote}`;
 }
 function seasonSpec(scope){
-  if(scope === '가을' || scope === '겨울'){
+  if(annRunScope(scope)){
+    const rows = annScopeRows(scope), tot = rowTotalOf(scope);
+    return {nodes: rows.map(r => ({name: r.name, d: r, kids: []})), total: {name: tot.name, d: tot}};
+  }
+  if(isSeasonName(scope)){
     const parents = SUM.block1.filter(d => d.mode === 'new' && d.season === scope && d.item !== 'TTL');
     return {nodes: parents.map(d => ({name:d.item, d, kids: SUM.seasonCat.filter(x => x.season === scope && matchItem(x.item, d.item)).map(x => ({name:x.cat, d:x}))})),
             total: {name: scope + ' TTL', d: rowSeasonTtl(scope)}};
@@ -1228,20 +1360,24 @@ function viewOverview(){
       <div class="card"><h3>성별 비중</h3><div class="sub">신상품을 여성 · 유니맨으로 나눈 것 (25FW 성별 자료는 없어 비중만 봅니다)</div>${genderStacks(['costV', 'plan', 'qtyIn', 'sales', 'salesAmt'])}</div>
   </div></div>`;
 }
-function viewSeason(){
+function viewSeason(){ const keep = SCOPE_LAB; SCOPE_LAB = scopeLab(SEASON); try{ return viewSeasonBody(); } finally{ SCOPE_LAB = keep; } }
+function viewSeasonBody(){
   TIPREG.length = 0;
-  const sc = Object.keys(SEASONS).map(s => chipB(SEASON === s, 'data-season', s, SEASONS[s])).join('');
+  const SM = seasonsMap();
+  const sc = Object.keys(SM).map(s => chipB(SEASON === s, 'data-season', s, SM[s])).join('');
   const rows = rowsItems(SEASON).concat([rowTotalOf(SEASON)]);
   const items = rowsItems(SEASON).map(r => r.name);
   if(DRILL && !items.includes(DRILL)) DRILL = '';
-  const drill = `<div class="chips"><span class="flabel">카테고리로 내려가기</span>${items.map(it => chipB(DRILL === it, 'data-drill', it, it)).join('')}</div>`;
+  const noCat = annRunScope(SEASON);                                  // 러닝은 카테고리 자료가 없다
+  if(noCat) DRILL = '';
+  const drill = noCat ? '' : `<div class="chips"><span class="flabel">카테고리로 내려가기</span>${items.map(it => chipB(DRILL === it, 'data-drill', it, it)).join('')}</div>`;
   const cats = DRILL ? rowsCats(SEASON, DRILL) : [];
   return `
-  <div class="sec"><h2>시즌 · 복종 <small>범위를 고르고, 지표를 바꿔 가며 비교합니다</small></h2>
+  <div class="sec"><h2>시즌 · 복종 <small>${PERIOD === 'fw' ? '범위를 고르고, 지표를 바꿔 가며 비교합니다' : `${PL().cur} — 시즌 범위를 고르고, 지표를 바꿔 가며 ${PL().yr}과 비교합니다`}</small></h2>
     <div class="chips"><span class="flabel">시즌</span>${sc}</div></div>
-  <div class="sec"><div class="card"><h3>${SEASONS[SEASON]} · 복종별 ${MET[METRIC].label}</h3>${metricChips(METRIC, 'data-metric')}${pairChart(rows, METRIC, {footnote: rowsGapNote(rows.slice(0, -1), rows[rows.length - 1], METRIC, '복종 막대')})}${drill}
-     ${DRILL ? `<h3 style="margin:10px 0 4px">${esc2(DRILL)} · 카테고리별 ${MET[METRIC].label}</h3>${pairChart(cats, METRIC, {noTable:true, footnote: catGapNote(SEASON, DRILL, cats, METRIC)})}` : '<div class="note">복종을 누르면 그 복종의 카테고리(코트·자켓 …)별 막대가 아래에 나옵니다.</div>'}</div></div>
-  <div class="sec"><div class="card"><h3>${SEASONS[SEASON]} · 비교표</h3><div class="sub">지표 묶음을 골라 한 번에 3개씩 봅니다 · 이 묶음에 없는 지표(ST수·SKU·택가 등)는 ‘전체 표’ 탭에 있습니다(SKU·택가는 ‘전주 대비’에서만 보입니다) · 원가 총액은 위 ‘원가’ 묶음과 ‘연간’ 탭에서 봅니다</div>${ctTable(seasonSpec(SEASON))}${(SEASON === '신상' && BASIS === 'yr') ? (g => g ? `<div class="note">${g}</div>` : '')(costTtlGap('season')) : ''}</div></div>`;
+  <div class="sec"><div class="card"><h3>${SM[SEASON]} · 복종별 ${MET[METRIC].label}</h3>${metricChips(METRIC, 'data-metric')}${pairChart(rows, METRIC, {footnote: rowsGapNote(rows.slice(0, -1), rows[rows.length - 1], METRIC, '복종 막대')})}${drill}
+     ${DRILL ? `<h3 style="margin:10px 0 4px">${esc2(DRILL)} · 카테고리별 ${MET[METRIC].label}</h3>${pairChart(cats, METRIC, {noTable:true, footnote: catGapNote(SEASON, DRILL, cats, METRIC)})}` : (noCat ? '<div class="note">러닝은 카테고리 자료가 없어 복종까지만 봅니다 — 전년 동시점 자료도 없어 이번 값만 보이고, 기획량이 없어 기획량·입고율·기획 원가는 비어 있습니다.</div>' : '<div class="note">복종을 누르면 그 복종의 카테고리(코트·자켓 …)별 막대가 아래에 나옵니다.</div>')}</div></div>
+  <div class="sec"><div class="card"><h3>${SM[SEASON]} · 비교표</h3><div class="sub">지표 묶음을 골라 한 번에 3개씩 봅니다 · ${PERIOD === 'fw' ? '이 묶음에 없는 지표(ST수·SKU·택가 등)는 ‘전체 표’ 탭에 있습니다(SKU·택가는 ‘전주 대비’에서만 보입니다) · 원가 총액은 위 ‘원가’ 묶음과 ‘연간’ 기간에서 봅니다' : '이 묶음에 없는 지표(ST수·SKU·택가 등)는 26FW 기간의 ‘전체 표’에 있습니다 · 원가 총액은 위 ‘원가’ 묶음과 한눈에 보기에서 봅니다'}</div>${ctTable(seasonSpec(SEASON))}${(PERIOD === 'fw' && SEASON === '신상' && BASIS === 'yr') ? (g => g ? `<div class="note">${g}</div>` : '')(costTtlGap('season')) : ''}</div></div>`;
 }
 function viewGender(){
   TIPREG.length = 0;
@@ -1252,7 +1388,7 @@ function viewGender(){
   });
   const rows = [w, u].filter(Boolean).map((d, i) => Object.assign({name: i ? '유니맨' : '여성'}, nrm(d)));
   return `
-  <div class="sec"><h2>성별 <small>여성 · 유니맨(남성+공용) — 25FW에는 성별 구분이 없어 전년 비교는 없고, 비중과 전주 대비를 봅니다</small></h2></div>
+  <div class="sec"><h2>성별 <small>${PERIOD === 'fw' ? '여성 · 유니맨(남성+공용) — 25FW에는 성별 구분이 없어 전년 비교는 없고, 비중과 전주 대비를 봅니다' : `여성 · 유니맨(남성+공용) — ${PL().cur}. 25SS 성별 열은 올해와 같은 기준인지 확인되지 않아 전년 비교는 만들지 않았고 비중을 봅니다${PERIOD === 'annual' ? '(26SS는 스타일별 시트, 26FW는 종합 시트의 성별 값을 더했습니다)' : '(스타일별 시트의 성별 값)'}`}</small></h2></div>
   <div class="sec"><div class="grid2">
     <div class="card"><h3>성별 비중</h3><div class="sub">기획 · 입고 · 판매 · 금액에서 여성이 차지하는 몫</div>${genderStacks(['costV', 'plan', 'qtyIn', 'sales', 'salesAmt', 'wkQty'])}</div>
     <div class="card"><h3>복종별 판매 비중</h3><div class="sub">복종마다 누계판매량을 여성 · 유니맨이 나눠 가진 몫</div><div class="legend"><span><i style="background:var(--g1)"></i>여성</span><span><i style="background:var(--g2)"></i>유니맨</span></div>${stackRows(itemShare)}</div>
@@ -1274,7 +1410,32 @@ function viewRun(){
   </div></div>
   <div class="sec"><div class="card"><h3>러닝 · 비교표</h3><div class="sub">복종 → 카테고리 순으로 펼쳐집니다</div>${ctTable(runSpec())}</div></div>`;
 }
+/* 러닝 — 26SS / 연간 (26FW 는 viewRun) */
+function viewRunP(){
+  TIPREG.length = 0;
+  const go = (p, l) => `<button class="chip" data-period="${p}">${l}</button>`;
+  if(PERIOD === 'ss'){
+    const rows = rowsItems('러닝').concat([rowTotalOf('러닝')]);
+    return `
+    <div class="sec"><h2>러닝 <small>26SS 러닝 — 12월말 기초재고 + 신규 물량의 1/1~ 누계 · 전년 동시점은 25SS 러닝(종합 시트의 입고·판매·금액만)</small></h2></div>
+    <div class="sec"><div class="card"><h3>러닝 · 복종별 ${MET[METRIC].label}</h3>${metricChips(METRIC, 'data-metric')}${pairChart(rows, METRIC)}</div></div>
+    <div class="sec">${withSUM(SUM_FW, annRunCard)}</div>
+    <div class="sec"><div class="card"><h3>러닝 · 비교표</h3><div class="sub">복종별 — 카테고리 자료는 26SS 종합 시트에 없습니다</div>${ctTable(runSpec())}</div></div>`;
+  }
+  if(!hasRunY()) return `
+  <div class="sec"><h2>러닝 <small>연간 — 26SS 러닝과 26FW 러닝은 기준과 기간이 달라 합치지 않고 나란히 둡니다</small></h2></div>
+  <div class="sec">${withSUM(SUM_FW, annRunCard)}</div>
+  <div class="sec"><div class="note">복종별 · 비교표 등 세부는 기간을 바꿔 보세요: ${go('ss', '26SS 러닝 보기')} ${go('fw', '26FW 러닝 보기')}</div></div>`;
+  const rp = P_ITEMS.map(annRunParts).filter(p => p && ((mv(p.cur, 'qtyIn') || 0) > 0 || (mv(p.cur, 'sales') || 0) > 0)), rt = annRunParts('TOTAL');
+  const rows = rp.map(p => ({name: p.item, cur: p.cur, cmp: null})).concat(rt ? [{name:'러닝 합계 (중복 제거)', ttl:true, cur: rt.cur, cmp: null}] : []);
+  return `
+  <div class="sec"><h2>러닝 <small>연간 — SS 러닝(1/1~)과 FW 러닝(8/1~)이 같은 구품번을 일부 공유해, 겹치는 품번의 FW 이월분을 뺀 합계입니다</small></h2></div>
+  <div class="sec"><div class="card"><h3>러닝 · 복종별 ${MET[METRIC].label}</h3>${metricChips(METRIC, 'data-metric')}${pairChart(rows, METRIC)}</div></div>
+  <div class="sec">${withSUM(SUM_FW, annRunDedupCard)}</div>
+  <div class="sec"><div class="note">기간별 세부는 위 기간을 바꿔 보세요: ${go('ss', '26SS 러닝 보기')} ${go('fw', '26FW 러닝 보기')}</div></div>`;
+}
 function viewAll(){
+  if(PERIOD !== 'fw') return `<div class="sec"><div class="headline warn">기존 집계표의 표 6종은 26FW 에만 있습니다. <button class="chip" data-period="fw">26FW 의 전체 표 보기</button></div></div>`;
   return `<div class="note" style="margin:0 0 10px">기존 집계표의 표 6종 전체입니다 — 위의 비교 기준 · 러닝 기준이 그대로 적용됩니다. 원가·택가·마크업·SKU 열은 ‘전주 대비’에서 모두 보입니다(전년 대비 표에서는 SKU는 25FW 자료가 거의 없어, 원가·택가·마크업은 표가 너무 넓어져 뺐습니다 — 가격·마크업은 ‘시즌 · 복종’ 탭의 비교표에서 25FW와 함께 볼 수 있습니다).${BASIS === 'wk' && RUNSTK ? ' <b>시점재고 합산 중 합계의 마크업(실판)</b>은 실판금액에는 이월 판매가 들어가는데 원가에는 이월분이 없어 높게(약 3.2) 나옵니다 — 참고용입니다.' : ''}${BASIS === 'yr' ? ' ⓘ 25FW 신상품 TTL은 가을+겨울 합과 열에 따라 값이 다릅니다(누계판매량 170장 등 — 스타일맵 종합 시트 집계, 원인 미확인).' : ''}</div><div id="legacyBasis" class="note" style="margin:0 0 10px"></div><div class="panels" id="legacyPanels"></div>`;
 }
 
@@ -1331,45 +1492,85 @@ function costMini(o){
   const pc = mv(o, 'planCostV'), sc = mv(o, 'salesCostV'), c = mv(o, 'costV'), rest = (c != null && sc != null) ? c - sc : null;
   return `<div class="cs"><div><span>기획 원가</span><b>${fmtW(pc)}</b></div><div><span>판매 원가</span><b>${fmtW(sc)}</b></div><div><span>남은 재고 원가(추정)</span><b>${fmtW(rest)}</b></div></div>`;
 }
-function annKpiHtml(t, labels){
+/* ---------- 연간 러닝(중복 제거) ----------
+   연간 러닝 = SS 러닝 전체(구품번 31 · 12월말 기초재고 + 신규 · 1/1~) + FW 신품번(8/1~) + FW 이월 중 SS 와 겹치지 않는 구품번.
+   FW ‘시점재고 합산’의 구품번 36 중 SS 러닝과 겹치는 10개(W 코드)와 26SS 신상품인 10개(GF1 코드)의 이월분(7/31 시점재고 수량 · 8/1~ 판매)은 SS 쪽에 이미 들어 있어 뺀다
+   (RUNY.items[..].carryOverlap · carryOverlapNew). 남는 것은 FW 전용 구품번 16개의 이월분.
+   이월분의 원가는 시점재고 시트의 재고 원가금액(7/31)과 8/1~ 판매 원가로 더한다. 러닝의 기획량은 없어 입고율은 만들지 않는다. */
+const hasRunY = () => !!(RUNY && RUNY.overlap && RUNY.overlap.length && RUNY.items && RUNY.checks && hasSS()
+  && RUNY.checks.carryAll && typeof RUNY.checks.carryAll.cost === 'number' && typeof RUNY.checks.carryAll.tag === 'number' && RUNY.checks.overlapSsSalesRec != null && RUNY.checks.fwOnlyJanJulSales != null
+  && P_ITEMS.every(it => RUNY.items[it] && RUNY.items[it].carryAll && typeof RUNY.items[it].carryAll.cost === 'number'));      // 옛 형식 자료(이월 원가·택가가 없는)는 쓰지 않고 ‘나란히’ 카드로 물러난다
+const RUN_PICK = ['qtyIn', 'cost', 'tag', 'sales', 'salesTag', 'salesAmt', 'salesCost', 'wkQty', 'wkAmt'];
+const RUN_CARRY = ['qtyIn', 'sales', 'salesTag', 'salesAmt', 'wkQty', 'wkAmt', 'cost', 'salesCost', 'tag'];      // 이월분: 7/31 시점재고 · 8/1~ 판매 · 금액 · 재고 원가금액 · 판매 원가 · 재고 택가 금액
+const pickK = (o, keys) => keys.reduce((r, k) => { if(o && o[k] != null) r[k] = o[k]; return r; }, {});
+function annRunParts(item){
+  if(!hasRunY()) return null;
+  const tot = item === 'TOTAL';
+  const ssr = SS.block1.find(d => d.mode === 'run' && (tot ? d.kind === '러닝 TTL' : (d.kind === '항목' && d.item === item)));
+  const fw = SUM_FW.runItem.find(d => d.item === item);
+  const yi = tot ? null : RUNY.items[item];
+  const ca = tot ? RUNY.checks.carryAll : (yi && yi.carryAll), o1 = tot ? RUNY.checks.carryOverlap : (yi && yi.carryOverlap), o2 = tot ? RUNY.checks.carryOverlapNew : (yi && yi.carryOverlapNew);
+  if(!ssr && !fw && !ca) return null;
+  const ss = ssr ? pickK(ssr.cur, RUN_PICK) : {}, fwn = pickK(fw, RUN_PICK), carryEx = {}, ov = {}, carry = {};
+  RUN_CARRY.forEach(k => {                                         // FW 이월(구품번 36) − SS 러닝과 겹치는 10 − 26SS 신상품과 겹치는 10 = FW 전용 이월
+    if(ca && ca[k] != null){ carry[k] = ca[k]; ov[k] = ((o1 && o1[k]) || 0) + ((o2 && o2[k]) || 0); carryEx[k] = ca[k] - ov[k]; }
+  });
+  const cur = sumRows([ss, fwn, carryEx]);
+  cur.plan = null; cur.planCost = null; cur.planCostV = null; cur.inRate = null; cur.muPlan = null;      // 러닝은 기획량(기획 원가)이 없다
+  return {item, ss, fwn, carry, ov, carryEx, cur};
+}
+const withRunSum = (nc, rc) => {                                  // 신상품 + 러닝 합계 — 기획량(입고율)은 러닝에 없어 비운다
+  const t = sumRows([nc, rc]);
+  t.plan = null; t.planCost = null; t.planCostV = null; t.inRate = null; t.muPlan = null;
+  return t;
+};
+function annKpiHtml(t, labels, run){
+  const wr = run ? withRunSum(t.cur, run.cur) : null;
   const row = k => {
     const a = mv(t.cur, k), b = t.cmp ? mv(t.cmp, k) : null, d = dltR(k, a, b, t.cmp);
     const base = b == null ? '<span class="dim">자료 없음</span>' : `${fmtMV(k, b)}${MET[k].unit || ''}`;
-    return `<div class="kd main"><span class="nm">${labels.cmp} <span style="font-weight:500;color:var(--muted)">${base}</span></span><span class="dv">${dHtml(d, null)}</span></div>`;
+    return `<div class="kd main"><span class="nm">${run ? `신상품만 <b>${fmtMV(k, a)}${MET[k].unit || ''}</b> · ` : ''}${labels.cmp} <span style="font-weight:500;color:var(--muted)">${base}</span></span><span class="dv">${dHtml(d, null)}</span></div>`;
   };
-  return KPI_DEFS.map(([k, label, sub]) => `<div class="kpi${k === 'costV' ? ' hero' : ''}"><div class="kl">${label}${sub ? ` <span style="font-weight:500;color:var(--muted)">· ${sub}</span>` : ''}</div>
-      <div class="kv">${fmtMV(k, mv(t.cur, k))}${MET[k].unit ? `<small>${MET[k].unit}</small>` : ''}</div>${row(k)}${k === 'costV' ? costMini(t.cur) : ''}</div>`).join('');
+  return KPI_DEFS.map(([k, label, sub]) => {
+    const withRun = run && k !== 'inRate';                         // 입고율은 러닝에 기획량이 없어 신상품 값 그대로
+    const lb = (run && k === 'qtyIn') ? '입고(투입) 수량' : label, sb = (run && k === 'sellRate') ? '투입 대비' : ((run && k === 'costV') ? '입고(투입) 기준 · VAT 포함' : sub);      // 러닝의 입고량은 기초재고·이월재고를 포함한 투입 수량
+    return `<div class="kpi${k === 'costV' ? ' hero' : ''}"><div class="kl">${lb}${sb ? ` <span style="font-weight:500;color:var(--muted)">· ${sb}</span>` : ''}${withRun ? ' <span style="font-weight:700;color:#6d4aa5">· 러닝 포함</span>' : ''}${(run && k === 'inRate') ? ' <span style="font-weight:700;color:#6d4aa5">· 러닝 제외(기획량 없음)</span>' : ''}</div>
+      <div class="kv">${fmtMV(k, mv(withRun ? wr : t.cur, k))}${MET[k].unit ? `<small>${MET[k].unit}</small>` : ''}</div>${row(k)}${withRun ? `<div class="kd alt"><span class="nm">러닝(중복 제거) <b>${fmtMV(k, mv(run.cur, k))}${MET[k].unit || ''}</b> · 전년 비교 없음</span></div>` : ''}${k === 'costV' ? costMini(t.cur) + (run ? '<div class="kd alt"><span class="nm">위 세 칸은 신상품 기준</span></div>' : '') : ''}</div>`;
+  }).join('');
 }
-function annHeadlineHtml(t, labels){
+function annHeadlineHtml(t, labels, run){
   if(!t) return '';
   const a = mv(t.cur, 'costV'), b = t.cmp ? mv(t.cmp, 'costV') : null, d = dlt('costV', a, b);
   const more = d && d.v >= 0, pct = d && d.v != null ? Math.abs(d.v).toFixed(1) + '%' : '-';
   const qa = mv(t.cur, 'qtyIn'), qb = t.cmp ? mv(t.cmp, 'qtyIn') : null;
   const ua = (a != null && qa) ? a / qa : null, ub = (b != null && qb) ? b / qb : null, ud = (ua != null && ub != null) ? (ua - ub) / ub * 100 : null;
   const qd0 = dlt('qtyIn', qa, qb), sg = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
-  const ncAll = A_SEASONS[ASCOPE].filter(x => !isSSs(x)).reduce((z, x) => z + ((((SUM.noCost || {})[x]) || {}).inQty || 0), 0);
-  const unit = ud != null ? `<div class="story">장당 원가는 ${labels.cmp} <b>${fmtN(ub)}원</b> → <b>${fmtN(ua)}원</b>으로 <b class="${ud >= 0 ? 'up' : 'down'}">${Math.abs(ud).toFixed(1)}% ${ud >= 0 ? '올랐습니다' : '내렸습니다'}</b> — ${(qd0 && qd0.v != null) ? (Math.abs(ud) > Math.abs(qd0.v) ? `입고량(${sg(qd0.v)})보다 장당 원가(${sg(ud)})의 영향이 큽니다(복종·시즌 구성 변화가 섞여 있습니다)` : `원가 총액의 변화는 입고량(${sg(qd0.v)})과 장당 원가(${sg(ud)})가 함께 만든 결과입니다`) : '원가 총액의 변화에는 장당 원가 변화가 들어 있습니다'}.</div>` : '';
+  const ncAll = A_SEASONS[ASCOPE].filter(x => !isSSs(x)).reduce((z, x) => z + ((((SUM_FW.noCost || {})[x]) || {}).inQty || 0), 0);
+  const unit = ud != null ? `<div class="story">${run ? '신상품 ' : ''}장당 원가는 ${labels.cmp} <b>${fmtN(ub)}원</b> → <b>${fmtN(ua)}원</b>으로 <b class="${ud >= 0 ? 'up' : 'down'}">${Math.abs(ud).toFixed(1)}% ${ud >= 0 ? '올랐습니다' : '내렸습니다'}</b> — ${(qd0 && qd0.v != null) ? (Math.abs(ud) > Math.abs(qd0.v) ? `입고량(${sg(qd0.v)})보다 장당 원가(${sg(ud)})의 영향이 큽니다(복종·시즌 구성 변화가 섞여 있습니다)` : `원가 총액의 변화는 입고량(${sg(qd0.v)})과 장당 원가(${sg(ud)})가 함께 만든 결과입니다`) : '원가 총액의 변화에는 장당 원가 변화가 들어 있습니다'}.</div>` : '';
   const sa = mv(t.cur, 'sales'), sb = t.cmp ? mv(t.cmp, 'sales') : null, sd = dlt('sales', sa, sb), qd = dlt('qtyIn', mv(t.cur, 'qtyIn'), t.cmp ? mv(t.cmp, 'qtyIn') : null);
   const parts = A_SEASONS[ASCOPE].map(s => { const r = annRow(s, 'TTL'); if(!r || !r.py) return null; const diff = (mv(r.cur, 'costV') || 0) - (mv(r.py, 'costV') || 0); return diff ? {name:s, diff} : null; }).filter(Boolean).sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
   const chip = x => `<span class="hc ${x.diff > 0 ? 'up' : 'down'}">${x.diff > 0 ? '▲' : '▼'} ${esc2(x.name)} ${x.diff > 0 ? '+' : '−'}${fmtW(Math.abs(x.diff))}</span>`;
   const story = (qd && sd && qd.v != null && sd.v != null)
-    ? `<div class="story">입고량은 ${labels.cmp}보다 <b class="${qd.v >= 0 ? 'up' : 'down'}">${Math.abs(qd.v).toFixed(1)}% ${qd.v >= 0 ? '많고' : '적고'}</b>, 누계판매량은 <b class="${sd.v >= 0 ? 'up' : 'down'}">${Math.abs(sd.v).toFixed(1)}% ${sd.v >= 0 ? '많습니다' : '적습니다'}</b>(${fmtN(sa)}장 vs ${fmtN(sb)}장).</div>` : '';
+    ? `<div class="story">${run ? '신상품 ' : ''}입고량은 ${labels.cmp}보다 <b class="${qd.v >= 0 ? 'up' : 'down'}">${Math.abs(qd.v).toFixed(1)}% ${qd.v >= 0 ? '많고' : '적고'}</b>, 누계판매량은 <b class="${sd.v >= 0 ? 'up' : 'down'}">${Math.abs(sd.v).toFixed(1)}% ${sd.v >= 0 ? '많습니다' : '적습니다'}</b>(${fmtN(sa)}장 vs ${fmtN(sb)}장).</div>` : '';
   const ssShare = (ASCOPE === '연간' && annSum(['봄', '여름'], 'TTL')) ? (mv(annSum(['봄', '여름'], 'TTL').cur, 'costV') / a * 100) : null;
   const wTtl = A_SEASONS[ASCOPE].includes('겨울') ? annRow('겨울', 'TTL') : null, wRate = wTtl && wTtl.cur ? mv(wTtl.cur, 'inRate') : null;
   const prog = wRate != null && wRate < 0.9 ? `26FW는 겨울 입고율이 ${(wRate * 100).toFixed(0)}%라 입고가 더 들어올 수 있습니다` : '';
-  const share = ssShare != null ? `<div class="alt">원가 총액의 <b>${ssShare.toFixed(0)}%가 26SS, ${(100 - ssShare).toFixed(0)}%가 26FW</b>입니다${prog ? `(${prog})` : ''}.</div>` : (prog ? `<div class="alt">${prog}.</div>` : '');
+  const share = ssShare != null ? `<div class="alt">${run ? '신상품 ' : ''}원가 총액의 <b>${ssShare.toFixed(0)}%가 26SS, ${(100 - ssShare).toFixed(0)}%가 26FW</b>입니다${prog ? `(${prog})` : ''}.</div>` : (prog ? `<div class="alt">${prog}.</div>` : '');
   const endGap = (ASCOPE === '연간' && hasSS() && SS_END() !== (RNG_CUR || '').replace('~ ', '')) ? `<div class="alt"><span class="warnt">⚠ 기준일이 다릅니다 — 26SS ~ ${SS_END()} · 26FW ${RNG_CUR}. 같은 날짜가 아닌 두 시즌의 합입니다.</span></div>` : '';
   const snap = (hasSS() && SS.fromSnapshot) ? `<div class="alt"><span class="warnt">⚠ 26SS는 NAS를 읽지 못해 저장된 스냅샷(${esc2(SS.file || '')})을 썼습니다.</span></div>` : '';
   if(a == null) return `<div class="headline warn">${esc2(A_LABEL[ASCOPE])}의 원가 자료가 비어 있어 원가 총액을 표시할 수 없습니다 — 원천(스타일맵)의 원가 열을 확인하세요.</div>`;
+  const pre = run ? `연간 원가 총액 <b>${fmtW(mv(withRunSum(t.cur, run.cur), 'costV'))}</b>(신상품 ${fmtW(a)} + 러닝 ${fmtW(mv(run.cur, 'costV'))})` : `${esc2(A_LABEL[ASCOPE])} 원가 총액 <b>${fmtW(a)}</b>`;
+  const who = run ? '신상품은 ' : '';
   const lead = b == null
-    ? `${esc2(A_LABEL[ASCOPE])} 원가 총액 <b>${fmtW(a)}</b><span class="tg1 off">입고 기준 · VAT 포함</span> — ${labels.cmp} 원가 자료가 없어 비교하지 않습니다`
-    : `${esc2(A_LABEL[ASCOPE])} 원가 총액 <b>${fmtW(a)}</b><span class="tg1 off">입고 기준 · VAT 포함</span> — ${labels.cmp}(${fmtW(b)})보다 <b class="${more ? 'up' : 'down'}">${pct} ${more ? '많습니다' : '적습니다'}</b> (${more ? '+' : '−'}${fmtW(Math.abs(a - b))})<span class="hcs">${parts.map(chip).join('')}</span>`;
-  return `<div class="headline"><div>${lead}</div>${unit}${story}${share}${endGap}${snap}</div>`;
+    ? `${pre}<span class="tg1 off">${run ? '입고(투입) 기준' : '입고 기준'} · VAT 포함</span> — ${who}${labels.cmp} 원가 자료가 없어 비교하지 않습니다`
+    : `${pre}<span class="tg1 off">${run ? '입고(투입) 기준' : '입고 기준'} · VAT 포함</span> — ${who}${labels.cmp}(${fmtW(b)})보다 <b class="${more ? 'up' : 'down'}">${pct} ${more ? '많습니다' : '적습니다'}</b> (${more ? '+' : '−'}${fmtW(Math.abs(a - b))})<span class="hcs">${parts.map(chip).join('')}</span>`;
+  const runLine = run ? (() => { const tc = withRunSum(t.cur, run.cur); return `<div class="story">신상품 + 러닝(중복 제거): <b>누계판매량 ${fmtN(mv(tc, 'sales'))}장</b>(러닝 ${fmtN(mv(run.cur, 'sales'))}장) · 입고(투입) 수량 ${fmtN(mv(tc, 'qtyIn'))}장(러닝 ${fmtN(mv(run.cur, 'qtyIn'))}장) — 러닝은 전년 비교 자료가 없어 증감은 신상품 기준입니다.</div>`; })() : '';
+  return `<div class="headline"><div>${lead}</div>${unit}${story}${runLine}${share}${endGap}${snap}</div>`;
 }
 /* 원가 요약표 — 시즌별 기획·입고(총액)·판매·남은 재고 원가와 전년 동시점 */
-function annCostTable(scope){
+function annCostTable(scope, run){
   const seasons = A_SEASONS[scope], rows = [];
-  const ncq = ss => ss.filter(x => !isSSs(x)).reduce((a, x) => a + ((((SUM.noCost || {})[x]) || {}).inQty || 0), 0);      // 원가 미입력 입고량
+  const ncq = ss => ss.filter(x => !isSSs(x)).reduce((a, x) => a + ((((SUM_FW.noCost || {})[x]) || {}).inQty || 0), 0);      // 원가 미입력 입고량
   const line = (name, cur, cmp, cls, sub, nq) => {
     const c = mv(cur, 'costV'), p = cmp ? mv(cmp, 'costV') : null, q = mv(cur, 'qtyIn'), sc = mv(cur, 'salesCostV');
     rows.push(`<tr class="${cls || ''}"><th class="nm">${esc2(name)}${sub ? `<small class="sb">${esc2(sub)}</small>` : ''}</th>
@@ -1387,15 +1588,20 @@ function annCostTable(scope){
   grp(true); grp(false);
   const t = annSum(seasons, 'TTL');
   if(t) line(scope === '연간' ? '연간 합계 (신상품)' : scope + ' 합계', t.cur, t.cmp, 'tt', '', ncq(seasons));
-  return `<div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac"><thead><tr><th class="nm">구분</th><th>원가 총액<small class="sb">입고 기준</small></th><th>${esc2(A_CMP[scope])}</th><th>증감</th><th>입고량</th><th>장당 원가</th><th>기획 원가</th><th>판매 원가</th><th>남은 재고 원가<small class="sb">추정</small></th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
-    <div class="note">원가 총액 = 입고량 기준 생산원가 합(VAT 포함, 원천 ×1.1) · 기획 원가 = 기획량 기준 · 판매 원가 = 누계판매량 기준 · 남은 재고 원가 = 원가 총액 − 판매 원가(기타 출고·반품은 반영하지 않은 추정) · 장당 원가 = 원가 총액 ÷ 입고량. 25SS는 ‘전년비교BACK’ 스타일별 값을 합친 것입니다${(() => { const gs = []; if(scope !== '26FW' && hasSS() && SS.gifts25Sum && SS.gifts25Sum.n) gs.push(`25SS ${SS.gifts25Sum.n}품번(입고 ${fmtN(SS.gifts25Sum.qtyIn)}장 · 원가 ${fmtW(SS.gifts25Sum.costV)})`); if(scope !== '26SS') (SUM.pyExcl || []).forEach(x => gs.push(`25FW ${esc2(x.name)}(입고 ${fmtN(x.qtyIn)}장 · 원가 ${fmtW(x.costV)})`)); if(scope !== '26FW' && hasSS()) (SS.gifts26 || []).forEach(x => gs.push(`26SS ${esc2(x.name)}(입고 ${fmtN(x.qtyIn)}장 · 원가 ${fmtW(x.costV)})`)); return gs.length ? ` — 비교에서 뺀 사은품·증정품: ${gs.join(' · ')}. 스타일맵 종합 시트의 해당 열·합계 행에는 들어 있어 시트 숫자와 다를 수 있습니다` : ''; })()}.${seasons.includes('겨울') ? ' 겨울은 입고율이 낮고 복종 구성이 25FW와 달라 장당 원가 비교는 참고용입니다.' : ''}</div>`;
+  if(run && t){                                                    // 러닝(중복 제거)과 러닝 포함 합계 — 이월분은 원가가 없어 장당 원가·기획 원가는 비운다
+    const rr = (name, cur, cls, sub) => rows.push(`<tr class="${cls}"><th class="nm">${esc2(name)}<small class="sb">${esc2(sub)}</small></th><td class="cur">${fmtW(mv(cur, 'costV'))}</td><td class="cmp">-</td><td class="dl">-</td><td>${fmtN(mv(cur, 'qtyIn'))}</td><td>${(mv(cur, 'qtyIn') && mv(cur, 'costV') != null) ? fmtN(mv(cur, 'costV') / mv(cur, 'qtyIn')) + '원' : '-'}</td><td>-</td><td>${fmtW(mv(cur, 'salesCostV'))}</td><td>${(mv(cur, 'costV') != null && mv(cur, 'salesCostV') != null) ? fmtW(mv(cur, 'costV') - mv(cur, 'salesCostV')) : '-'}</td></tr>`);
+    rr('러닝 (중복 제거)', run.cur, 'cr', 'SS 러닝 + FW 신품번 + FW 전용 이월');
+    rr('연간 합계 (신상품+러닝)', withRunSum(t.cur, run.cur), 'tt', '전년 비교는 신상품만');
+  }
+  return `<div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac"><thead><tr><th class="nm">구분</th><th>원가 총액<small class="sb">입고 기준</small></th><th>${esc2(A_CMP[scope])}</th><th>증감</th><th>${run ? '입고(투입)량' : '입고량'}</th><th>장당 원가</th><th>기획 원가</th><th>판매 원가</th><th>남은 재고 원가<small class="sb">추정</small></th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    <div class="note">원가 총액 = 입고량 기준 생산원가 합(VAT 포함, 원천 ×1.1) · 기획 원가 = 기획량 기준 · 판매 원가 = 누계판매량 기준 · 남은 재고 원가 = 원가 총액 − 판매 원가(기타 출고·반품은 반영하지 않은 추정) · 장당 원가 = 원가 총액 ÷ 입고량.${run ? ' 러닝 원가 = SS 러닝(12월말 기초재고 포함) + FW 신품번 입고분 + FW 전용 이월분(7/31 시점재고의 재고 원가금액). 러닝은 기획 원가가 없습니다.' : ''} 25SS는 ‘전년비교BACK’ 스타일별 값을 합친 것입니다${(() => { const gs = []; if(scope !== '26FW' && hasSS() && SS.gifts25Sum && SS.gifts25Sum.n) gs.push(`25SS ${SS.gifts25Sum.n}품번(입고 ${fmtN(SS.gifts25Sum.qtyIn)}장 · 원가 ${fmtW(SS.gifts25Sum.costV)})`); if(scope !== '26SS') (SUM_FW.pyExcl || []).forEach(x => gs.push(`25FW ${esc2(x.name)}(입고 ${fmtN(x.qtyIn)}장 · 원가 ${fmtW(x.costV)})`)); if(scope !== '26FW' && hasSS()) (SS.gifts26 || []).forEach(x => gs.push(`26SS ${esc2(x.name)}(입고 ${fmtN(x.qtyIn)}장 · 원가 ${fmtW(x.costV)})`)); return gs.length ? ` — 비교에서 뺀 사은품·증정품: ${gs.join(' · ')}. 스타일맵 종합 시트의 해당 열·합계 행에는 들어 있어 시트 숫자와 다를 수 있습니다` : ''; })()}.${seasons.includes('겨울') ? ' 겨울은 입고율이 낮고 복종 구성이 25FW와 달라 장당 원가 비교는 참고용입니다.' : ''}</div>`;
 }
 /* 원가·입고·판매가 시즌별로 얼마씩 차지하는지 (100% 막대) */
-const A_SP = {'봄':'sp1', '여름':'sp2', '가을':'sp3', '겨울':'sp4'};
-function annStacks(scope){
+const A_SP = {'봄':'sp1', '여름':'sp2', '가을':'sp3', '겨울':'sp4', '러닝':'sp5'};
+function annStacks(scope, run){
   const seasons = A_SEASONS[scope].filter(s => annRow(s, 'TTL'));
-  const mk = k => ({name:MET[k].label, fmt:MET[k].fmt, parts: seasons.map(s => ({label:s, cls:A_SP[s], v:mv(annRow(s, 'TTL').cur, k)}))});
-  const legend = `<div class="legend">${seasons.map(s => `<span><i class="${A_SP[s]}b"></i>${s}</span>`).join('')}</div>`;
+  const mk = k => ({name:(run && k === 'qtyIn') ? '입고(투입)량' : MET[k].label, fmt:MET[k].fmt, parts: seasons.map(s => ({label:s, cls:A_SP[s], v:mv(annRow(s, 'TTL').cur, k)})).concat(run ? [{label:'러닝(중복 제거)', cls:A_SP['러닝'], v:mv(run.cur, k)}] : [])});
+  const legend = `<div class="legend">${seasons.map(s => `<span><i class="${A_SP[s]}b"></i>${s}</span>`).join('')}${run ? `<span><i class="${A_SP['러닝']}b"></i>러닝(중복 제거)</span>` : ''}</div>`;
   return legend + stackRows(['costV', 'qtyIn', 'sales', 'salesAmt'].map(mk));
 }
 /* 시즌 × 복종 히트맵 */
@@ -1414,8 +1620,9 @@ function annHeatCard(scope){
 }
 /* 러닝 — 합계에 넣지 않고 SS · FW 를 나란히 (기준 차이와 겹침을 밝힌다) */
 function annRunCard(){
+  const only = ASCOPE === '26SS';                                   // 26SS 기간이면 SS 러닝만
   const sr = hasSS() ? SS.block1.find(d => d.mode === 'run' && d.kind === '러닝 TTL') : null;
-  const fr = rowRunTtl();
+  const fr = only ? null : rowRunTtl();
   const line = (name, sub, o, cmp, mode) => {        // mode: 'dim' = 증감이 다른 기준과의 비교(※) · 'sell' = 판매율 분자·분모 기준이 다름(※)
     const c = mv(o, 'costV'), q = mv(o, 'qtyIn'), s = mv(o, 'sales'), p = cmp ? mv(cmp, 'sales') : null;
     const dd = dParts(dlt('sales', s, p), mode === 'dim' ? 'dim' : null);
@@ -1428,43 +1635,91 @@ function annRunCard(){
   if(sr) rows.push(line('26SS 러닝', '12월말 기초재고 + 신규 · 1/1~', sr.cur, sr.py));
   if(fr) rows.push(line('26FW 러닝 · 신품번만', '26FW 신품번 · 8/1~', fwS, fr.py, 'dim'));
   if(fr && stk) rows.push(line('26FW 러닝 · 시점재고 합산', '신품번 + 구품번 이월(7/31 시점재고)', fwSt, fr.py, 'sell'));
-  const R = hasSS() ? SS.run : null;
+  const R = (hasSS() && !only) ? SS.run : null;
   const ov = R && R.overlap ? `<div class="note"><b>합계에 넣지 않은 이유</b> — SS 러닝 ${R.ssList}품번 중 <b>${R.overlap}품번</b>(${esc2((R.overlapStyles || []).slice(0, 4).join(' · '))}${(R.overlapStyles || []).length > 4 ? ' 등' : ''})이 26FW 러닝 구품번 목록(${R.fwList}품번)에도 들어 있습니다. SS 러닝 누계(1/1~)에는 이 품번들의 8월 이후 판매가 이미 포함돼 있고, FW 러닝 ‘시점재고 합산’(구품번 8/1~)도 같은 판매를 한 번 더 셉니다${R.overlapQty ? ` — 주간판매 시트 기준 약 <b>${R.overlapQtyLo ? fmtN(R.overlapQtyLo) + '~' : ''}${fmtN(R.overlapQty)}장</b>(7/27 주를 넣느냐에 따른 범위)` : ''}. 또 SS 러닝 원가는 12월말 기초재고를 포함해 올해 생산분만이 아닙니다. 그래서 러닝은 시즌별로 따로 보고, 연간 합계에는 신상품만 더했습니다.</div>` : '';
-  return `<div class="card"><h3>러닝 · SS와 FW를 나란히 <span class="flag">합계에 넣지 않음</span></h3><div class="sub">기준일·기준재고가 다른 별개 집계입니다 — 원가는 VAT 포함 · SS는 입고(기초재고+신규) 기준, FW는 신품번 입고분만(구품번 이월분은 원가 자료 없음)</div>
+  return `<div class="card"><h3>${only ? '러닝 · 26SS' : '러닝 · SS와 FW를 나란히 <span class="flag">합계에 넣지 않음</span>'}</h3><div class="sub">${only ? '12월말 기초재고 + 신규 물량의 1/1~ 누계 — 원가는 VAT 포함 · 입고(기초재고+신규) 기준' : '기준일·기준재고가 다른 별개 집계입니다 — 원가는 VAT 포함 · SS는 입고(기초재고+신규) 기준, FW는 신품번 입고분만(구품번 이월분의 원가는 종합 시트에 없음)'}</div>
     <div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac"><thead><tr><th class="nm">구분</th><th>입고량</th><th>원가 총액</th><th>누계판매량</th><th>판매율<small class="sb">행마다 기준 다름</small></th><th>실판매금액</th><th>전년 동시점 판매</th><th>증감</th></tr></thead><tbody>${rows.join('') || '<tr><td colspan="8" class="empty">러닝 자료가 없습니다</td></tr>'}</tbody></table></div>
-    ${ov}<div class="note">※ = 기준이 달라 참고용입니다 — 25FW 러닝은 이월재고를 포함한 값이라 ‘신품번만’ 행의 증감은 같은 기준이 아니고, ‘시점재고 합산’ 행의 판매율은 (신품번+이월 판매) ÷ 신품번 입고량입니다.</div><div class="note">전년 동시점 = 25SS 러닝 · 25FW 러닝(이월재고 포함 값 — ‘26FW 신품번만’과는 기준이 다릅니다). 26SS 러닝의 전년 원가는 종합 시트에 없어 비워 두었습니다. 26FW 러닝의 구품번 이월분은 원가 자료가 없어 원가 총액에 신품번 입고분만 들어 있습니다.</div></div>`;
+    ${only ? '<div class="note">전년 동시점 = 25SS 러닝(종합 시트의 입고·판매·금액만). 26SS 러닝의 전년 원가는 종합 시트에 없어 비워 두었습니다.</div>' : `${ov}<div class="note">※ = 기준이 달라 참고용입니다 — 25FW 러닝은 이월재고를 포함한 값이라 ‘신품번만’ 행의 증감은 같은 기준이 아니고, ‘시점재고 합산’ 행의 판매율은 (신품번+이월 판매) ÷ 신품번 입고량입니다.</div><div class="note">전년 동시점 = 25SS 러닝 · 25FW 러닝(이월재고 포함 값 — ‘26FW 신품번만’과는 기준이 다릅니다). 26SS 러닝의 전년 원가는 종합 시트에 없어 비워 두었습니다. 26FW 러닝의 구품번 이월분의 원가는 종합 시트에 없어 원가 총액에 신품번 입고분만 들어 있습니다.</div>`}</div>`;
+}
+/* 러닝 · 중복 제거 — SS 러닝과 FW 러닝이 같은 구품번을 두 번 세는 것을 빼고 더한 값, 그리고 그 근거(겹치는 품번 · 두 파일 대조) */
+function annRunDedupCard(){
+  if(!hasRunY()) return annRunCard();
+  const P = P_ITEMS.map(annRunParts).filter(p => p && ((mv(p.cur, 'qtyIn') || 0) > 0 || (mv(p.cur, 'sales') || 0) > 0)), TOT = annRunParts('TOTAL');
+  const gk = (o, k) => (o && o[k] != null) ? o[k] : null, v11 = x => x == null ? null : x * 1.1;
+  const body = P.concat(TOT ? [TOT] : []).map(p => { const tot = p.item === 'TOTAL'; return `<tr class="${tot ? 'tt' : 'cr'}"><th class="nm">${tot ? '러닝 합계' : p.item}</th>
+      <td>${fmtN(gk(p.ss, 'qtyIn'))}</td><td>${fmtN(gk(p.fwn, 'qtyIn'))}</td><td>${fmtN(gk(p.carryEx, 'qtyIn'))}</td><td class="cur">${fmtN(mv(p.cur, 'qtyIn'))}</td>
+      <td>${fmtN(gk(p.ss, 'sales'))}</td><td>${fmtN(gk(p.fwn, 'sales'))}</td><td>${fmtN(gk(p.carryEx, 'sales'))}</td><td class="cur">${fmtN(mv(p.cur, 'sales'))}</td>
+      <td>${fmtW(v11(gk(p.ss, 'cost')))}</td><td>${fmtW(v11(gk(p.fwn, 'cost')))}</td><td>${fmtW(v11(gk(p.carryEx, 'cost')))}</td><td class="cur">${fmtW(mv(p.cur, 'costV'))}</td><td>${fmtP1(mv(p.cur, 'sellRate'))}</td><td>${fmtW(mv(p.cur, 'salesAmt'))}</td></tr>`; }).join('');
+  const ck = RUNY.checks, tol = ck.tol, n1 = ck.overlapN, n2 = ck.overlapNewN || 0, nAll = n1 + n2, bad = (ck.boundaryFail || []).length + (ck.boundaryFailNew || []).length;
+  const wMax = Math.max(ck.weeklyMaxDiffAll || 0, ck.weeklyMaxDiffNew || 0), sMax = Math.max(ck.stockMaxDiffAll || 0, ck.stockMaxDiffNew || 0);
+  const okW = wMax <= tol, okS = sMax <= tol, okB = !bad, okC = ck.carryMatchesSheet !== false, allOk = okW && okS && okB && okC;
+  const mk = ok => ok ? '<b style="color:#047857">✓</b>' : '<b style="color:#b91c1c">✗</b>';
+  const ovC = (ck.carryOverlap || {}), ovN = (ck.carryOverlapNew || {}), ovAll = k => (ovC[k] || 0) + (ovN[k] || 0);
+  const before = k => (TOT && TOT.ss && TOT.ss[k] || 0) + (TOT && TOT.fwn && TOT.fwn[k] || 0) + (ck.carryAll[k] || 0);                  // 그냥 더했을 때(중복 포함)
+  const recOver = (ck.ssSalesDiffOver || []).length, recDiff = (ck.overlapSsSalesRec || 0) - (ck.overlapSsSales || 0);
+  const summary = `<div class="note"><b>무엇이 겹쳤나</b> — SS 러닝은 1/1부터, FW 러닝은 7/31 재고와 8/1부터 같은 옛 품번(구품번)을 따로 세서, FW 이월(구품번 ${ck.fwOldN}개) 중 <b>${nAll}개</b>가 SS 쪽에 이미 들어 있었습니다 — SS 러닝과 겹치는 ${n1}개 + 26SS 신상품인 ${n2}개. 나머지 ${ck.fwOldN - nAll}개(FW 전용)만 더했습니다.<br>
+    <b>그냥 더했다면 → 뺀 몫 → 중복 제거 후</b>: 입고(투입) 수량 ${fmtN(before('qtyIn'))}장 → −${fmtN(ovAll('qtyIn'))}장 → <b>${fmtN(TOT && mv(TOT.cur, 'qtyIn'))}장</b> · 누계판매량 ${fmtN(before('sales'))}장 → −${fmtN(ovAll('sales'))}장 → <b>${fmtN(TOT && mv(TOT.cur, 'sales'))}장</b> · 원가 ${fmtW(before('cost') * 1.1)} → −${fmtW(ovAll('cost') * 1.1)} → <b>${fmtW(TOT && mv(TOT.cur, 'costV'))}</b></div>`;
+  const checks = `<div class="note ${(allOk && !recOver) ? '' : 'warnbox'}"><b>두 파일 대조(허용 오차 ${tol}장)</b> ${!allOk ? '— ⚠ 확인 필요' : (recOver ? '— 두 스타일맵의 값은 서로 같음 · 이어붙임은 ⚠ 정의 차이 있음(아래)' : '— 문제 없음')}<br>
+    ${mk(okW)} 주간판매(52주): 겹치는 ${nAll}품번을 SS 스타일맵과 FW 스타일맵에서 읽은 값의 최대 차이 ${fmtN(wMax)}장 · ${mk(okS)} 현재고 최대 차이 ${fmtN(sMax)}장 (두 스타일맵이 같은 ERP 추출이라 같게 나오는 것이 정상)<br>
+    ${mk(okB)} FW 이월 판매(8/1~ = 누계 − 7/31 시점 누계)가 SS 주간판매로 센 범위(8/3 주부터 ~ 7/27 주부터) 안에 드는 품번 ${nAll - bad}/${nAll} · ${mk(okC)} FW 이월 계산(시점재고 시트·러닝 ST 시트)이 종합 시트 값과 같음(재고 ${fmtN(ck.carryAll.qtyIn)}장 · 8/1~ 판매 ${fmtN(ck.carryAll.sales)}장)<br>
+    <b style="color:${recOver ? '#b45309' : '#047857'}">${recOver ? '⚠' : '✓'}</b> 이어붙임(SS 러닝과 겹치는 ${n1}개의 1/1~ 판매): 스타일맵 정의(올해재고 − 현재고) ${fmtN(ck.overlapSsSales)}장 vs 판매기록 기준(주마감 누계 − 12월말 누계) ${fmtN(ck.overlapSsSalesRec)}장 → ${fmtN(Math.abs(recDiff))}장 차이(품번별 최대 ${fmtN(ck.ssSalesDiffMax)}장, ${tol}장 넘는 품번 ${recOver}/${n1}). 차이는 31품번 모두 ‘실제 입고 − 신규발주’와 같습니다(스타일맵은 올해재고를 기초재고+신규발주로 잡기 때문). 같은 정의라 입고(투입) 수량·원가도 SS 러닝은 실제 입고보다 ${fmtN(ck.ssSalesRecTotal - ck.ssSalesBackTotal)}장만큼 적게 잡힙니다. 연간에는 스타일맵 정의 그대로(러닝 전체 ${fmtN(ck.ssSalesBackTotal)}장; 판매기록 기준 ${fmtN(ck.ssSalesRecTotal)}장)를 썼습니다. 26SS 신상품과 겹치는 ${n2}개는 SS 신상품 판매와 FW 누계 판매의 최대 차이 ${fmtN(ck.overlapNewSalesDiffMax || 0)}장입니다.</div>`;
+  const ovRow = (r, rec) => `<tr><th class="nm">${esc2(r.code)}<small class="sb">${esc2(r.name || '')}</small></th><td>${esc2(r.item || '')}</td><td>${fmtN(r.ssIn)}</td><td>${fmtN(r.ssSales)}</td>${rec ? `<td>${fmtN(r.ssSalesRec)}</td><td>${fmtN((r.ssSales || 0) - (r.ssSalesRec || 0))}</td>` : ''}<td>${fmtN(r.fwCarryStock)}</td><td class="cur">${fmtN(r.fwAugSales)}</td><td>${fmtN(r.ssWk0803)} ~ ${fmtN(r.ssWk0727)}</td><td>${r.boundaryOk ? '<b style="color:#047857">✓</b>' : '<b style="color:#b91c1c">✗</b>'}</td></tr>`;
+  const ovHead = (ssLab, rec) => `<thead><tr><th class="nm">품번</th><th>복종</th><th>${ssLab} 입고</th><th>${ssLab} 판매(1/1~)${rec ? '<small class="sb">스타일맵 정의</small>' : ''}</th>${rec ? '<th>판매기록 기준<small class="sb">주마감 − 12월말</small></th><th>차이</th>' : ''}<th>FW 이월 재고(7/31)</th><th>FW 이월 판매(8/1~)</th><th>SS 주간판매<small class="sb">8/3주부터 ~ 7/27주부터</small></th><th>범위 안</th></tr></thead>`;
+  const fwOnly = ck.fwOldN - nAll, jj = ck.fwOnlyJanJulSales || 0;
+  return `<div class="card"><h3>러닝 · 중복 제거 <span class="flag">SS 러닝 + FW 러닝</span></h3>
+    <div class="sub">원가는 VAT 포함 · 뺀 이월분: 재고 ${fmtN(ovAll('qtyIn'))}장 · 8/1~ 판매 ${fmtN(ovAll('sales'))}장 · 재고 원가 ${fmtW(ovAll('cost') * 1.1)}</div>
+    ${summary}
+    <div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac"><thead><tr><th class="nm" rowspan="2">복종</th><th class="mh" colspan="4">입고(투입) 수량</th><th class="mh" colspan="4">누계판매량</th><th class="mh" colspan="4">원가 총액</th><th rowspan="2">판매율</th><th rowspan="2">실판매금액</th></tr>
+      <tr><th>SS 러닝</th><th>FW 신품번</th><th>FW 이월<small class="sb">FW 전용</small></th><th>합계</th><th>SS 러닝</th><th>FW 신품번</th><th>FW 이월<small class="sb">FW 전용</small></th><th>합계</th><th>SS 러닝</th><th>FW 신품번</th><th>FW 이월<small class="sb">FW 전용</small></th><th>합계</th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="note">합계 = SS 러닝(구품번 ${ck.ssN}개) + FW 신품번 + FW 이월 중 FW 전용 구품번 ${fwOnly}개. 입고(투입) 수량 = SS 12월말 기초재고+신규 · FW 신품번 입고 · FW 전용의 7/31 시점재고. 판매율 = 누계판매량 ÷ 입고(투입) 수량. 원가 총액 = SS 러닝 + FW 신품번 입고분 + FW 전용 이월분의 재고 원가금액(시점재고 시트, VAT 포함). 러닝은 기획량이 없어 입고율을 만들지 않았습니다. 음수(예: SS 러닝 OUTER −6)는 스타일맵 정의(올해재고 − 현재고)상의 값이며 판매기록 기준과 다릅니다. <b>들어 있지 않은 것</b>: FW 전용 ${fwOnly}개의 1/1~7/31 판매 약 ${fmtN(jj)}장(8/1~ 판매만 포함) · 25SS·25FW 러닝의 전년 비교(같은 방식으로 겹쳐 있는지 확인할 자료가 없음). 26SS 신상품과 겹친 ${n2}개는 신상품 합계에 이미 들어 있어 ‘신상품+러닝’ 합계에서 한 번만 셉니다.</div>
+    ${checks}
+    <h3 style="margin:14px 0 4px">① SS 러닝과 겹치는 구품번 ${n1}개 — SS 러닝(1/1~)에 이미 들어 있는 것</h3>
+    <div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac">${ovHead('SS 러닝', true)}<tbody>${RUNY.overlap.map(r => ovRow(r, true)).join('')}</tbody></table></div>
+    <h3 style="margin:14px 0 4px">② 26SS 신상품과 겹치는 구품번 ${n2}개 — 신상품(봄) 합계에 이미 들어 있는 것</h3>
+    <div class="tw"><div class="swipe">좌우로 밀어서 보세요 →</div><table class="ct ac">${ovHead('SS 신상품', false)}<tbody>${(RUNY.overlapNew || []).map(r => ovRow(r, false)).join('')}</tbody></table></div>
+    <div class="note">‘FW 이월 판매(8/1~)’는 스타일맵의 누계에서 7/31 시점 누계를 뺀 값이라 날짜 경계가 정확하고, SS 주간판매는 주(월~일) 단위라 7/27 주를 넣는지에 따라 두 값의 범위로 봅니다 — FW 값이 그 범위(±${tol}장) 안이면 두 파일이 이어집니다. ① ${n1}개 중 FW 가 다시 센 8/1~ 판매는 ${fmtN(ovC.sales)}장, ② ${n2}개는 ${fmtN(ovN.sales)}장입니다.</div></div>`;
 }
 /* 연간 합계에서 빠진 러닝의 크기 — ‘−23.9%’ 같은 숫자가 회사 전체로 읽히지 않도록 */
 function annRunExcl(){
-  const sr = hasSS() ? SS.block1.find(d => d.mode === 'run' && d.kind === '러닝 TTL') : null, fr = rowRunTtl(), fw = fr ? sumRows([fr]) : null;
+  if(ASCOPE === '연간' && hasRunY()){                              // 연간: 중복 제거한 러닝 합계(아래 러닝 카드와 같은 값)
+    const rt = annRunParts('TOTAL'), c = rt.cur;
+    return ` <b>제외된 러닝(중복 제거)</b> — 원가 ${fmtW(mv(c, 'costV'))} · 판매 ${fmtN(mv(c, 'sales'))}장 · 입고(투입) ${fmtN(mv(c, 'qtyIn'))}장 = SS 러닝 ${fmtW(mv(sumRows([rt.ss]), 'costV'))} + FW 신품번 ${fmtW(mv(sumRows([rt.fwn]), 'costV'))} + FW 전용 이월 ${fmtW((rt.carryEx.cost || 0) * 1.1)}(아래 러닝 카드).`;
+  }
+  const sr = hasSS() ? SS.block1.find(d => d.mode === 'run' && d.kind === '러닝 TTL') : null, fr = rowRunTtl(), fw = fr ? sumRows([fr]) : null;      // (26FW 자료 — 호출하는 쪽이 SUM_FW 를 끼워 둔다)
   const parts = [];
   if(ASCOPE !== '26FW' && sr) parts.push(`26SS 러닝 원가 ${fmtW(mv(sr.cur, 'costV'))}(기초재고 포함)·판매 ${fmtN(mv(sr.cur, 'sales'))}장`);
   if(ASCOPE !== '26SS' && fw) parts.push(`26FW 러닝(신품번) 원가 ${fmtW(mv(fw, 'costV'))}·판매 ${fmtN(mv(fw, 'sales'))}장`);
   return parts.length ? ` <b>제외된 러닝</b> — ${parts.join(' · ')}(아래 러닝 카드).` : '';
 }
-function viewAnnual(){
+function viewAnnual(){ return withSUM(SUM_FW, viewAnnualBody); }       // 연간·26SS 한눈에 보기 — 26FW 부분은 항상 SUM_FW 로 읽는다
+function viewAnnualBody(){
   TIPREG.length = 0;
   const L = annLabels();
-  const scopeChips = `<div class="chips"><span class="flabel">범위</span>${['연간', '26SS', '26FW'].map(s => chipB(ASCOPE === s, 'data-ascope', s, s === '연간' ? '연간 (SS+FW)' : s)).join('')}</div>`;
-  if(ASCOPE !== '26FW' && !hasSS()) return `<div class="sec">${scopeChips}<div class="headline warn">26SS 스타일맵 자료를 읽지 못해 SS 는 표시할 수 없습니다 — 빌드 PC 에서 NAS(4.26SS/04. 스타일맵 (주별 판매))가 열리는지 확인하세요.</div></div>`;
+  const scopeChips = '';
+  if(ASCOPE !== '26FW' && !hasSS()) return noSsView();
   const T = annSum(A_SEASONS[ASCOPE], 'TTL');
   if(!T) return `<div class="sec">${scopeChips}<div class="empty">표시할 자료가 없습니다</div></div>`;
   const rowsS = annSeasonRows(ASCOPE), rowsI = annItemRows(ASCOPE);
+  const RUNC = (ASCOPE === '연간' && INCRUN && hasRunY()) ? annRunParts('TOTAL') : null;      // 러닝 포함(중복 제거)이면 러닝 합계
+  if(RUNC){
+    rowsS.splice(rowsS.length - 1, 0, {name:'러닝', sub:'중복 제거 · 전년 비교 없음', cur:RUNC.cur, cmp:null});
+    rowsS.push({name:'합계 (러닝 포함)', sub:'신상품+러닝', ttl:true, cur: withRunSum(T.cur, RUNC.cur), cmp:null});
+  }
   const opt = {curLabel:L.cur, cmpLabel:L.cmp, rngCur:L.rng, rngCmp:L.prng};
   return `
-  <div class="sec">${scopeChips}${annHeadlineHtml(T, L)}</div>
-  <div class="sec"><h2>${esc2(A_LABEL[ASCOPE])} <small>카드의 굵은 줄 = ${esc2(L.cmp)} 대비 · 원가는 VAT 포함</small></h2><div class="kpis">${annKpiHtml(T, L)}</div>
-    ${noCostHtml(A_SEASONS[ASCOPE].filter(x => !isSSs(x)), false)}<div class="note">▲ 빨강 = 늘어남, ▼ 파랑 = 줄어듦 (좋고 나쁨이 아니라 방향입니다) · 입고·판매·원가 합계는 모두 <b>신상품만</b> 더했습니다. 러닝은 SS(12월말 기초재고·1/1~)와 FW(7/31 시점재고·8/1~)의 기준이 달라 일부 품번을 두 번 세게 되므로 합계에 넣지 않고 아래 카드에 따로 둡니다.${annRunExcl()}</div>${(() => { const g = costTtlGap(); return ASCOPE !== '26SS' && g ? `<div class="note">${g}</div>` : ''; })()}</div>
-  <div class="sec"><h2>원가 총액 <small>시즌별로 기획 · 입고(총액) · 판매 · 남은 재고 원가와 전년 동시점</small></h2><div class="card">${annCostTable(ASCOPE)}</div></div>
+  <div class="sec">${scopeChips}${annHeadlineHtml(T, L, RUNC)}</div>
+  <div class="sec"><h2>${esc2(A_LABEL[ASCOPE])}${RUNC ? ' + 러닝(중복 제거)' : ''} <small>카드의 굵은 줄 = ${esc2(L.cmp)} 대비(신상품) · 원가는 VAT 포함</small></h2><div class="kpis">${annKpiHtml(T, L, RUNC)}</div>
+    ${noCostHtml(A_SEASONS[ASCOPE].filter(x => !isSSs(x)), false)}<div class="note">▲ 빨강 = 늘어남, ▼ 파랑 = 줄어듦 (좋고 나쁨이 아니라 방향입니다) · ${RUNC ? '큰 숫자는 <b>신상품 + 러닝(중복 제거)</b>입니다 — 러닝은 SS(12월말 기초재고·1/1~)와 FW(7/31 시점재고·8/1~)가 같은 구품번을 일부 공유해, 겹치는 품번의 FW 이월분을 빼고 더했습니다(근거는 아래 러닝 카드). 증감은 러닝의 전년 비교 자료가 없어 신상품 기준입니다. 위 ‘합계’ 버튼으로 신상품만 볼 수 있습니다.' : '입고·판매·원가 합계는 모두 <b>신상품만</b> 더했습니다. 러닝은 SS(12월말 기초재고·1/1~)와 FW(7/31 시점재고·8/1~)의 기준이 달라 일부 품번을 두 번 세게 되므로 따로 둡니다(' + (ASCOPE === '연간' ? '위 ‘합계’ 버튼' : '연간 기간') + '에서 중복을 뺀 러닝 포함 합계를 볼 수 있습니다).'}${RUNC ? '' : annRunExcl()}</div>${(() => { const g = costTtlGap(); return ASCOPE !== '26SS' && g ? `<div class="note">${g}</div>` : ''; })()}</div>
+  <div class="sec"><h2>원가 총액 <small>시즌별로 기획 · 입고(총액) · 판매 · 남은 재고 원가와 전년 동시점</small></h2><div class="card">${annCostTable(ASCOPE, RUNC)}</div></div>
   <div class="sec"><h2>한 지표로 크게 비교 ${metricChips(AMET, 'data-ametric')}</h2>
     <div class="grid2">
       <div class="card"><h3>시즌별 · ${MET[AMET].label}</h3><div class="sub">${A_SEASONS[ASCOPE].join(' · ')} · 합계</div>${pairChart(rowsS, AMET, opt)}</div>
       <div class="card"><h3>복종별 · ${MET[AMET].label}</h3><div class="sub">${esc2(A_LABEL[ASCOPE])}의 복종(OUTER · TOP · BOTTOM · ACC)</div>${pairChart(rowsI, AMET, opt)}</div>
     </div></div>
   <div class="sec"><div class="grid2">${annHeatCard(ASCOPE)}
-      <div class="card"><h3>시즌별 구성</h3><div class="sub">원가 총액 · 입고량 · 누계판매량 · 실판매금액을 시즌이 나눠 가진 몫</div>${annStacks(ASCOPE)}</div>
+      <div class="card"><h3>시즌별 구성</h3><div class="sub">원가 총액 · 입고량 · 누계판매량 · 실판매금액을 시즌${RUNC ? '·러닝' : ''}이 나눠 가진 몫</div>${annStacks(ASCOPE, RUNC)}</div>
   </div></div>
-  <div class="sec">${annRunCard()}</div>`;
+  <div class="sec">${ASCOPE === '연간' ? annRunDedupCard() : annRunCard()}</div>`;
 }
 
 /* =====================================================================
@@ -1523,12 +1778,14 @@ function chTable(scope){
     <tr><th>온라인</th><th>오프라인</th><th>기타</th><th>온라인 비중</th><th>온라인</th><th>오프라인</th><th>온라인 비중</th><th>온라인</th><th>오프라인</th><th>합계<small class="sb">기타·미확인 포함</small></th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 function noCostSalesHtml(groups){
-  const nc = SUM.noCost || {}, out = [];
+  const nc = SUM_FW.noCost || {}, out = [];
   groups.forEach(g => { const x = nc[g]; if(x && x.saN) out.push(`${g === '러닝' ? '러닝(신품번)' : g} ${fmtN(x.saN)}품번(판매 ${fmtN(x.saQty)}장)`); });
   return out.length ? `<div class="note warnbox">⚠ <b>원가 미입력</b> — ${out.join(' · ')}은 판매가 있는데 원천에 원가가 비어 있어 판매 원가에서 빠져 있습니다. 판매량·채널 비중은 영향이 없습니다.</div>` : '';
 }
 function viewOnOff(){
   TIPREG.length = 0;
+  if(PERIOD === 'ss') return `<div class="sec"><div class="headline warn">26SS 는 채널(온라인·오프라인)별 판매 자료가 없습니다 — 허브 MARK 자료에 26SS 가 없어 이 탭은 26FW 에서만 볼 수 있습니다. <button class="chip" data-period="fw">26FW 의 온 · 오프 보기</button></div></div>`;
+  const perBanner = PERIOD === 'annual' ? `<div class="sec"><div class="note warnbox">연간 기간이지만 이 탭은 <b>26FW 부분만</b> 나옵니다 — 26SS 의 채널별 판매 자료가 없어 SS+FW 합계는 만들 수 없습니다.</div></div>` : '';
   const scopeChips = `<div class="chips"><span class="flabel">범위</span>${O_SCOPES.map(s => chipB(OSCOPE === s, 'data-oscope', s, s === '전체' ? '전체 (신상품+러닝)' : s)).join('')}</div>`;
   if(!hasCH()) return `<div class="sec">${scopeChips}<div class="headline warn">온/오프 판매 자료를 읽지 못했습니다 — 빌드 PC 에서 허브 MARK 채널 자료(chteam.json)가 열리는지 확인하세요.</div></div>`;
   const rows = chRows(OSCOPE), T = chSum(rows);
@@ -1559,7 +1816,7 @@ function viewOnOff(){
   const itemItems = O_ITEMS.map(it => ({name:it, t: chSum(chRows(OSCOPE, it))})).filter(x => chTot(x.t, 'sales') || chTot(x.t, 'wk'));
   const cov = rows.reduce((a, r) => a + r.chCards, 0), covAll = rows.reduce((a, r) => a + r.cards, 0);
   const gap = gapC, salesAll = smSales, missN = rows.reduce((z, r) => z + (r.miss || 0), 0);
-  return `
+  return perBanner + `
   <div class="sec">${scopeChips}${head}</div>
   <div class="sec"><h2>온 · 오프 <small>카드의 굵은 줄 = 전체 대비 비중 · 판매 원가는 VAT 포함</small></h2><div class="kpis">${kpis}</div>
     ${noCostSalesHtml(OSCOPE === '전체' ? ['가을', '겨울', '러닝'] : [OSCOPE])}<div class="note">▲ 빨강 = 늘어남, ▼ 파랑 = 줄어듦 (좋고 나쁨이 아니라 방향입니다) · 채널별 비교 상대(전년 동시점·SS)는 자료가 없어 비중과 이번 주 변화만 봅니다 · 이번 주 비중과 비교하는 ‘누계’에는 이번 주 판매도 들어 있습니다.</div></div>
@@ -1571,13 +1828,21 @@ function viewOnOff(){
     </div></div>
   <div class="sec"><h2>온 · 오프 표 <small>시즌 → 복종</small></h2><div class="card">${chTable(OSCOPE)}
     <div class="note"><b>출처·정의</b> — 허브 MARK 채널 자료(기준일 ${esc2(ymdS(CHN.at) || '미확인')}${(CHN.src && CHN.src.indexOf('스냅샷') >= 0) ? (chAt && chAt === chEnd ? ' · 카드 마감일과 같은 날짜로 저장해 둔 값' : ' · 지난 빌드에 저장해 둔 값') : ''}). 온라인 = 온라인팀(몰·자사몰·풀필먼트·벤더·직원구매 등, 반품은 마이너스), 오프라인 = 오프라인팀(직영·백화점·아울렛·면세), 기타 = 글로벌+기타. 이번 주 = 지난 일요일에 끝난 최근 1주${wr ? `(${wr})` : ''}. ${missN ? `판매가 있는데 채널 자료가 없는 카드가 ${fmtN(missN)}장 있습니다` : '판매가 있는 카드는 모두 채널 자료가 있습니다'}. ${gap ? `채널 합은 스타일맵 누계보다 ${fmtN(Math.abs(gap))}장(${salesAll ? (Math.abs(gap) / salesAll * 100).toFixed(1) : '-'}%) ${gap > 0 ? '적습니다' : '많습니다'}(원인 미확인) — 원가로는 약 ${fmtW(Math.abs(costUnk))}입니다.` : '채널 합과 스타일맵 누계가 같습니다.'}</div>
-    <div class="note"><b>러닝</b>은 26FW 신품번 판매만입니다 — 구품번 이월 판매(시점재고 합산)는 채널 자료가 없어 빠졌습니다. <b>26SS</b>는 허브에 채널 자료가 없어 이 탭에 없습니다. 판매 원가 = 스타일 원가(VAT 포함) × 판매량으로 계산한 값이며, 한눈에 보기의 ‘판매 원가’(‘26FW 신품번만’)와 같은 범위입니다.</div></div></div>`;
+    <div class="note"><b>러닝</b>은 26FW 신품번 판매만입니다 — 구품번 이월 판매(시점재고 합산)는 채널 자료가 없어 빠졌습니다. <b>26SS</b>는 허브에 채널 자료가 없어 이 탭에 없습니다. 판매 원가 = 스타일 원가(VAT 포함) × 판매량으로 계산한 값이며, 26FW 기간 한눈에 보기의 ‘판매 원가’(‘26FW 신품번만’)와 같은 범위입니다.</div></div></div>`;
 }
 
 /* ---------- 상단 안내줄 ---------- */
 function noteHtml(){
-  if(TAB === 'onoff') return `<b>온 · 오프</b> — 26FW 판매를 온라인·오프라인·기타로 나눕니다(허브 MARK 채널 자료, 기준일 ${ymdS(CHN.at) || '미확인'}). 누계와 이번 주만 있고 전년·SS 비교는 없습니다. 러닝은 26FW 신품번 판매만이라, 한눈에 보기의 ‘시점재고 합산’(구품번 이월 판매 포함) 값보다 작습니다.`;
-  if(TAB === 'annual') return `<b>연간(SS+FW)</b> — 26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. 합계는 <b>신상품만</b> — 러닝은 SS·FW 기준이 달라 따로 둡니다. 원가는 입고 기준·VAT 포함입니다.`;
+  if(TAB === 'onoff') return `<b>온 · 오프</b> — 26FW 판매를 온라인·오프라인·기타로 나눕니다(허브 MARK 채널 자료, 기준일 ${ymdS(CHN.at) || '미확인'}). 누계와 이번 주만 있고 전년·SS 비교는 없습니다. ${PERIOD === 'fw' ? '러닝은 26FW 신품번 판매만이라, 한눈에 보기의 ‘시점재고 합산’(구품번 이월 판매 포함) 값보다 작습니다.' : (PERIOD === 'ss' ? '26SS 는 채널 자료가 없습니다.' : '러닝은 26FW 신품번 판매만입니다. 26SS 는 채널 자료가 없어 이 탭은 26FW 부분만 보입니다.')}`;
+  if(PERIOD !== 'fw'){
+    const lab = PERIOD === 'ss' ? '26SS' : '연간(SS+FW)', P = PL();
+    if(TAB === 'season') return `<b>${lab} · 시즌 · 복종</b> — ${P.cur}(${P.rngCur})를 ${P.yr}(${P.rngPrev})과 비교합니다. 카테고리별 전년 값은 전년비교BACK(스타일별)을 합친 것이고 사은품·증정품은 뺐습니다. ${PERIOD === 'annual' && hasRunY() ? '‘신상품+러닝’·‘러닝’ 범위는 SS·FW 러닝이 겹치는 구품번을 뺀 러닝을 포함하고 복종까지만(카테고리·전년 비교 없음) 봅니다.' : '합계는 신상품만 — 러닝은 러닝 탭에서 봅니다.'}`;
+    if(TAB === 'gender') return `<b>${lab} · 성별</b> — 신상품 기준(러닝 제외) 여성 · 유니맨(남성+공용) 비중입니다. 26SS 성별 값은 스타일별 시트에서 합쳤고(사은품성 품번 제외), 25SS 성별 열은 올해와 같은 기준인지 확인되지 않아 전년 비교는 만들지 않았습니다.`;
+    if(TAB === 'run') return PERIOD === 'ss' ? `<b>26SS 러닝</b> — 12월말 기초재고와 신규 물량의 1/1~ 누계입니다. 전년 동시점은 25SS 러닝이며 종합 시트에 있는 입고·판매·금액만 비교됩니다.` : (hasRunY() ? `<b>연간 러닝</b> — SS 러닝(12월말 기초재고·1/1~) + FW 신품번(8/1~) + FW 전용 이월(7/31 시점재고·8/1~)을 더한 합계입니다. SS 와 겹치는 구품번 ${RUNY.checks.overlapN + RUNY.checks.overlapNewN}개의 FW 이월분은 뺐습니다(근거는 아래 카드).` : `<b>연간 러닝</b> — 26SS 러닝(12월말 기초재고 기준·1/1~)과 26FW 러닝(7/31 시점재고 기준·8/1~)은 기준과 기간이 달라 합치지 않고 나란히 둡니다.`);
+    if(TAB === 'all') return `<b>전체 표</b> — 기존 집계표의 표 6종은 26FW 에만 있습니다.`;
+    return `<b>${lab}</b> — ${PERIOD === 'ss' ? `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''})과 비교합니다. 러닝은 아래 카드에 따로 둡니다.` : `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. ${(INCRUN && hasRunY()) ? '합계는 <b>신상품 + 러닝(중복 제거)</b> — 러닝은 SS·FW 가 같은 구품번을 일부 공유해 겹치는 품번의 FW 이월분을 뺐습니다.' : '합계는 <b>신상품만</b> — 러닝은 SS·FW 기준이 달라 따로 둡니다.'}`} 원가는 입고 기준·VAT 포함입니다.`;
+  }
+  if(false) return `<b>연간(SS+FW)</b> — 26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. 합계는 <b>신상품만</b> — 러닝은 SS·FW 기준이 달라 따로 둡니다. 원가는 입고 기준·VAT 포함입니다.`;
   const a = BASIS === 'yr'
     ? `<b>${TERMS.yr} 대비</b> — 26FW(${RNG_CUR})를 25FW(${RNG_PREV}, 같은 요일로 맞춘 전년 같은 시점)와 비교합니다.`
     : `<b>전주 대비</b> — 직전 스타일맵(${TERMS.wk} 스냅샷)보다 이번 주에 늘어난 만큼을 봅니다.`;
@@ -1587,29 +1852,39 @@ function noteHtml(){
   if(TAB === 'all') return a + ' &nbsp;·&nbsp; ' + (RUNSTK ? `<b>러닝: ${TERMS.runOn}</b>` : `<b>러닝: ${TERMS.runOff}</b>`) + ' — 기존 집계표의 표 6종입니다.';
   if(RUNSTK) b = `<b>러닝: ${TERMS.runOn}</b> — 기획량 = 26FW 러닝 기획 + 구품번 이월(26.07.31 시점재고), 판매 = 구+신 합산, 입고량은 신품번 입고.${BASIS === 'yr' ? ' 판매량·판매금액은 25FW 러닝(이월 포함)과 같은 기준입니다.' : ' 지난주 스냅샷과는 기준이 달라 전주 대비는 계산하지 않습니다.'}`;
   else b = `<b>러닝: ${TERMS.runOff}</b>${BASIS === 'yr' ? ` — ⚠ 25FW 러닝은 이월재고를 포함한 값이라 전년 비교는 <b>${TERMS.runOn}</b>이 같은 기준입니다(위 버튼).` : '.'}`;
+  if(RUNSTK && hasRunY()) b += ` <b>⚠</b> 구품번 이월 중 ${RUNY.checks.overlapN + RUNY.checks.overlapNewN}개는 26SS 쪽에도 들어 있어 26SS 화면과 더하면 두 번 셉니다(‘연간’ 기간은 겹침을 뺀 합계).`;
   return a + ' &nbsp;·&nbsp; ' + b;
 }
 
 /* ---------- 그리기 ---------- */
 function renderAll(){
+  MET.qtyIn.label = (PERIOD === 'annual' && hasRunY() && ((TAB === 'overview' && INCRUN) || (TAB === 'season' && annRunScope(SEASON)) || TAB === 'run')) ? '입고(투입)량' : '입고량';      // 러닝이 들어간 입고량은 기초재고·이월재고를 포함한 투입 수량
   const ae = document.activeElement;                                      // 다시 그린 뒤 같은 버튼으로 포커스를 돌려준다
-  const keepSel = ae && ae.getAttribute ? ['data-tab', 'data-metric', 'data-iscope', 'data-season', 'data-tg', 'data-hm', 'data-drill', 'data-fixrun', 'data-expand', 'data-ascope', 'data-ametric', 'data-ahm', 'data-oscope', 'data-ometric'].map(at => ae.hasAttribute(at) ? `[${at}="${ae.getAttribute(at)}"]` : null).find(Boolean) : null;
+  const keepSel = ae && ae.getAttribute ? ['data-tab', 'data-metric', 'data-iscope', 'data-season', 'data-tg', 'data-hm', 'data-drill', 'data-fixrun', 'data-expand', 'data-period', 'data-ametric', 'data-ahm', 'data-oscope', 'data-ometric'].map(at => ae.hasAttribute(at) ? `[${at}="${ae.getAttribute(at)}"]` : null).find(Boolean) : null;
   const legSel = ae && ae.classList ? ['stkbtn', 'runrow'].find(c => ae.classList.contains(c)) : null;           // 전체 표 탭의 기존 버튼·러닝 행
   const legIdx = legSel ? [...document.querySelectorAll('.' + legSel)].indexOf(ae) : -1;
   MODE = BASIS; COLS = MODE === 'yr' ? COLS_YR : COLS_ALL;                 // 기존 표 코드가 쓰는 전역
   document.querySelectorAll('#segBasis .opt').forEach(b => { const on = b.dataset.basis === BASIS; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-  document.querySelectorAll('#segRun .opt').forEach(b => { const on = (b.dataset.run === '1') === RUNSTK; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-  const runOnBtn = document.querySelector('#segRun .opt[data-run="1"]'); if(runOnBtn) runOnBtn.title = BASIS === 'wk' ? '전주 대비는 신품번만으로 계산합니다 — 누르면 전년 동시점 대비(시점재고 합산)로 바뀝니다' : '25FW 러닝(이월재고 포함)과 같은 기준';
-  document.getElementById('segRun').style.display = (TAB === 'season' || TAB === 'gender' || TAB === 'annual' || TAB === 'onoff') ? 'none' : '';   // 러닝이 안 나오는 화면에서는 숨긴다
-  document.getElementById('segBasis').style.display = (TAB === 'annual' || TAB === 'onoff') ? 'none' : '';                                       // 연간은 전년 동시점만
+  const runAnn = PERIOD === 'annual';
+  const rb0 = document.querySelector('#segRun .opt[data-run="0"]'), rb1 = document.querySelector('#segRun .opt[data-run="1"]');
+  if(rb0 && rb1){ rb0.textContent = runAnn ? '신상품만' : '26FW 신품번만'; rb1.textContent = runAnn ? '신상품 + 러닝 (중복 제거)' : '시점재고 합산'; const fl = document.querySelector('#segRun .flabel'); if(fl) fl.textContent = runAnn ? '합계' : '러닝'; }
+  document.querySelectorAll('#segRun .opt').forEach(b => { const on = (b.dataset.run === '1') === (runAnn ? INCRUN : RUNSTK); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const runOnBtn = document.querySelector('#segRun .opt[data-run="1"]'); if(runOnBtn) runOnBtn.title = runAnn ? 'SS 러닝과 FW 러닝이 같은 구품번을 두 번 세는 부분을 뺀 러닝을 신상품에 더합니다' : BASIS === 'wk' ? '전주 대비는 신품번만으로 계산합니다 — 누르면 전년 동시점 대비(시점재고 합산)로 바뀝니다' : '25FW 러닝(이월재고 포함)과 같은 기준';
+  const fwP = PERIOD === 'fw', allFw = TAB === 'all' && fwP;
+  document.querySelectorAll('#segPeriod .opt').forEach(b => { const on = b.dataset.period === PERIOD; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  document.getElementById('segRun').style.display = (fwP ? !(TAB === 'season' || TAB === 'gender' || TAB === 'onoff') : (PERIOD === 'annual' && TAB === 'overview' && hasRunY())) ? '' : 'none';   // 러닝이 안 나오는 화면에서는 숨긴다(연간은 한눈에 보기에서만 러닝 포함 선택)
+  document.getElementById('segBasis').style.display = (!fwP || TAB === 'onoff') ? 'none' : '';                                       // 26SS·연간은 전년 동시점만(전주 스냅샷이 없다)
+  document.getElementById('ttlt').textContent = PERIOD === 'fw' ? '26FW 시즌 집계표' : PERIOD === 'ss' ? '26SS 시즌 집계표' : '26 시즌 집계표 · 연간(SS+FW)';
+  document.title = (PERIOD === 'fw' ? '26FW 시즌 집계표' : PERIOD === 'ss' ? '26SS 시즌 집계표' : '26 시즌 집계표 · 연간') + ' · 제안안';
   document.getElementById('tabs').innerHTML = TABS.map(([k, l]) => `<button class="tab${TAB === k ? ' on' : ''}" aria-pressed="${TAB === k}" data-tab="${k}">${l}</button>`).join('');
-  document.getElementById('rng').textContent = TAB === 'onoff' ? `26FW ${RNG_CUR} · MARK ${ymdS(CHN.at) || '-'} · 기준 업데이트 ${UPDATED}` : TAB === 'annual' ? `26SS ${SS_END() ? '~ ' + SS_END() : ''} · 26FW ${RNG_CUR} · 전년 동시점 · 기준 업데이트 ${UPDATED}` : `26FW ${RNG_CUR} · 25FW ${RNG_PREV} · 기준 업데이트 ${UPDATED}`;
+  document.getElementById('rng').textContent = (TAB === 'onoff' && PERIOD !== 'ss') ? `26FW ${RNG_CUR} · MARK ${ymdS(CHN.at) || '-'} · 기준 업데이트 ${UPDATED}` : PERIOD === 'annual' ? `26SS ${SS_END() ? '~ ' + SS_END() : ''} · 26FW ${RNG_CUR} · 전년 동시점 · 기준 업데이트 ${UPDATED}` : PERIOD === 'ss' ? `26SS ${PL().rngCur} · 25SS ${PL().rngPrev} · 기준 업데이트 ${UPDATED}` : `26FW ${RNG_CUR} · 25FW ${RNG_PREV} · 기준 업데이트 ${UPDATED}`;
   document.getElementById('basisnote').innerHTML = noteHtml();
-  document.querySelector('main').classList.toggle('wide', TAB === 'all');
+  document.querySelector('main').classList.toggle('wide', allFw);
   hideTip();
   const v = document.getElementById('view');
-  v.innerHTML = TAB === 'overview' ? viewOverview() : TAB === 'onoff' ? viewOnOff() : TAB === 'annual' ? viewAnnual() : TAB === 'season' ? viewSeason() : TAB === 'gender' ? viewGender() : TAB === 'run' ? viewRun() : viewAll();
-  if(TAB === 'all'){
+  const needSS = PERIOD !== 'fw' && !SUM_SS && (TAB === 'overview' || TAB === 'season' || TAB === 'gender' || TAB === 'run');
+  v.innerHTML = needSS ? noSsView() : TAB === 'overview' ? (fwP ? viewOverview() : viewAnnual()) : TAB === 'onoff' ? viewOnOff() : TAB === 'season' ? viewSeason() : TAB === 'gender' ? viewGender() : TAB === 'run' ? (fwP ? viewRun() : viewRunP()) : viewAll();
+  if(allFw){
     renderSum();
     document.querySelectorAll('#legacyPanels tr.runrow, #legacyPanels tr.prow.has').forEach(tr => {      // 기존 표의 클릭 전용 행을 키보드로도 열 수 있게
       tr.tabIndex = 0; tr.setAttribute('role', 'button');
@@ -1617,7 +1892,7 @@ function renderAll(){
       tr.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); tr.click(); if(tr.classList.contains('has')) tr.setAttribute('aria-expanded', tr.classList.contains('open')); } });
     });
   }
-  if(TAB === 'all'){
+  if(allFw){
     document.querySelectorAll('#legacyPanels th.nm').forEach(th => {                                     // 말줄임된 이름은 마우스를 올리면 전체가 보인다(접힘 기호·개수 배지는 뺀 이름만)
       const tr = th.closest('tr'), nm = [...th.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() || th.textContent.trim();
       th.title = (tr && tr.title) || nm;
@@ -1625,7 +1900,7 @@ function renderAll(){
     document.querySelectorAll('#legacyPanels tr.prow.has').forEach(tr => tr.addEventListener('click', () => tr.setAttribute('aria-expanded', tr.classList.contains('open'))));
     document.querySelectorAll('#legacyPanels .tw').forEach(w => { if(!w.querySelector('.swipe')){ const s = document.createElement('div'); s.className = 'swipe'; s.textContent = '좌우로 밀어서 보세요 →'; w.insertBefore(s, w.firstChild); } });
   }
-  document.body.classList.toggle('allwide', TAB === 'all');
+  document.body.classList.toggle('allwide', allFw);
   bindView();
   writeHash();
   fitHints();
@@ -1644,7 +1919,7 @@ function bindView(){
   v.querySelectorAll('[data-iscope]').forEach(b => b.addEventListener('click', () => { ITEMSCOPE = b.dataset.iscope; renderAll(); }));
   v.querySelectorAll('[data-oscope]').forEach(b => b.addEventListener('click', () => { OSCOPE = b.dataset.oscope; renderAll(); }));
   v.querySelectorAll('[data-ometric]').forEach(b => b.addEventListener('click', () => { OMET = b.dataset.ometric; renderAll(); }));
-  v.querySelectorAll('[data-ascope]').forEach(b => b.addEventListener('click', () => { ASCOPE = b.dataset.ascope; renderAll(); }));
+  v.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => { setPeriod(b.dataset.period); renderAll(); }));
   v.querySelectorAll('[data-ametric]').forEach(b => b.addEventListener('click', () => { AMET = b.dataset.ametric; renderAll(); }));
   v.querySelectorAll('[data-ahm]').forEach(b => b.addEventListener('click', () => { AHM = b.dataset.ahm; renderAll(); }));
   v.querySelectorAll('[data-season]').forEach(b => b.addEventListener('click', () => { SEASON = b.dataset.season; DRILL = ''; renderAll(); }));
@@ -1667,6 +1942,7 @@ function bindView(){
     v.querySelectorAll('table.ct tr.prow').forEach(tr => { if(tr.dataset.p) tr.style.display = on ? '' : 'none'; if(tr.classList.contains('has')){ tr.classList.toggle('open', on); tr.setAttribute('aria-expanded', on); } });
   }));
 }
+document.getElementById('segPeriod').addEventListener('click', e => { const b = e.target.closest('.opt'); if(!b) return; setPeriod(b.dataset.period); renderAll(); });
 document.getElementById('segBasis').addEventListener('click', e => {
   const b = e.target.closest('.opt'); if(!b) return;
   BASIS = b.dataset.basis;
@@ -1676,6 +1952,7 @@ document.getElementById('segBasis').addEventListener('click', e => {
 });
 document.getElementById('segRun').addEventListener('click', e => {
   const b = e.target.closest('.opt'); if(!b) return;
+  if(PERIOD === 'annual'){ INCRUN = b.dataset.run === '1'; renderAll(); return; }
   RUN_TOUCHED = true; RUNSTK = b.dataset.run === '1';
   if(BASIS === 'wk' && RUNSTK){ BASIS = 'yr'; RUN_TOUCHED = false; }     // 전주 대비+합산은 비교할 값이 없는 막다른 화면이라, 합산을 누르면 전년 동시점 대비(합산)로 간다
   renderAll();
@@ -1719,27 +1996,33 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') hideTip(); })
 /* ---------- 화면 상태를 주소 끝(#…)에 적어 둔다 — 같은 주소를 보내면 같은 화면이 열린다 ---------- */
 function readHash(){
   const h = new URLSearchParams(location.hash.replace(/^#/, ''));
-  if(TABS.some(t => t[0] === h.get('tab'))) TAB = h.get('tab');
+  let np = PERIODS.some(x => x[0] === h.get('period')) ? h.get('period') : PERIOD;
+  if(h.get('tab') === 'annual'){ np = {'26SS':'ss', '26FW':'fw'}[h.get('ascope')] || 'annual'; TAB = 'overview'; }      // 예전 주소(연간 탭) 호환
+  else if(TABS.some(t => t[0] === h.get('tab'))) TAB = h.get('tab');
   if(h.get('basis') === 'wk' || h.get('basis') === 'yr') BASIS = h.get('basis');
   if(h.get('run') === '0' || h.get('run') === '1') RUNSTK = h.get('run') === '1';
   else if(BASIS === 'wk') RUNSTK = false;
-  RUN_TOUCHED = h.get('rt') === '1';                      // 사람이 러닝 버튼을 직접 눌렀을 때만 기록 — 아니면 비교 기준에 맞춰 자동 연동 유지
-  if(own(SEASONS, h.get('season') || '')) SEASON = h.get('season');
+  RUN_TOUCHED = h.get('rt') === '1';
+  if(h.get('incrun') === '0' || h.get('incrun') === '1') INCRUN = h.get('incrun') === '1';                      // 사람이 러닝 버튼을 직접 눌렀을 때만 기록 — 아니면 비교 기준에 맞춰 자동 연동 유지
+  if(SEASON_KEYS.includes(h.get('season'))) SEASON = h.get('season');
   if(CHART_METRICS.includes(h.get('metric'))) METRIC = h.get('metric');
   if(own(TG, h.get('tg') || '')) TGROUP = h.get('tg');
   if(['전체', '신상', '가을', '겨울', '러닝'].includes(h.get('scope'))) ITEMSCOPE = h.get('scope');
   if(['OUTER', 'TOP', 'BOTTOM', 'ACC'].includes(h.get('drill'))) DRILL = h.get('drill');
-  if(own(A_SEASONS, h.get('ascope') || '')) ASCOPE = h.get('ascope');
   if(O_SCOPES.includes(h.get('oscope'))) OSCOPE = h.get('oscope');
   if(O_METRICS.some(x => x[0] === h.get('ometric'))) OMET = h.get('ometric');
   if(CHART_METRICS.includes(h.get('ametric'))) AMET = h.get('ametric');
   if(A_HEAT.some(x => x[0] === h.get('aheat'))) AHM = h.get('aheat');
+  const dh = h.get('drill');
+  setPeriod(np, true);
+  DRILL = ['OUTER', 'TOP', 'BOTTOM', 'ACC'].includes(dh) ? dh : '';      // 카테고리 내려가기는 주소 값만 쓴다(없으면 비움)
 }
 function writeHash(){
-  const p = {tab:TAB, basis:BASIS, run: RUNSTK ? '1' : '0', season:SEASON, metric:METRIC, tg:TGROUP, scope:ITEMSCOPE};
-  if(RUN_TOUCHED) p.rt = '1';
+  const p = {period:PERIOD, tab:TAB, season:SEASON, metric:METRIC, tg:TGROUP, scope:ITEMSCOPE};
+  if(PERIOD === 'fw'){ p.basis = BASIS; p.run = RUNSTK ? '1' : '0'; if(RUN_TOUCHED) p.rt = '1'; }
+  if(PERIOD === 'annual') p.incrun = INCRUN ? '1' : '0';
   if(DRILL) p.drill = DRILL;
-  if(TAB === 'annual'){ p.ascope = ASCOPE; p.ametric = AMET; p.aheat = AHM; }
+  if(TAB === 'overview' && PERIOD !== 'fw'){ p.ametric = AMET; p.aheat = AHM; }
   if(TAB === 'onoff'){ p.oscope = OSCOPE; p.ometric = OMET; }
   try{ history.replaceState(null, '', '#' + new URLSearchParams(p).toString()); }catch(e){}
 }
@@ -1751,7 +2034,7 @@ function normCost(o){
   if(o.salesCost != null) o.salesCostV = Math.round(o.salesCost * 1.1);
 }
 function normAll(){
-  [SUM, SS].forEach(src => Object.keys(src || {}).forEach(key => { const arr = src[key]; if(!Array.isArray(arr)) return;
+  [SUM_FW, SS].forEach(src => Object.keys(src || {}).forEach(key => { const arr = src[key]; if(!Array.isArray(arr)) return;
     arr.forEach(d => { if(!d || typeof d !== 'object') return;
       [d.py].forEach(py => { if(!py || typeof py !== 'object') return;
         if((py.qtyIn || 0) > 0 && !py.cost) py.cost = null;
@@ -1761,6 +2044,7 @@ function normAll(){
       ['py'].forEach(f => { const o = d[f]; if(o && typeof o === 'object'){ if(o.cost == null) o.costV = null; if(o.planCost == null) o.planCostV = null; if(o.salesCost == null) o.salesCostV = null; } }); }); }));
 }
 normAll();
+buildPeriods();
 RUNSTK = DEFAULTS.runStk;       // 전년 동시점 대비가 기본 → 러닝도 25FW 와 같은 기준(시점재고 합산)으로 시작
 readHash();
 if(location.protocol === 'file:'){ const ol = document.querySelector('.oldlink'); if(ol) ol.style.display = 'none'; }   // 저장해서 연 파일에서는 ‘기존 집계표’ 링크가 안 열린다

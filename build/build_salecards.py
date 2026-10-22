@@ -1419,6 +1419,34 @@ except Exception as _e:
     print('[경고] 26FW 러닝스타일 리스트를 읽지 못했습니다:', _e)
     _fw_run_old = []
 SS = ss_data.load(fw_codes=_fw_run_old)
+# 연간 러닝 — 26SS 러닝(구품번 31, 1/1~)과 26FW 러닝 '시점재고 합산'(구품번 36의 7/31 이월 + 8/1~ 판매)이 같은 구품번을 두 번 센다.
+# 겹치는 품번을 찾아 이월분을 빼고, 두 파일이 서로 맞는지(오차 50장 이내) 확인한 값을 화면에 싣는다. 자세한 정의는 run_annual.py.
+import run_annual
+RUNY_SNAP = os.path.join(HERE, 'run_annual_snapshot.json')
+RUNY = {}
+try:
+    _ss_path = ss_data.find_latest()
+    if _ss_path and os.path.exists(_ss_path) and SS and not SS.get('fromSnapshot'):
+        _stk = next((d.get('stk') for d in SUM['runItem'] if d['item'] == 'TOTAL'), None)
+        RUNY = run_annual.build(wb, _ss_path, SS.get('runList') or [], _fw_run_old, _stk)
+        json.dump(RUNY, open(RUNY_SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
+    elif os.path.exists(RUNY_SNAP):
+        RUNY = json.load(open(RUNY_SNAP, encoding='utf-8'))
+        RUNY['fromSnapshot'] = True
+        print('연간 러닝 중복 제거: 저장된 스냅샷 사용')
+    if RUNY:
+        _ck = RUNY['checks']
+        print('연간 러닝 중복: SS 러닝 %d · FW 구품번 %d → SS 러닝과 겹침 %d품번(이월 재고 %s장·8/1~판매 %s장) · 26SS 신상품과 겹침 %d품번(이월 재고 %s장·8/1~판매 %s장) · FW 전용 %d품번' % (
+            _ck['ssN'], _ck['fwOldN'], _ck['overlapN'], int(_ck['carryOverlap']['qtyIn']), int(_ck['carryOverlap']['sales']),
+            _ck['overlapNewN'], int(_ck['carryOverlapNew']['qtyIn']), int(_ck['carryOverlapNew']['sales']), _ck['fwOldN'] - _ck['overlapN'] - _ck['overlapNewN']))
+        print('  대조(오차 %d장): 주간판매 최대차 %s/%s장 · 현재고 최대차 %s/%s장 · 경계 불일치 %s/%s · 이월 계산=종합시트 %s · SS 러닝이 신상품에도 있는 품번 %s' % (
+            run_annual.TOL, int(_ck['weeklyMaxDiffAll']), int(_ck['weeklyMaxDiffNew']), int(_ck['stockMaxDiffAll']), int(_ck['stockMaxDiffNew']), _ck['boundaryFail'] or '없음',
+            _ck['boundaryFailNew'] or '없음', _ck.get('carryMatchesSheet'), _ck['ssRunInNew'] or '없음'))
+        if (max(_ck['weeklyMaxDiffAll'], _ck['weeklyMaxDiffNew'], _ck['stockMaxDiffAll'], _ck['stockMaxDiffNew']) > run_annual.TOL or _ck['boundaryFail'] or _ck['boundaryFailNew']
+                or _ck.get('carryMatchesSheet') is False or _ck['ssRunInNew']):
+            print('  ⚠ 두 파일 대조가 오차 %d장을 넘거나 이월 계산이 종합 시트와 다릅니다 — 연간 러닝 숫자를 쓰기 전에 확인하세요' % run_annual.TOL)
+except Exception as _e:
+    print('[경고] 연간 러닝 중복 제거 자료를 만들지 못했습니다:', type(_e).__name__, _e)
 # 온·오프 탭 — 판매 카드의 채널 판매(허브 MARK 채널 자료)를 시즌(가을·겨울·러닝)×복종으로 합친다.
 # 러닝은 카드가 신품번 기준이라 신품번 판매만(구품번 이월 판매는 채널 자료가 없다). 판매 원가 = 스타일 원가(VAT 포함) × 판매량 — 채널에 따라 달라지지 않는 단가라 정확하다.
 def _bok_of(it):
@@ -1471,7 +1499,7 @@ CHN = {'at': CH_AT, 'src': CH_SRC, 'end': DATA_END,
        'rows': [dict(g=_k[0], bok=_k[1], **{_x: (round(_y) if isinstance(_y, float) else _y) for _x, _y in _v.items()}) for _k, _v in sorted(_chn.items())]}
 print('온·오프 탭: %d행 · 채널 판매 합 %d장 (카드 판매 %d장)' % (len(CHN['rows']), sum(r['on'] + r['off'] + r['etc'] for r in CHN['rows']), sum(r['sales'] for r in CHN['rows'])))
 render('summary_v2_template.html', OUT_SUM2,
-       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '__DATAEND__': DATA_END})
+       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '/*__RUNY__*/{}': json.dumps(RUNY, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
     print('removed:', OUT_CMP)

@@ -50,6 +50,8 @@ BK = dict(plan=34, planCost=36, qtyIn=43, tag=44, cost=45, wkQty=56, wkAmt=58, s
 ITEMS = ('OUTER', 'TOP', 'BOTTOM', 'ACC')
 GIFT_EXTRA_25SS = ('WBE1L95512',)         # 25SS 삭스 세트(판매금액 0원) — MD 지시 2026-10-22 로 사은품과 같이 뺀다
 SS_EXCLUDE_CODES = ('QBF1U98001',)        # 26SS 현재 값에서 뺄 사은품성 품번: GNRL 2026 다이어리(U98 + 판매금액 0원) — MD 지시 2026-10-22
+GRP_OF = {'OUTER': 'OUTER', 'KNIT': 'TOP', 'INNER (W/O KNIT)': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC'}     # 생,판,재 '품목' -> 4복종 (기타=사은품 등은 뺀다)
+CAT_KEYS = ('styles', 'sku', 'plan', 'inM', 'inSku', 'qtyIn', 'planCost', 'cost', 'tag', 'sales', 'salesTag', 'salesAmt', 'salesCost', 'wkQty', 'wkAmt')
 SUB_KEYS = ('styles', 'sku', 'plan', 'inM', 'inSku', 'qtyIn', 'planCost', 'cost', 'tag', 'sales', 'salesTag', 'salesAmt', 'salesCost', 'wkQty', 'wkAmt')
 
 
@@ -83,13 +85,56 @@ def find_latest(folder=SS_DIR):
         return None
 
 
-def exclude_current(wb, block1, codes):
+def gender_rows(wb):
+    """26SS 성별(여성 / 유니맨=남성+공용) 값 — 스타일별 시트 '생,판,재'(칼라 단위 행)를 복종·카테고리로 합친다. 사은품·제외 품번은 뺀다.
+    전년(25SS) 성별 비교는 만들지 않는다 — 전년비교BACK 의 성별 열은 분류 기준이 올해와 같은지 확인되지 않는다(유니맨 입고 25SS 1.8만 vs 26SS 9.7만으로 크게 다름)."""
+    acc = {}
+    sty = {}
+    for r in wb['생,판,재'].iter_rows(min_row=4, max_row=1200, max_col=86, values_only=True):
+        if not (len(r) > 74 and r[23] and str(r[13]) == '2026' and txt(r[14]) in ('봄', '여름')) or txt(r[23]) in SS_EXCLUDE_CODES:
+            continue
+        grp = GRP_OF.get(txt(r[16]))
+        if not grp:
+            continue
+        g = '여성' if txt(r[15]) == '여성' else '남성'
+        cat = txt(r[18])
+        v = {'plan': num(r[45]) or 0.0, 'planCost': num(r[47]) or 0.0, 'qtyIn': num(r[54]) or 0.0, 'tag': num(r[55]) or 0.0, 'cost': num(r[56]) or 0.0,
+             'wkQty': num(r[67]) or 0.0, 'wkAmt': num(r[69]) or 0.0, 'sales': num(r[71]) or 0.0, 'salesTag': num(r[72]) or 0.0, 'salesAmt': num(r[73]) or 0.0, 'salesCost': num(r[74]) or 0.0}
+        v['sku'] = 1.0 if v['plan'] > 0 else 0.0
+        v['inSku'] = 1.0 if v['qtyIn'] > 0 else 0.0
+        for key in ((g, grp), (g, grp, cat)):
+            a = acc.setdefault(key, {k: 0.0 for k in CAT_KEYS})
+            for k, x in v.items():
+                a[k] += x
+            st = sty.setdefault(key, {'p': set(), 'i': set()})
+            if v['plan'] > 0:
+                st['p'].add(txt(r[23]))
+            if v['qtyIn'] > 0:
+                st['i'].add(txt(r[23]))
+    for key, a in acc.items():
+        a['styles'] = float(len(sty[key]['p']))
+        a['inM'] = float(len(sty[key]['i']))
+    items, cats_ = [], []
+    for g in ('여성', '남성'):
+        tot = {k: 0.0 for k in CAT_KEYS}
+        for grp in ITEMS:
+            a = acc.get((g, grp)) or {k: 0.0 for k in CAT_KEYS}
+            for k in CAT_KEYS:
+                tot[k] += a[k]
+            items.append({'gender': g, 'item': grp, 'cur': derive(dict(a)), 'py': None})
+        items.append({'gender': g, 'item': 'TOTAL', 'cur': derive(tot), 'py': None})
+    for (g, grp, cat) in sorted(k for k in acc if len(k) == 3):
+        cats_.append({'gender': g, 'item': 'ACCESSORY' if grp == 'ACC' else grp, 'cat': cat, 'code': '', 'cur': derive(dict(acc[(g, grp, cat)])), 'py': None})
+    return items, cats_
+
+
+def exclude_current(wb, block1, codes, new_cat=None, season_cat=None):
     """26SS 종합 시트 합계에서 사은품성 품번의 값을 뺀다. 값은 스타일별 시트 '생,판,재'(칼라 단위 행)에서 합쳐 읽고,
     해당 복종 행 · 시즌 TTL · 신상품 TTL · 전체 TTL 에서 차감한다(카테고리 행은 화면에서 쓰지 않아 건드리지 않는다)."""
     per = {}
     for r in wb['생,판,재'].iter_rows(min_row=4, max_row=1200, max_col=86, values_only=True):
         if len(r) > 74 and txt(r[23]) in codes and str(r[13]) == '2026':
-            a = per.setdefault(txt(r[23]), dict(season=txt(r[14]), item=txt(r[17]), name=txt(r[24]), styles=1, sku=0, inM=0, inSku=0, plan=0.0, planCost=0.0,
+            a = per.setdefault(txt(r[23]), dict(season=txt(r[14]), item=txt(r[17]), cat=txt(r[18]), name=txt(r[24]), styles=1, sku=0, inM=0, inSku=0, plan=0.0, planCost=0.0,
                                                 qtyIn=0.0, tag=0.0, cost=0.0, sales=0.0, salesTag=0.0, salesAmt=0.0, salesCost=0.0, wkQty=0.0, wkAmt=0.0))
             for k, j in (('plan', 45), ('planCost', 47), ('qtyIn', 54), ('tag', 55), ('cost', 56), ('wkQty', 67), ('wkAmt', 69), ('sales', 71), ('salesTag', 72), ('salesAmt', 73), ('salesCost', 74)):
                 a[k] += num(r[j]) or 0.0
@@ -108,6 +153,13 @@ def exclude_current(wb, block1, codes):
                         c[k] -= v[k]
                 derive(c)
                 hit += 1
+        for lst, by_season in ((new_cat or [], False), (season_cat or [], True)):             # 카테고리 행(시즌·복종·카테고리 화면용)에서도 뺀다
+            for rec in lst:
+                if rec['cat'] == v['cat'] and rec['item'][:3] == v['item'][:3] and (not by_season or rec.get('season') == v['season']):
+                    for k in SUB_KEYS:
+                        if rec['cur'].get(k) is not None and v.get(k):
+                            rec['cur'][k] -= v[k]
+                    derive(rec['cur'])
         done.append({'code': code, 'name': v['name'], 'season': v['season'], 'qtyIn': round(v['qtyIn']), 'costV': round(v['cost'] * 1.1), 'rows': hit})
     return done
 
@@ -165,6 +217,7 @@ def parse(path, fw_codes=None):
     # --- 전년비교BACK -> (시즌, 복종)별 합 ---
     bs = wb['전년비교BACK(1.1~현재)']
     back, back_all, gifts, gsum = {}, {}, [], {'n': 0, 'qtyIn': 0.0, 'costV': 0.0}
+    back_cat = {}                                    # 카테고리별 (시즌, 복종, 아이템) — 사은품 제외
     for r in bs.iter_rows(min_row=4, max_row=1200, max_col=71, values_only=True):
         if not r[14] or str(r[4]) != '2025' or txt(r[5]) not in ('봄', '여름') or txt(r[0]) not in ITEMS:
             continue
@@ -176,6 +229,10 @@ def parse(path, fw_codes=None):
             gsum['costV'] += (num(r[BK['cost']]) or 0.0) * 1.1
         for tgt in ((back_all,) if gift else (back, back_all)):
             a = tgt.setdefault((txt(r[5]), txt(r[0])), {k: 0.0 for k in BK})
+            for k, j in BK.items():
+                a[k] += num(r[j]) or 0.0
+        if not gift:
+            a = back_cat.setdefault((txt(r[5]), txt(r[0]), txt(r[9])), {k: 0.0 for k in BK})
             for k, j in BK.items():
                 a[k] += num(r[j]) or 0.0
 
@@ -195,6 +252,17 @@ def parse(path, fw_codes=None):
         if not hit:
             return None
         # 전년비교BACK 의 '기획'·'판매(최근)' 은 종합 시트의 기획량·주간판매와 정의가 달라(입고율 68% vs 94% 로 어긋남) 쓰지 않는다 — 전년 값은 입고·판매·금액·원가만
+        for k in ('plan', 'planCost', 'wkQty', 'wkAmt'):
+            t.pop(k, None)
+        return derive(t)
+
+    def py_sum(src, keys):
+        """src 의 keys 합(전년비교BACK 기준) -> py 값. 하나도 없으면 0 으로 채운 값(= 전년에 없던 구분)"""
+        t = {k: 0.0 for k in BK}
+        for k in keys:
+            if k in src:
+                for kk in t:
+                    t[kk] += src[k][kk]
         for k in ('plan', 'planCost', 'wkQty', 'wkAmt'):
             t.pop(k, None)
         return derive(t)
@@ -228,7 +296,6 @@ def parse(path, fw_codes=None):
         elif rec['mode'] == 'run':
             rec['py'] = derive({k: v for k, v in sprev.items() if v is not None}) if any(v for v in sprev.values()) else None
         block1.append(rec)
-    gifts26 = exclude_current(wb, block1, SS_EXCLUDE_CODES)
 
     # --- 복종·카테고리 현재값(전년 없음) — 신상품 전체(30~64행), 봄·여름 시즌별(71~144행) ---
     def cats(r0, r1, season=None):
@@ -242,15 +309,41 @@ def parse(path, fw_codes=None):
             if not f or 'S.TTL' in e:
                 continue
             v = vals(r, MET)
+            grp = 'ACC' if gubun.startswith('ACC') else gubun
             if any((v.get(k) or 0) for k in ('plan', 'qtyIn', 'sales')):
                 rec = {'item': gubun, 'cat': f, 'code': e, 'cur': v}
                 if season:
                     rec['season'] = season
+                rec['py'] = py_sum(back_cat, [(season, grp, f)] if season else [(s_, grp, f) for s_ in ('봄', '여름')])
                 out.append(rec)
+        # 올해 행이 없는(또는 0 인) 카테고리라도 전년에 값이 있었으면 전년 값만 있는 행으로 둔다 — 복종 합계와 맞추려고
+        have = {(x['item'][:3] if x['item'].startswith('ACC') else x['item'], x['cat']) for x in out}
+        for (se, grp, cat) in sorted(back_cat):
+            if (season and se != season) or (grp, cat) in have:
+                continue
+            ks = [(season, grp, cat)] if season else [(s_, grp, cat) for s_ in ('봄', '여름')]
+            py = py_sum(back_cat, ks)
+            if not any((py.get(k) or 0) for k in ('qtyIn', 'sales')):
+                continue
+            rec = {'item': 'ACCESSORY' if grp == 'ACC' else grp, 'cat': cat, 'code': '', 'cur': derive({k: 0.0 for k in MET}), 'py': py}
+            if season:
+                rec['season'] = season
+            out.append(rec)
+            have.add((grp, cat))
         return out
 
     new_cat = cats(30, 64)
     season_cat = cats(71, 104, '봄') + cats(110, 143, '여름')
+    gender_item, gender_cat = gender_rows(wb)
+    gifts26 = exclude_current(wb, block1, SS_EXCLUDE_CODES, new_cat, season_cat)
+    # 성별 합 = 신상품 TTL 인지 확인(사은품성 품번 제외 후)
+    ttl = next((x for x in block1 if x.get('kind') == '신상품 TTL'), None)
+    if ttl:
+        for g_ in ('qtyIn', 'cost', 'sales'):
+            gs_ = sum((x['cur'].get(g_) or 0) for x in gender_item if x['item'] == 'TOTAL')
+            ts_ = ttl['cur'].get(g_) or 0
+            if ts_ and abs(gs_ - ts_) > max(1.0, abs(ts_) * 0.001):
+                check.append('성별 합 %s: %s ≠ 신상품 TTL %s' % (g_, round(gs_), round(ts_)))
 
     # --- 러닝 품번(겹침 확인용) ---
     run_list = []
@@ -260,7 +353,7 @@ def parse(path, fw_codes=None):
 
     run = run_overlap(wb, run_list, fw_codes or [], iso(end))
     return {'file': os.path.basename(path), 'end': iso(end), 'prevEnd': iso(prev_end), 'gifts25': gifts, 'gifts25Sum': {k: round(v) for k, v in gsum.items()}, 'gifts26': gifts26,
-            'block1': block1, 'newCat': new_cat, 'seasonCat': season_cat, 'runList': run_list, 'run': run, 'check': check}
+            'block1': block1, 'newCat': new_cat, 'seasonCat': season_cat, 'genderItem': gender_item, 'genderCat': gender_cat, 'runList': run_list, 'run': run, 'check': check}
 
 
 def load(path=None, quiet=False, fw_codes=None):
