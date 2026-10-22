@@ -22,6 +22,7 @@ import openpyxl
 TOL = 50
 GRP = {'OUTER': 'OUTER', 'KNIT': 'TOP', 'INNER (W/O KNIT)': 'TOP', 'BOTTOM': 'BOTTOM', 'ACC': 'ACC'}
 ITEMS = ('OUTER', 'TOP', 'BOTTOM', 'ACC')
+BASIS_KEYS = ('qtyIn', 'cost', 'tag', 'sales', 'salesTag', 'salesAmt', 'salesCost', 'wkQty', 'wkAmt')        # SS 기준으로 세는 구품번 추가분의 항목
 CARRY = ('qtyIn', 'sales', 'salesTag', 'salesAmt', 'wkQty', 'wkAmt', 'cost', 'salesCost', 'tag')      # cost = 7/31 시점재고의 재고 원가금액 · salesCost = 8/1~ 판매의 원가(둘 다 VAT 미포함 원천값)
 
 
@@ -48,7 +49,7 @@ def weekly(ws, si, stock_col, maxr=6000):
     return [str(hdr[j]) for j in wcols], out
 
 
-def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40):                # noqa: C901
+def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40, nas_all=None):                # noqa: C901
     """fw_wb: 열린 26FW 스타일맵, ss_path: 26SS 스타일맵 경로, ss_list: 26SS 러닝 품번, old36: 26FW 러닝 구품번 목록.
     week_start_idx: 7/27 주의 위치(W52=0 … W1=51 중 W12=40). fw_stk_total: 종합 시트 CJ~CR 러닝 합계(대조용)."""
     wb = openpyxl.load_workbook(ss_path, read_only=True, data_only=True)
@@ -68,6 +69,33 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40):
         return out
     life_now, life_12 = life(wb['런닝 주마감(ST-생,판,재)']), life(wb['12월기초재고(런닝)'])
     ss_rec = {c: life_now[c] - life_12[c] for c in ss_list}                # 판매기록 기준 12월말 이후 판매
+
+    def lifefull(ws, codes):                                               # 스타일별 누계(생산·판매·재고의 수량·택가·원가) — 12월기초재고(런닝) · 런닝 주마감 시트 공통 배치
+        out = collections.defaultdict(lambda: collections.defaultdict(float))
+        for r in ws.iter_rows(min_row=4, max_row=6000, max_col=70, values_only=True):
+            if len(r) > 66 and r[12] and txt(r[12]) in codes:
+                a = out[txt(r[12])]
+                a['name'] = txt(r[13])
+                for k, j in dict(prod=41, prodTag=42, prodCost=43, sales=58, salesTag=59, salesAmt=60, salesCost=61, stock=64, stockTag=65, stockCost=66).items():
+                    a[k] += num(r[j])
+        return out
+    # 러닝 원본(NAS 런닝품번리스트 = production-hub/inventory/running-codes.json 'all') + 25년 러닝 목록(FW 러닝스타일 리스트 I열) 중
+    # SS 러닝·FW 구품번 어느 쪽에도 없는 품번 — 연간 러닝에 들어 있지 않다는 사실과 크기(SS 기준 12월말 재고 + 2026 입고, 1/1~ 판매)를 알린다
+    i25 = []
+    for r in fw_wb['26FW 러닝스타일 리스트'].iter_rows(min_row=2, max_row=120, max_col=12, values_only=True):
+        if r and len(r) > 8 and r[8] and txt(r[8]) not in i25:
+            i25.append(txt(r[8]))
+    cand = list(dict.fromkeys(list(nas_all or []) + i25))
+    unlisted = [c for c in cand if c not in ss_list and c not in old36]
+    lf_now_u, lf_12_u = lifefull(wb['런닝 주마감(ST-생,판,재)'], set(unlisted)), lifefull(wb['12월기초재고(런닝)'], set(unlisted))
+    unlisted_rows = []
+    for c in unlisted:
+        bn, b12 = lf_now_u.get(c), lf_12_u.get(c)
+        row = {'code': c, 'name': bn['name'] if bn else '', 'sales': None, 'stock': None, 'qtyIn': None, 'cost': None, 'inNas': c in (nas_all or []), 'in25': c in i25}
+        if bn:
+            z = b12 or collections.defaultdict(float)
+            row.update(sales=bn['sales'] - z['sales'], stock=bn['stock'], qtyIn=z['stock'] + bn['prod'] - z['prod'], cost=z['stockCost'] + bn['prodCost'] - z['prodCost'])
+        unlisted_rows.append(row)
     # --- FW: 주간판매-러닝(CO), 러닝 ST(누계), 시점재고(7/31) ---
     wl, fww = weekly(fw_wb['주간판매-러닝(CO)'], 13, 33)
     st, name = collections.defaultdict(lambda: collections.defaultdict(float)), {}
@@ -102,7 +130,7 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40):
     _, ssw_new = weekly(wb['주간판매'], 10, 30)
     overlap_new = sorted(set(old36) & set(ssn) - set(overlap))
 
-    items = {g: {'carryAll': {k: 0.0 for k in CARRY}, 'carryOverlap': {k: 0.0 for k in CARRY}, 'carryOverlapNew': {k: 0.0 for k in CARRY}} for g in ITEMS}
+    items = {g: {'carryAll': {k: 0.0 for k in CARRY}, 'carryOverlap': {k: 0.0 for k in CARRY}, 'carryOverlapNew': {k: 0.0 for k in CARRY}, 'onlyBasis': {k: 0.0 for k in BASIS_KEYS}} for g in ITEMS}
     for c in old36:
         g = st[c]['grp'] if c in st else '?'
         if g not in items:
@@ -126,18 +154,36 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40):
         rows.append({'code': c, 'name': name.get(c, ''), 'item': b.get('item') or st[c]['grp'], 'ssIn': b.get('qtyIn'), 'ssSales': b.get('sales'), 'ssStock': sw['stock'], 'fwStock': fw['stock'],
                      'fwCarryStock': cv['qtyIn'], 'fwAugSales': cv['sales'], 'ssWk0727': s27, 'ssWk0803': s03, 'fwWk0727': f27, 'fwWk0803': f03, 'weeklyMaxDiff': wd,
                      'boundaryOk': inb, 'stockDiff': sw['stock'] - fw['stock'], 'weeklyDiff0727': s27 - f27, 'ssSalesRec': ss_rec.get(c), 'ssSalesDiff': (b.get('sales') or 0) - ss_rec.get(c, 0.0)})
+    only_codes = [c for c in old36 if c not in overlap and c not in overlap_new]
+    lf_now_o, lf_12_o = lifefull(wb['런닝 주마감(ST-생,판,재)'], set(only_codes)), lifefull(wb['12월기초재고(런닝)'], set(only_codes))
+    wk_i = next((j for j, lab in enumerate(wl) if '(12/29' in lab), 10)           # 'W42(12/29 -04)'
     rows_only = []                                                        # FW 전용 이월(SS 러닝·SS 신상품 어느 쪽에도 없는 구품번)
     for c in old36:
         if c in overlap or c in overlap_new:
             continue
         cv = carry(c)
         jj = (sn[c]['sales'] - life_12[c]) if c in life_12 else None                  # 1/1~7/31 판매 = 7/31 시점 누계 − 12월말 누계(SS 스타일맵 12월기초재고 시트에 있는 품번만)
-        rows_only.append({'code': c, 'name': name.get(c, ''), 'item': st[c]['grp'] if c in st else '?', 'fwCarryStock': cv['qtyIn'], 'fwAugSales': cv['sales'], 'fwStock': st[c]['stock'] if c in st else 0.0, 'janJulSales': jj})
+        b12, bn = lf_12_o.get(c), lf_now_o.get(c)
+        basis = None
+        if b12 is not None and bn is not None:                                         # SS 기준(구품번 = 26SS): 12월말 재고 + 2026 입고, 1/1~ 판매·원가
+            basis = {'qtyIn': b12['stock'] + bn['prod'] - b12['prod'], 'newIn': bn['prod'] - b12['prod'], 'base': b12['stock'],
+                     'cost': b12['stockCost'] + bn['prodCost'] - b12['prodCost'], 'tag': b12['stockTag'] + bn['prodTag'] - b12['prodTag'],
+                     'sales': bn['sales'] - b12['sales'], 'salesTag': bn['salesTag'] - b12['salesTag'], 'salesAmt': bn['salesAmt'] - b12['salesAmt'], 'salesCost': bn['salesCost'] - b12['salesCost'],
+                     'wkQty': st[c]['wkQty'], 'wkAmt': st[c]['wkAmt'], 'stockNow': bn['stock']}
+            basis['resid'] = basis['qtyIn'] - basis['sales'] - bn['stock']             # 12월말 재고 + 입고 − 판매 − 현재고 (0 이면 서로 맞음)
+        fwk = fww.get(c, {'w': [0.0] * len(wl)})['w']
+        wk_hi, wk_lo = sum(fwk[wk_i:]), sum(fwk[wk_i + 1:])                            # 12/29 주부터 / 1/5 주부터 최근 주까지 FW 주간판매 합 — 12월말 기준일이 주 중간이라 두 값의 범위로 본다
+        rows_only.append({'wkLo': wk_lo, 'wkHi': wk_hi, 'wkOk': (basis is not None and wk_lo - TOL <= basis['sales'] <= wk_hi + TOL), 'basis': basis, 'code': c, 'name': name.get(c, ''), 'item': st[c]['grp'] if c in st else '?', 'fwCarryStock': cv['qtyIn'], 'fwAugSales': cv['sales'], 'fwStock': st[c]['stock'] if c in st else 0.0, 'janJulSales': jj})
     rows_all = []                                                         # SS 러닝 전 품번의 두 파일 주간판매·재고 대조(겹침 여부와 무관)
     for c in ss_list:
         sw, fw = ssw.get(c, {'w': [0.0] * 52, 'stock': 0.0}), fww.get(c, {'w': [0.0] * 52, 'stock': 0.0})
         rows_all.append({'code': c, 'overlap': c in overlap, 'ssSalesBack': ssb.get(c, {}).get('sales'), 'ssSalesRec': ss_rec.get(c), 'ssWk0727': sum(sw['w'][week_start_idx:]), 'fwWk0727': sum(fw['w'][week_start_idx:]),
                          'weeklyMaxDiff': max(abs(x - y) for x, y in zip(sw['w'], fw['w'])), 'ssStock': sw['stock'], 'fwStock': fw['stock']})
+    for r_ in rows_only:                                                  # 구품번 추가(FW 전용 16) 의 SS 기준 합계를 복종별로
+        g_ = r_['item']
+        if r_['basis'] and g_ in items:
+            for k in BASIS_KEYS:
+                items[g_]['onlyBasis'][k] += r_['basis'][k]
     rows_new = []
     for c in overlap_new:
         cv, b = carry(c), ssn[c]
@@ -162,6 +208,12 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40):
     checks['carryAll'] = {k: tot(k, 'carryAll') for k in CARRY}
     checks['carryOverlap'] = {k: tot(k, 'carryOverlap') for k in CARRY}
     checks['carryOverlapNew'] = {k: tot(k, 'carryOverlapNew') for k in CARRY}
+    checks['onlyBasis'] = {k: sum(items[g]['onlyBasis'][k] for g in ITEMS) for k in BASIS_KEYS}       # FW 전용 구품번 16개를 SS 기준(1/1~)으로 센 합계
+    checks['onlyResidMax'] = max((abs(r_['basis']['resid']) for r_ in rows_only if r_['basis']), default=0.0)
+    checks['onlyBasisKnown'] = sum(1 for r_ in rows_only if r_['basis'])
+    checks['onlyWeeklyOut'] = [{'code': r_['code'], 'sales': r_['basis']['sales'], 'lo': r_['wkLo'], 'hi': r_['wkHi']} for r_ in rows_only if r_['basis'] and not r_['wkOk']]     # 주간판매 범위(±50장) 밖
+    checks['onlyWeeklyN'] = sum(1 for r_ in rows_only if r_['basis'])
+    checks['unlisted'] = unlisted_rows
     checks['boundaryFailNew'] = [r['code'] for r in rows_new if not r['boundaryOk']]
     checks['stockMaxDiffNew'] = max((abs(r['stockDiff']) for r in rows_new), default=0.0)
     checks['weeklyMaxDiffNew'] = max((r['weeklyMaxDiff'] for r in rows_new if r['weeklyMaxDiff'] is not None), default=0.0)
