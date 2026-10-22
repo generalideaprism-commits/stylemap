@@ -1429,11 +1429,12 @@ try:
     if _ss_path and os.path.exists(_ss_path) and SS and not SS.get('fromSnapshot'):
         _stk = next((d.get('stk') for d in SUM['runItem'] if d['item'] == 'TOTAL'), None)
         try:                                                                      # 러닝 원본(NAS 런닝품번리스트) 품번 — 허브 inventory 사본
-            _nas_run = json.load(open(os.path.join(os.path.dirname(ROOT), 'production-hub', 'inventory', 'running-codes.json'), encoding='utf-8')).get('all') or []
+            _nas_json = json.load(open(os.path.join(os.path.dirname(ROOT), 'production-hub', 'inventory', 'running-codes.json'), encoding='utf-8'))
+            _nas_run, _nas_seas = _nas_json.get('all') or [], _nas_json.get('bySeason') or {}
         except Exception as _e2:
-            print('[경고] 러닝 원본 품번(running-codes.json)을 읽지 못했습니다 — 25년 러닝 목록 기준으로만 미반영 품번을 알립니다:', _e2)
-            _nas_run = []
-        RUNY = run_annual.build(wb, _ss_path, SS.get('runList') or [], _fw_run_old, _stk, nas_all=_nas_run)
+            print('[경고] 러닝 원본 품번(running-codes.json)을 읽지 못했습니다 — 25년 러닝 목록 기준으로만 추가 품번을 찾습니다:', _e2)
+            _nas_run, _nas_seas = [], {}
+        RUNY = run_annual.build(wb, _ss_path, SS.get('runList') or [], _fw_run_old, _stk, nas_all=_nas_run, nas_seasons=_nas_seas)
         json.dump(RUNY, open(RUNY_SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
     elif os.path.exists(RUNY_SNAP):
         RUNY = json.load(open(RUNY_SNAP, encoding='utf-8'))
@@ -1447,12 +1448,17 @@ try:
         print('  대조(오차 %d장): 주간판매 최대차 %s/%s장 · 현재고 최대차 %s/%s장 · 경계 불일치 %s/%s · 이월 계산=종합시트 %s · SS 러닝이 신상품에도 있는 품번 %s' % (
             run_annual.TOL, int(_ck['weeklyMaxDiffAll']), int(_ck['weeklyMaxDiffNew']), int(_ck['stockMaxDiffAll']), int(_ck['stockMaxDiffNew']), _ck['boundaryFail'] or '없음',
             _ck['boundaryFailNew'] or '없음', _ck.get('carryMatchesSheet'), _ck['ssRunInNew'] or '없음'))
-        _ob, _un = _ck.get('onlyBasis') or {}, _ck.get('unlisted') or []
-        print('  시즌 기준 구품번 추가 %d개: 투입 %s장 · 판매 %s장 · 원가(VAT 미포함) %s원 · 재고 항등식 잔차 최대 %s장 · 주간판매 범위 밖 %s' % (
-            _ck['fwOldN'] - _ck['overlapN'] - _ck['overlapNewN'], format(int(_ob.get('qtyIn', 0)), ','), format(int(_ob.get('sales', 0)), ','), format(int(_ob.get('cost', 0)), ','),
-            int(_ck.get('onlyResidMax') or 0), ['%s(%d vs %d~%d)' % (x['code'], x['sales'], x['lo'], x['hi']) for x in (_ck.get('onlyWeeklyOut') or [])] or '없음'))
-        print('  연간 러닝에 넣지 않은 러닝 원본·25년 러닝 목록 품번 %d개: 2026 판매 %s장 · 입고(투입) %s장 · 원가(VAT 미포함) %s원' % (
-            len([u for u in _un if u.get('sales') is not None]), format(int(sum(u.get('sales') or 0 for u in _un)), ','), format(int(sum(u.get('qtyIn') or 0 for u in _un)), ','), format(int(sum(u.get('cost') or 0 for u in _un)), ',')))
+        _ob, _un, _cv = _ck.get('onlyBasis') or {}, _ck.get('unlisted') or [], _ck.get('nasCover') or {}
+        print('  시즌 기준 구품번 추가 %d개(FW 구품번 %d + 러닝 원본 %d): 투입 %s장 · 판매 %s장 · 원가(VAT 미포함) %s원 · 재고 항등식 잔차 최대 %s장 · 채널표 대비 %s/%s개 ±50장 이내(합 %s vs %s, 차 %s) · 채널표 밖 %s · SS 러닝 %d개 차 %s · SS 러닝 원가 재평가 차 %s원' % (
+            _ck['onlyN'], _ck['onlyFwN'], _ck['onlyExtraN'], format(int(_ob.get('qtyIn', 0)), ','), format(int(_ob.get('sales', 0)), ','), format(int(_ob.get('cost', 0)), ','),
+            int(_ck.get('onlyResidMax') or 0), _ck.get('onlyChN', 0) - len(_ck.get('onlyChOut') or []), _ck.get('onlyChN', 0), format(int(_ck.get('onlyChBasisSum', 0)), ','), format(int(_ck.get('onlyChSum', 0)), ','),
+            format(int(_ck.get('onlyChBasisSum', 0) - _ck.get('onlyChSum', 0)), ','), ['%s[%s](%d vs %d)' % (x['code'], x.get('src', ''), x['sales'], x['ch']) for x in (_ck.get('onlyChOut') or [])] or '없음',
+            _ck['ssN'], format(int(_ck.get('ssChBackSum', 0) - _ck.get('ssChSum', 0)), ','), format(int(_ck.get('ssStockCostGap') or 0), ',')))
+        _eb = _ck.get('onlyExtraBasis') or {}
+        print('  러닝 원본 %s개 → SS 러닝 %s + FW 구품번 %s + 추가 %s · 미반영 %s · 자료 없음 %s · 추가분(러닝 원본 %d개): 투입 %s장 · 판매 %s장 · 원가(VAT 미포함) %s원 · 현재고 차(SS−FW) 최대 %s장 · 복종 불일치 %s · FW 신품번과 겹침 %s · 복종 미정 %s' % (
+            _cv.get('n'), _cv.get('ss'), _cv.get('fwOld'), _cv.get('extra'), _cv.get('none') or '없음', [u['code'] for u in _un] or '없음', _ck['onlyExtraN'],
+            format(int(_eb.get('qtyIn', 0)), ','), format(int(_eb.get('sales', 0)), ','), format(int(_eb.get('cost', 0)), ','), int(_ck.get('extraStockDiffMax') or 0),
+            _ck.get('extraGrpMismatch') or '없음', _ck.get('extraInFwNew') or '없음', _ck.get('onlyItemUnknown') or '없음'))
         if (max(_ck['weeklyMaxDiffAll'], _ck['weeklyMaxDiffNew'], _ck['stockMaxDiffAll'], _ck['stockMaxDiffNew']) > run_annual.TOL or _ck['boundaryFail'] or _ck['boundaryFailNew']
                 or _ck.get('carryMatchesSheet') is False or _ck['ssRunInNew']):
             print('  ⚠ 두 파일 대조가 오차 %d장을 넘거나 이월 계산이 종합 시트와 다릅니다 — 연간 러닝 숫자를 쓰기 전에 확인하세요' % run_annual.TOL)

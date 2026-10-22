@@ -51,7 +51,13 @@ lines = [
     ['FW 러닝 구품번(이월)', ck['fwOldN']],
     ['① SS 러닝과 겹치는 구품번(W 코드)', ck['overlapN']],
     ['② 26SS 신상품과 겹치는 구품번(GF1 코드)', ck['overlapNewN']],
-    ['③ SS 러닝 목록 밖 구품번(구품번 추가, SS 기준으로 더함)', ck['fwOldN'] - ck['overlapN'] - ck['overlapNewN']],
+    ['③ SS 러닝 목록 밖 FW 구품번(구품번 추가, SS 기준으로 더함)', ck['onlyFwN']],
+    ['④ 과년 러닝(러닝 원본 NAS 24SS~25FW 목록에만 있음, 구품번 추가·SS 기준으로 더함 — MD 결정 10/22)', ck['onlyExtraN']],
+    ['  구품번 추가 합계(③+④)', ck['onlyN']],
+    ['  ④ 과년 러닝이 올라 있는 시즌 목록', '%s (26SS·26FW 목록에도 있는 품번: %s · 러닝 원본에서 비어 있는 시즌 열: %s)' % (', '.join(ck.get('extraSeasons') or []), ', '.join(ck.get('extraIn26') or []) or '없음', ', '.join(ck.get('nasEmptySeasons') or []) or '없음')],
+    ['러닝 원본(NAS 런닝품번리스트) 품번 반영 현황', '%d개 = SS 러닝 %d + FW 구품번 %d + 구품번 추가(④) %d · 미반영 %s' % (
+        (ck.get('nasCover') or {}).get('n', 0), (ck.get('nasCover') or {}).get('ss', 0), (ck.get('nasCover') or {}).get('fwOld', 0), (ck.get('nasCover') or {}).get('extra', 0),
+        ', '.join((ck.get('nasCover') or {}).get('none') or []) or '없음')],
     ['기준', '시즌 지표로 보면 구품번 = 26SS(1/1~ 지금까지), 신품번(GF7·GF8)만 = 26FW(8/1~). FW ‘시점재고 합산’의 이월(구품번 36개)은 연간에 더하지 않고, 구품번은 SS 기준으로 한 번만 센다.'],
     ['', ''],
     ['FW 이월 합계 — 7/31 시점재고(장)', c_all['qtyIn']],
@@ -81,14 +87,22 @@ lines = [
     ['연간 러닝에 들어 있지 않은 것', '25SS·25FW 러닝 전년 비교(같은 방식으로 세어져 있는지 확인할 자료 없음)'],
     ['', ''],
     ['정의', '‘FW 이월 판매(8/1~)’ = 러닝 ST 시트 누계 − 시점재고(7/31) 시트 누계(날짜 경계 정확). SS 주간판매는 주(월~일) 단위라 8/3 주~ 와 7/27 주~ 두 값의 범위로 본다.'],
-    ['연간 러닝', 'SS 러닝 31개(1/1~) + 구품번 추가 %d개(③, SS 스타일맵 12월말 재고+2026 입고 기준 1/1~) + FW 신품번(8/1~). FW 이월은 더하지 않는다.' % (ck['fwOldN'] - ck['overlapN'] - ck['overlapNewN'])],
-    ['구품번 추가 합계(SS 기준)', '투입 %s장 · 1/1~ 판매 %s장 · 원가 %s원(VAT 미포함) · 12월말 재고+입고−판매−현재고 잔차 최대 %s장' % (format(int(ck['onlyBasis']['qtyIn']), ','), format(int(ck['onlyBasis']['sales']), ','), format(int(ck['onlyBasis']['cost']), ','), int(ck.get('onlyResidMax') or 0))],
-    ['구품번 추가 %d개의 1/1~ 판매 vs FW 주간판매(12/29 주부터 ~ 1/5 주부터 범위, ±%d장)' % (ck['fwOldN'] - ck['overlapN'] - ck['overlapNewN'], TOL),
-     '%d/%d개 범위 안 · 밖: %s' % (ck.get('onlyWeeklyN', 0) - len(ck.get('onlyWeeklyOut') or []), ck.get('onlyWeeklyN', 0),
-                              ', '.join('%s(%s장 vs %s~%s)' % (x['code'], format(int(x['sales']), ','), format(int(x['lo']), ','), format(int(x['hi']), ',')) for x in (ck.get('onlyWeeklyOut') or [])) or '없음')],
-    ['연간 러닝에 넣지 않은 러닝 품번(러닝 원본 NAS·25년 러닝 목록에 있고 SS 러닝·FW 구품번에 없음)', '%d개 · SS 스타일맵 기준 2026 판매 %s장 · 입고(투입) %s장 · 원가 %s원(VAT 미포함) — 넣을지는 MD 판단' % (
-        len([u for u in (ck.get('unlisted') or []) if u.get('sales') is not None]), format(int(sum(u.get('sales') or 0 for u in (ck.get('unlisted') or []))), ','),
-        format(int(sum(u.get('qtyIn') or 0 for u in (ck.get('unlisted') or []))), ','), format(int(sum(u.get('cost') or 0 for u in (ck.get('unlisted') or []))), ','))],
+    ['연간 러닝', 'SS 러닝 31개(1/1~) + 구품번 추가 %d개(③ FW 구품번 %d + ④ 러닝 원본 %d, SS 스타일맵 12월말 재고+2026 입고 기준 1/1~) + FW 신품번(8/1~). FW 이월은 더하지 않는다.' % (ck['onlyN'], ck['onlyFwN'], ck['onlyExtraN'])],
+    ['구품번 추가 합계(SS 기준, ③+④)', '투입 %s장 · 1/1~ 판매 %s장 · 원가 %s원(VAT 미포함) · 12월말 재고+입고−판매−현재고 잔차 최대 %s장' % (format(int(ck['onlyBasis']['qtyIn']), ','), format(int(ck['onlyBasis']['sales']), ','), format(int(ck['onlyBasis']['cost']), ','), int(ck.get('onlyResidMax') or 0))],
+    ['구품번 추가 %d개의 1/1~ 판매(주마감 − 12월말 시트) vs 채널표(SS 스타일맵 ‘전주(유통1.1~)’ 1/1~, 날짜 기준)' % ck['onlyN'],
+     '%d/%d개 ±%d장 이내 · 합계 %s vs 채널표 %s(차 %s장) · 벗어난 품번: %s · 채널표에 행 없음: %s · 채널표보다 작은 품번: %s · SS 러닝 %d개의 스타일맵 정의 %s vs 채널표 %s(차 %s장)' % (
+         ck.get('onlyChN', 0) - len(ck.get('onlyChOut') or []), ck.get('onlyChN', 0), TOL, format(int(ck.get('onlyChBasisSum', 0)), ','), format(int(ck.get('onlyChSum', 0)), ','),
+         format(int(ck.get('onlyChBasisSum', 0) - ck.get('onlyChSum', 0)), ','), ', '.join('%s[%s](%s vs %s)' % (x['code'], x['src'], format(int(x['sales']), ','), format(int(x['ch']), ',')) for x in (ck.get('onlyChOut') or [])) or '없음',
+         ', '.join(ck.get('onlyChMissing') or []) or '없음', ', '.join(ck.get('onlyChBelow') or []) or '없음', ck['ssN'], format(int(ck.get('ssChBackSum', 0)), ','), format(int(ck.get('ssChSum', 0)), ','), format(int(ck.get('ssChBackSum', 0) - ck.get('ssChSum', 0)), ','))],
+    ['  원인(검증 확인)', '12월말 기초재고(런닝) 시트에는 빠져 있고 현재 주마감 누계에는 들어 있는 2025년 일자 판매(8월 말~9월 초 소급 입력으로 보임) — 12월 시트가 그 전에 굳어 있어 ‘주마감 − 12월 시트’가 날짜 기준보다 크다. 투입(= 12월말 재고 + 입고)도 같은 양만큼 크게 잡힌다. 합계에는 스타일맵 값을 그대로 사용(SS 러닝 31개와 같은 정의로 맞추려고).'],
+    ['(참고) 이전 방식: 구품번 추가 %d개의 1/1~ 판매 vs FW 주간판매(12/29 주부터 ~ 1/5 주부터 범위, ±%d장)' % (ck['onlyN'], TOL),
+     '%d/%d개 범위 안 · 밖: %s — 벗어난 양의 합 %s장' % (ck.get('onlyWeeklyN', 0) - len(ck.get('onlyWeeklyOut') or []), ck.get('onlyWeeklyN', 0),
+                              ', '.join('%s[%s](%s장 vs %s~%s)' % (x['code'], x.get('src', ''), format(int(x['sales']), ','), format(int(x['lo']), ','), format(int(x['hi']), ',')) for x in (ck.get('onlyWeeklyOut') or [])) or '없음',
+                              format(int(sum(max(x['sales'] - x['hi'], x['lo'] - x['sales'], 0) for x in (ck.get('onlyWeeklyOut') or []))), ','))],
+    ['  (참고) 원인', '주간판매 범위 방식은 12월말 기준일이 주 중간이라 범위가 넓어 3% 과대를 못 잡는다 — 위 채널표 대조가 더 정확하다'],
+    ['과년 러닝(④) 점검', '%d개 · SS·FW 스타일맵 현재고 최대 차이 %s장 · 복종 분류 불일치 %s · FW 신품번 목록과 겹침 %s · 자료 없어 못 넣은 품번 %s' % (
+        ck['onlyExtraN'], int(ck.get('extraStockDiffMax') or 0), ', '.join(ck.get('extraGrpMismatch') or []) or '없음', ', '.join(ck.get('extraInFwNew') or []) or '없음',
+        ', '.join(u['code'] for u in (ck.get('unlisted') or [])) or '없음')],
 ]
 for ln in lines:
     ws.append(ln)
@@ -115,11 +129,11 @@ hdr = ['품번', '스타일명', '복종', '입고', '1/1~ 판매(스타일맵 �
 w13 = [14, 30, 9, 12, 14, 14, 9, 14, 14, 14, 14, 11, 11, 11, 12]
 sheet(wb.create_sheet(), '① SS러닝과 겹침', hdr, ov_rows(ov1), w13)
 sheet(wb.create_sheet(), '② SS신상품과 겹침', hdr, ov_rows(ov2), w13)
-sheet(wb.create_sheet(), '③ 구품번 추가(SS 기준)', ['품번', '스타일명', '복종', '12월말 재고', '2026 입고', '입고(투입)', '1/1~ 판매', '현재고', '원가(VAT 미포함)', '잔차(재고+입고−판매−현재고)', '참고: FW 이월 재고(7/31)', '참고: FW 이월 판매(8/1~)', 'FW 주간판매 12/29주~', 'FW 주간판매 1/5주~', '주간판매 범위 안(±%d)' % TOL],
-      [[r['code'], r['name'], r['item'], (r['basis'] or {}).get('base'), (r['basis'] or {}).get('newIn'), (r['basis'] or {}).get('qtyIn'), (r['basis'] or {}).get('sales'), (r['basis'] or {}).get('stockNow'), (r['basis'] or {}).get('cost'), (r['basis'] or {}).get('resid'), r['fwCarryStock'], r['fwAugSales'], r.get('wkHi'), r.get('wkLo'), ('○' if r.get('wkOk') else '× 확인')] for r in only], [14, 34, 9, 12, 12, 12, 12, 11, 16, 16, 14, 14, 14, 14, 14])
+sheet(wb.create_sheet(), '③④ 구품번 추가(SS 기준)', ['품번', '스타일명', '복종', '12월말 재고', '2026 입고', '입고(투입)', '1/1~ 판매', '현재고', '원가(VAT 미포함)', '잔차(재고+입고−판매−현재고)', '참고: FW 이월 재고(7/31)', '참고: FW 이월 판매(8/1~)', 'FW 주간판매 12/29주~', 'FW 주간판매 1/5주~', '주간판매 범위 안(±%d)' % TOL, '출처', '채널표 1/1~ 판매(날짜 기준)', '차이(기록 − 채널표)'],
+      [[r['code'], r['name'], r['item'], (r['basis'] or {}).get('base'), (r['basis'] or {}).get('newIn'), (r['basis'] or {}).get('qtyIn'), (r['basis'] or {}).get('sales'), (r['basis'] or {}).get('stockNow'), (r['basis'] or {}).get('cost'), (r['basis'] or {}).get('resid'), r['fwCarryStock'], r['fwAugSales'], r.get('wkHi'), r.get('wkLo'), ('○' if r.get('wkOk') else '× 확인'), r.get('src', '') + ((' (' + '·'.join(r['nasSeasons']) + ' 목록)') if r.get('nasSeasons') else ''), r.get('chSales'), ((r['basis'] or {}).get('sales', 0) - r['chSales']) if r.get('chSales') is not None else None] for r in only], [14, 34, 9, 12, 12, 12, 12, 11, 16, 16, 14, 14, 14, 14, 14, 22, 16, 14])
 sheet(wb.create_sheet(), 'SS 러닝 전 품번 대조', ['품번', '겹침(FW 구품번)', '스타일맵 정의 판매', '판매기록 기준 판매', 'SS 주간판매 7/27주~', 'FW 주간판매 7/27주~', '52주 최대 차이', 'SS 현재고', 'FW 현재고', '현재고 차이'],
       [[r['code'], '○' if r['overlap'] else '', r.get('ssSalesBack'), r.get('ssSalesRec'), r['ssWk0727'], r['fwWk0727'], r['weeklyMaxDiff'], r['ssStock'], r['fwStock'], r['ssStock'] - r['fwStock']] for r in allss], [14, 14, 16, 16, 18, 18, 14, 12, 12, 12])
-sheet(wb.create_sheet(), '연간에 안 넣은 러닝 품번', ['품번', '스타일명', '2026 판매(1/1~)', '입고(투입: 12월말 재고+2026 입고)', '현재고', '원가(VAT 미포함)', '러닝 원본(NAS)', '25년 러닝 목록'],
-      [[u['code'], u.get('name'), u.get('sales'), u.get('qtyIn'), u.get('stock'), u.get('cost'), '○' if u.get('inNas') else '', '○' if u.get('in25') else ''] for u in (ck.get('unlisted') or [])], [14, 34, 14, 22, 11, 16, 14, 14])
+if ck.get('unlisted'):                                                   # SS 스타일맵에 자료가 없어 못 넣은 품번(있을 때만)
+    sheet(wb.create_sheet(), '자료 없어 못 넣은 품번', ['품번', '러닝 원본(NAS)', '25년 러닝 목록'], [[u['code'], '○' if u.get('inNas') else '', '○' if u.get('in25') else ''] for u in ck['unlisted']], [14, 14, 14])
 wb.save(OUT)
 print('저장:', OUT)
