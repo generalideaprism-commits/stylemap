@@ -166,6 +166,7 @@ def mdp_tag(code, sheet_tag):
 styles = {}
 order = []
 GIFT_CAT, GIFT = '사은품', {}     # 사은품 스타일: 품번 -> 품명
+NAME_THEMES = {'온도업': '온도업'}   # 품명 접두어 -> 테마 (생판재 K열에 없는 테마 보강)
 STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
@@ -208,7 +209,9 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'cat2': txt(r[ST_['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
             # 테마 = 생판재 시트 K열(컨셉). '노르딕,패턴' 도 통째로 하나의 테마다
             # '컨셉1' 은 ERP 덤프의 자리표시 값 — 테마가 아니다
-            'themes': [txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [],
+            'themes': ([txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [])
+                      # 시트 컨셉 열에 없어도 품명 앞머리로 붙는 테마 (사용자 지시 2026-10-22: '온도업')
+                      + [th for pre, th in NAME_THEMES.items() if txt(r[ST_['name']]).startswith(pre) and th != txt(r[ST_['theme']])],
             'vendor': txt(r[ST_['vendor']]),
             'tag': tag,
             'tagErp': tag_erp,              # 시트 Z열 원본 택가 — 덮기 전 값 보존(실판가 대타는 이 값을 쓴다)
