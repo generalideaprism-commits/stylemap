@@ -167,6 +167,8 @@ styles = {}
 order = []
 GIFT_CAT, GIFT = '사은품', {}     # 사은품 스타일: 품번 -> 품명
 NAME_THEMES = {'온도업': '온도업'}   # 품명 접두어 -> 테마 (생판재 K열에 없는 테마 보강)
+# 품번으로 직접 빼는 스타일 (사용자 지시). 입고·판매가 있는 스타일은 기획만 빠지므로 빌드 로그 경고를 확인할 것
+EXCLUDE_CODES = {'GF3UJP011'}     # 2026-10-23 와플 후드집업
 STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
@@ -183,7 +185,8 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             GIFT[code] = txt(r[ST_['name']])
             continue
         # 스타일명 맨 앞 '*' = 아직 반영하지 않는 스타일(사용자 지시 2026-10-02) — 카드·기획 스타일수에서 뺀다
-        if txt(r[ST_['name']]).startswith('*'):
+        # EXCLUDE_CODES 는 품번으로 직접 지정한 제외 스타일 (같은 경로로 기획 ST수·SKU·기획량까지 뺀다)
+        if txt(r[ST_['name']]).startswith('*') or code in EXCLUDE_CODES:
             STAR[code] = {'season': txt(r[ST_['season']]).replace('(러닝)', '').strip(), 'name': txt(r[ST_['name']]),
                           'plan': num(r[ST_['plan_qty']]) if len(r) > ST_['plan_qty'] else None, 'main': is_main}
             continue
@@ -296,6 +299,8 @@ for co_sheet in (CO_MAIN, CO_RUN):
             continue
         if code in STAR:
             _star_colors.add((code, txt(r[co['color']])))
+            if code in EXCLUDE_CODES and ((num(r[co['qty_in']]) or 0) or (num(r[co['total']]) or 0)):
+                print('[경고] 제외 스타일 %s 에 입고/판매가 있음 — 기획만 빠지고 입고·판매는 종합 시트 합계에 남는다' % code)
         s = styles.get(code)
         if s is None or (co_sheet == CO_RUN and run_codes and code not in run_codes):
             continue
