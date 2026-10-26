@@ -659,10 +659,12 @@ renderSum();
 /* ---------- 그래프로 보기 (전년 대비) ----------
    집계표와 같은 SUM 에서 바로 그린다 — 별도 데이터 없음, 표가 바뀌면 그래프도 같이 바뀐다.
    26FW 대 25FW 동시점 고정. 시즌별·복종별을 한 번에 깔고, 첫 막대는 합계.
-   러닝 포함은 표의 러닝 행과 같은 값(시점재고 합산 칩도 표와 같은 RUNSTK 를 공유). */
-const GV = {on:false, run:false};
+   러닝 포함·시점재고 합산은 둘 다 켜진 채로 시작하고, 한 번 더 누르면 각각 제외한다(표의 시점재고 칩과는 별개 상태). */
+const GV = {on:false, run:true, stk:true};
 const GV_ITEMS = ['OUTER','TOP','BOTTOM','ACC'];
-const GV_CUR = '#5b73a6', GV_PRV = '#9aa2ae';
+const GV_CUR = '#e0294a', GV_PRV = '#9aa2ae';
+// 소진 구조 색 — 26FW 는 붉은 계열, 25FW 는 회색 계열 (진한 색 = 누계판매, 옅은 색 = 입고 재고, 가장 옅은 색 = 미입고)
+const GV_PAL = [{sold:GV_CUR, stock:'#f7c3cd', un:'#eef0f4'}, {sold:'#9aa2ae', stock:'#d9dde4', un:'#eef0f4'}];
 const GV_MET = [
   {k:'plan',    t:'기획량',       s:'막대 · 물량 크기 비교',               f:'n'},
   {k:'qtyIn',   t:'입고량',       s:'막대 · 물량 크기 비교',               f:'n'},
@@ -680,13 +682,23 @@ function gvViews(){
   const newTtl = SUM.block1.find(d=>d.kind==='신상품 TTL');
   const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
   const runIt  = i => SUM.runItem.find(d=>d.item===i);
-  const pair    = d => d ? {c:d.cur, p:d.py||null} : null;
-  const runPair = d => d ? {c:withStk(d), p:d.py||null} : null;
+  // 25FW 값이 비율 비교에 못 쓰이는 행: 판매량이 입고량보다 크거나(판매율 100% 초과),
+  // 시트의 판매율이 판매÷입고와 안 맞는 경우(분모에 이월분 등 다른 기준이 섞인 것). 이런 행은 입고율·판매율을 비교불가로 둔다.
+  const bad = o => !!o && o.qtyIn!=null && o.sales!=null && (
+    o.sales > o.qtyIn*1.0001 ||
+    (o.sellRate!=null && o.qtyIn && Math.abs(o.sellRate - o.sales/o.qtyIn) > 0.005));
+  const mkP = d => d && d.py ? Object.assign({}, d.py, {_bad: bad(d.py)}) : null;
+  const pair    = d => d ? {c:d.cur, p:mkP(d)} : null;
+  // 표의 RUNSTK 는 건드리지 않고, 이 계산 동안만 그래프 쪽 시점재고 설정으로 바꿔 withStk 를 쓴다
+  const stkAs = fn => { const s = RUNSTK; RUNSTK = GV.stk; try{ return fn(); } finally{ RUNSTK = s; } };
+  const runPair = d => d ? {c:stkAs(()=>withStk(d)), p:mkP(d)} : null;
   // 여러 행의 합 — 25FW 쪽은 구성요소 중 하나라도 값이 없으면 그 지표를 비운다(표의 합계 행과 같은 규칙)
   const add = list => {
     const ok = list.filter(Boolean);
     if(!ok.length) return null;
-    return {c: sumRows(ok.map(x=>x.c)), p: yr(()=>cmpSum(ok.map(x=>({py:x.p}))))};
+    const p = yr(()=>cmpSum(ok.map(x=>({py:x.p}))));
+    if(p) p._bad = ok.some(x=>x.p && x.p._bad);
+    return {c: sumRows(ok.map(x=>x.c)), p};
   };
   const run = GV.run;
   const total = run ? add([pair(newTtl), runPair(runTtl)]) : pair(newTtl);
@@ -699,7 +711,7 @@ function gvViews(){
   return [{cap:'시즌별', rows:bySeason}, {cap:'복종별' + (run ? ' (러닝 포함)' : ' (신상품)'), rows:byItem}];
 }
 
-const gvVal = (o,m) => o ? valOf(o,{k:m.k}) : null;
+const gvVal = (o,m) => !o ? null : (m.f==='r' && o._bad) ? null : valOf(o,{k:m.k});
 const gvFmt = (v,f) => v==null ? '-' : f==='r' ? fmtP1(v) : f==='m' ? fmtM(v) : fmtN(v);
 function gvDelta(c,p,f){
   if(c==null || p==null) return '<span class="gvna">비교불가</span>';
@@ -771,17 +783,18 @@ function gvChart(rows, m, W){
 /* 기획량 대비 소진 구조 — 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 (행마다 26FW, 25FW 두 줄) */
 function gvStack(rows, W){
   const rh=15, gp=6, L=92, R=40, T=2, n=rows.length, H=T + n*(2*rh+gp) + 18, bw=W-L-R;
-  const seg = [['sold','#5b73a6'],['stock','#c3d0ea'],['un','#e4e7ed']];
+  const seg = ['sold','stock','un'];
   let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="기획량 대비 소진 구조">`;
   rows.forEach((r,i)=>{
     [['26FW', r[1] && r[1].c], ['25FW', r[1] && r[1].p]].forEach(([yr,o],j)=>{
       const yy = T + i*(2*rh+gp) + j*rh;
       s += `<text x="${L-8}" y="${yy+rh/2+3.5}" text-anchor="end" font-size="11" fill="${j?'#8b93a1':'#111827'}" font-weight="${j?400:700}">${gvEsc(r[0])} · ${yr}</text>`;
-      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null;
+      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null && o.sales<=o.qtyIn*1.0001 && !o._bad;
       if(!ok){ s += `<text x="${L}" y="${yy+rh/2+3.5}" font-size="10.5" fill="#b4bbc7">비교불가</text>`; return; }
       const f = {sold:o.sales/o.plan, stock:(o.qtyIn-o.sales)/o.plan, un:(o.plan-o.qtyIn)/o.plan};
       let x = L;
-      seg.forEach(([k,col])=>{
+      seg.forEach(k=>{
+        const col = GV_PAL[j][k];
         const w = Math.max(0, bw*f[k]);
         if(w>0) s += `<rect x="${x}" y="${yy+2}" width="${w}" height="${rh-4}" fill="${col}"/>`;
         x += w;
@@ -791,7 +804,7 @@ function gvStack(rows, W){
   });
   rows.forEach((r,i)=>{
     const line = (yr,o,col) => {
-      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null;
+      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null && o.sales<=o.qtyIn*1.0001 && !o._bad;
       if(!ok) return `<div><i style="background:${col}"></i>${yr} <span class="gvna">비교불가</span></div>`;
       const pc = x => (x/o.plan*100).toFixed(1)+'%';
       return `<div><i style="background:${col}"></i>${yr} 기획 <b>${fmtN(o.plan)}</b> · 입고 <b>${fmtN(o.qtyIn)}</b> · 판매 <b>${fmtN(o.sales)}</b></div>`
@@ -823,7 +836,7 @@ function gvRender(){
     `<button class="chip" id="gvBack">← 집계표</button>`
     + `<span class="gvt">전년 대비 그래프</span>`
     + `<button class="chip${GV.run?' on':''}" id="gvRun">${GV.run?'✓ ':'＋ '}러닝 ${GV.run?'포함':'제외'}</button>`
-    + (GV.run ? `<button class="stkbtn${RUNSTK?' on':''}" id="gvStk">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>` : '')
+    + (GV.run ? `<button class="stkbtn${GV.stk?' on':''}" id="gvStk">${GV.stk?'기획 + 시점재고':'＋ 시점재고 합산'}</button>` : '')
     + `<span class="gvlg">${lg(GV_CUR,'26FW <span class="rg">'+RNG_CUR+'</span>')}${lg(GV_PRV,'25FW 동시점 <span class="rg">'+RNG_PREV+'</span>')}`
     + `<span class="rg">증감: 수량·금액 %, 비율 %p</span></span>`;
 
@@ -833,9 +846,9 @@ function gvRender(){
   document.getElementById('gvbody').innerHTML =
     GV_MET.map(m=>panel(m.t, m.s, cols('chart', m))).join('')
     + panel('기획량 대비 소진 구조', '누적 막대 · 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 · 오른쪽 숫자 = 누계판매 비중',
-        `<div class="gvlg" style="margin:0 0 8px;justify-content:flex-start">${lg('#5b73a6','누계판매')}${lg('#c3d0ea','입고 재고')}${lg('#e4e7ed','미입고')}</div>` + cols('stack'))
+        `<div class="gvlg" style="margin:0 0 8px;justify-content:flex-start">${lg(GV_PAL[0].sold,'26FW 누계판매')}${lg(GV_PAL[0].stock,'26FW 입고 재고')}${lg(GV_PAL[1].sold,'25FW 누계판매')}${lg(GV_PAL[1].stock,'25FW 입고 재고')}${lg(GV_PAL[0].un,'미입고')}</div>` + cols('stack'))
     + `<div class="gvnote">${GV.run
-        ? '러닝 포함: 26FW 러닝 ' + (RUNSTK ? '신품번 + 시점재고(26.07.31) 합산' : '신규 품번 기준') + ' 대 25FW 러닝(종합 시트 값 그대로). 기준이 달라 비교할 수 없는 칸은 "비교불가"로 둡니다.'
+        ? '러닝 포함: 26FW 러닝 ' + (GV.stk ? '신품번 + 시점재고(26.07.31) 합산' : '신규 품번 기준') + ' 대 25FW 러닝(종합 시트 값 그대로). 25FW 러닝은 판매량이 입고량보다 커서(이월분이 판매에만 잡힘) 입고율·판매율은 전년과 비교할 수 없어 "비교불가"로 둡니다. 러닝이 들어간 합계도 같습니다.'
         : '러닝 제외: 신상품(가을+겨울)만 집계하고, 합계 = 가을 + 겨울입니다.'} 값은 위 집계표와 같은 데이터입니다.</div>`;
 
   document.querySelectorAll('#gview .gvcol').forEach(el=>{
@@ -848,7 +861,7 @@ function gvRender(){
   document.getElementById('gvBack').onclick = () => gvSet(false);
   document.getElementById('gvRun').onclick  = () => { GV.run = !GV.run; gvRender(); };
   const stk = document.getElementById('gvStk');
-  if(stk) stk.onclick = () => { RUNSTK = !RUNSTK; renderSum(); gvRender(); };
+  if(stk) stk.onclick = () => { GV.stk = !GV.stk; gvRender(); };
 }
 
 function gvSet(on){
