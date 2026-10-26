@@ -173,10 +173,28 @@ EXCLUDE_CODES = {'GF3UJP011',      # 2026-10-23 와플 후드집업
                  'GF3LPT518', 'GF3LBG508', 'GF3LBG509', 'GF3LBG510',          # 샘플 단계('*') 데님 팬츠·가방 3종
                  'GF3UFG101', 'GF4LFG512', 'GF4LFG513', 'GF4UFG101',          # 사은품 (키링·핸드크림 2종·핫팩)
                  'GF4UCP016'}                                                  # GNRL 워싱 로고 볼캡
+# 입고가 잡히기 전까지만 빼는 품번 (입고 수량 > 0 이 되면 자동으로 카드·집계에 들어온다)
+EXCLUDE_UNTIL_INBOUND = {'GF4UCP016'}   # 2026-10-26 추후 입고 예정
 # 실판매금액을 '판매수량 × 지정 단가'로 바로잡는 스타일 (ERP 판매금액이 TAG금액보다 크게 들어온 건, 사용자 지시)
 AMT_FIX = {'GF3LSA503': 65000}    # 2026-10-26 덤블 스티치 머플러: 7장 실판 565,540 > TAG 455,000 -> 65,000 기준
 AMT_FIX_DIFF = {}  # 품번 -> 시트 판매금액 - 고친 판매금액 (집계표에서 같은 만큼 뺀다)
 STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
+
+# 입고 대기 품번: 주간판매(CO) 시트 입고 합이 0 보다 크면 제외 목록에서 푼다
+_inb = {}
+if EXCLUDE_UNTIL_INBOUND:
+    _wsc = wb[CO_MAIN]
+    _cc = co_cols(_wsc)
+    for _r in _wsc.iter_rows(min_row=4, values_only=True):
+        _c = txt(_r[_cc['style']]) if len(_r) > _cc['style'] else ''
+        if _c in EXCLUDE_UNTIL_INBOUND:
+            _inb[_c] = _inb.get(_c, 0) + (num(_r[_cc['qty_in']]) or 0)
+    for _c in EXCLUDE_UNTIL_INBOUND:
+        if _inb.get(_c, 0) > 0:
+            EXCLUDE_CODES.discard(_c)
+            print('입고 대기 해제: %s 입고 %d장 — 카드·집계에 포함' % (_c, _inb[_c]))
+        elif _c in EXCLUDE_CODES:
+            print('입고 대기: %s 입고 없음 — 제외 유지' % _c)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
     ws = wb[st_sheet]
