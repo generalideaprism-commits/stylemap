@@ -755,8 +755,20 @@ function gvTip(name, c, p, m){
 }
 
 /* 막대(물량·금액) / 점 연결(비율) — 25FW 회색, 26FW 청색 */
+/* 그래프 위에 직접 쓰는 전년 대비 증감 — 수량·금액은 %, 비율은 %p (하단 문장과 같은 규칙) */
+function gvDeltaRaw(c,p,f){
+  if(c==null || p==null) return null;
+  if(f==='r'){
+    const d = (c-p)*100;
+    return Math.abs(d)<0.05 ? null : {up:d>0, t:`${d>0?'▲':'▼'}${Math.abs(d).toFixed(1)}%p`};
+  }
+  if(!p) return c ? {up:true, t:'신규'} : null;
+  const d = (c/p-1)*100;
+  return Math.abs(d)<0.5 ? null : {up:d>0, t:`${d>0?'▲':'▼'}${Math.abs(d).toFixed(0)}%`};
+}
+
 function gvChart(rows, m, W){
-  const H=141, L=42, R=6, T=10, B=24, n=rows.length, gw=(W-L-R)/n;
+  const H=141, L=42, R=6, T=20, B=24, n=rows.length, gw=(W-L-R)/n;
   const cs = rows.map(r=>gvVal(r[1] && r[1].c, m)), ps = rows.map(r=>gvVal(r[1] && r[1].p, m));
   const vals = cs.concat(ps).filter(v=>v!=null);
   const max = Math.max(0, ...vals);
@@ -784,6 +796,8 @@ function gvChart(rows, m, W){
       });
     }
     s += `<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="11" font-weight="${i?500:800}" fill="${i?'#5b6472':'#111827'}">${gvEsc(r[0])}</text>`;
+    const dv = gvDeltaRaw(c,p,m.f);
+    if(dv) s += `<text x="${cx}" y="${y(Math.max(c,p)) - (m.f==='r' ? 10 : 5)}" text-anchor="middle" font-size="10.5" font-weight="800" fill="${dv.up?'#e0294a':'#2563eb'}">${dv.t}</text>`;
   });
   rows.forEach((r,i)=>{
     s += `<rect class="gvhit" x="${L+gw*i}" y="${T}" width="${gw}" height="${H-T}" fill="transparent" data-tip="${gvAttr(gvTip(r[0], cs[i], ps[i], m))}"/>`;
