@@ -839,10 +839,11 @@ function gvDeltaLine(rows, m){
   }).join('') + '</div>';
 }
 
-/* 주간회의용 핵심 3줄 — 집계표 데이터에서 자동 생성.
-   ① 이번 주 판매금액 (전주·전년 동주 대비, 가을·겨울·러닝별)  ② 누계 실판매금액·판매율 (전년 동시점 대비)
-   ③ 복종별로 전주보다 가장 많이 줄고 늘어난 곳.
-   전주 값(was)에는 러닝 시점재고가 없어서 주간 비교(①③)의 러닝은 시점재고를 얹기 전 기획분 기준이다. */
+/* 주간회의용 분석 5줄 (고정 형식: 긍정 2 · 부정 2 · 종합 1) — 집계표 데이터에서 자동 생성.
+   ①② 긍정적인 부분 (전주 대비 / 전년 대비)  ③④ 부정적인 부분 (전주 대비 / 전년 대비)  ⑤ 종합 추세
+   근거: 주간판매금액의 전주·전년 동주 대비, 누계 실판매금액의 전년 동시점 대비, 누계판매율의 전년 대비.
+   시즌(가을·겨울·러닝)과 복종(OUTER·TOP·BOTTOM·ACC)을 모두 후보로 놓고 가장 두드러진 항목을 고른다.
+   전주 값(was)에는 러닝 시점재고가 없어서 주간 비교의 러닝은 시점재고를 얹기 전 기획분 기준이다. */
 function gvSummary(){
   const b1 = (s,i) => SUM.block1.find(d=>d.mode==='new' && d.season===s && d.item===i);
   const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
@@ -855,43 +856,89 @@ function gvSummary(){
     return r;
   };
   const mm = v => (v/1e6).toFixed(1) + '백만';
-  const pct = (c,b) => {
-    if(c==null || b==null || !b) return '<span class="gvna">비교불가</span>';
-    const d = (c/b-1)*100;
-    return Math.abs(d)<0.05 ? '<span class="gvz">-</span>'
-      : `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d).toFixed(1)}%</span>`;
-  };
-  const amt = d => `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${mm(Math.abs(d))}</span>`;
+  const arrow = d => d>0 ? '▲' : '▼';
+  const cls = d => d>0 ? 'up' : 'down';
+  const pctV = (c,b) => (c==null || b==null || !b) ? null : (c/b-1)*100;
+  const pctS = v => v==null ? '<span class="gvna">비교불가</span>'
+    : Math.abs(v)<0.05 ? '<span class="gvz">-</span>'
+    : `<span class="dt ${cls(v)}">${arrow(v)}${Math.abs(v).toFixed(1)}%</span>`;
+  const ppS = v => v==null ? '<span class="gvna">비교불가</span>'
+    : `<span class="dt ${cls(v)}">${arrow(v)}${Math.abs(v).toFixed(1)}%p</span>`;
+  const amtS = d => `<span class="dt ${cls(d)}">${arrow(d)}${mm(Math.abs(d))}</span>`;
 
-  // ① 이번 주 판매금액
-  const parts = [['가을', trip(b1('가을','TTL'))], ['겨울', trip(b1('겨울','TTL'))]];
-  if(GV.run) parts.push(['러닝', trip(runTtl)]);
-  const tot = sum3(parts.map(x=>x[1]));
-  const l1 = `<b>이번 주 판매 ${tot.c==null?'-':mm(tot.c)}</b> — 전주 대비 ${pct(tot.c,tot.w)} · 전년 동주 대비 ${pct(tot.c,tot.p)}`
-    + ` <span class="sb">(전주 대비 ${parts.map(([n,x])=>n+' '+(Math.max(x.c||0,x.w||0)<5e6 ? '<span class="sb">소액(5백만 미만)</span>' : pct(x.c,x.w))).join(' · ')}${GV.run&&GV.stk?' · 러닝은 시점재고 제외 기준':''})</span>`;
-
-  // ② 누계 실판매금액·판매율 (그래프와 같은 기준: 러닝·시점재고 토글 반영)
-  const row = gvViews()[0].rows[0][1];
+  const views = gvViews();
   const mAmt = GV_MET.find(m=>m.k==='salesAmt'), mRate = GV_MET.find(m=>m.k==='sellRate');
-  const ca = gvVal(row && row.c, mAmt), pa = gvVal(row && row.p, mAmt);
-  const cr = gvVal(row && row.c, mRate), pr = gvVal(row && row.p, mRate);
-  const l2 = `<b>누계 판매 ${ca==null?'-':mm(ca)}</b> — 전년 동시점 대비 ${pct(ca,pa)} · 누계판매율 <b>${gvFmt(cr,'r')}</b>`
-    + (pr!=null ? ` (전년 ${gvFmt(pr,'r')}, ${(cr-pr)>=0?'▲':'▼'}${Math.abs((cr-pr)*100).toFixed(1)}%p)` : ' <span class="sb">(전년 판매율은 비교불가)</span>');
+  const rowOf = (vi,n) => { const r = views[vi].rows.find(x=>x[0]===n); return r && r[1]; };
 
-  // ③ 복종별 전주 대비 증감 — 가장 많이 줄어든 곳 / 늘어난 곳
-  const items = GV_ITEMS.map(i=>{
-    const x = sum3([trip(b1('가을',i)), trip(b1('겨울',i))].concat(GV.run ? [trip(runIt(i))] : []));
-    return {n:i, c:x.c, w:x.w, d:(x.c!=null && x.w!=null) ? x.c-x.w : null};
-  }).filter(x=>x.d!=null);
-  let l3 = '<b>복종별 변화</b> — 전주 대비 판매금액 증감을 계산할 수 없습니다';
-  if(items.length){
-    const dn = items.reduce((a,x)=>x.d<a.d?x:a), up = items.reduce((a,x)=>x.d>a.d?x:a);
-    const one = x => `<b>${x.n}</b> ${amt(x.d)}(${pct(x.c,x.w)})`;
-    l3 = '<b>복종별 변화</b> — 전주보다 '
-      + (dn.d<0 ? `가장 많이 줄어든 복종은 ${one(dn)}` : '줄어든 복종 없음')
-      + ' · ' + (up.d>0 ? `가장 많이 늘어난 복종은 ${one(up)}` : '늘어난 복종 없음');
+  // 후보: 시즌 + 복종
+  const ents = [];
+  const seasons = [['가을', trip(b1('가을','TTL'))], ['겨울', trip(b1('겨울','TTL'))]];
+  if(GV.run) seasons.push(['러닝', trip(runTtl)]);
+  seasons.forEach(([n,t])=>ents.push({n, t, kind:'s', row:rowOf(0,n)}));
+  GV_ITEMS.forEach(i=>{
+    const t = sum3([trip(b1('가을',i)), trip(b1('겨울',i))].concat(GV.run ? [trip(runIt(i))] : []));
+    ents.push({n:i, t, kind:'i', row:rowOf(1,i)});
+  });
+  ents.forEach(e=>{
+    const r = e.row, c = r && r.c, p = r && r.p;
+    e.wkD   = (e.t.c!=null && e.t.w!=null && Math.max(e.t.c,e.t.w)>=5e6) ? e.t.c-e.t.w : null;     // 주간판매 전주 대비 증감액
+    e.wkP   = e.wkD==null ? null : pctV(e.t.c, e.t.w);
+    const ca = gvVal(c,mAmt), pa = gvVal(p,mAmt);
+    e.ysP   = (ca!=null && pa!=null && pa>=5e7) ? pctV(ca,pa) : null;                                // 누계 실판매금액 전년 대비 %
+    const cr = gvVal(c,mRate), pr = gvVal(p,mRate);
+    const sold = Math.max((c&&c.sales)||0, (p&&p.sales)||0);
+    e.rtD   = (cr!=null && pr!=null && sold>=1000) ? (cr-pr)*100 : null;                             // 누계판매율 전년 대비 %p
+    e.cr = cr; e.pr = pr;
+  });
+
+  // 가장 두드러진 항목 고르기 (sign=+1 긍정, -1 부정). kind 로 시즌('s')·복종('i') 중 한쪽만 볼 수 있다.
+  const best = (key, sign, min, kind) => ents.filter(e=>(!kind || e.kind===kind) && e[key]!=null && e[key]*sign>min)
+    .reduce((a,e)=>(!a || e[key]*sign>a[key]*sign) ? e : a, null);
+  const kn = e => e.kind==='s' ? `${e.n}(시즌)` : `${e.n}(복종)`;
+  // 해당하는 항목이 하나도 없을 때: 방향은 반대지만 '상대적으로 가장 나은/가장 나쁜' 곳을 대신 보여 줘 줄이 비지 않게 한다
+  const rel = (key, sign, kind) => ents.filter(e=>(!kind || e.kind===kind) && e[key]!=null)
+    .reduce((a,e)=>(!a || e[key]*sign>a[key]*sign) ? e : a, null);
+  const fbHead = (sign, what) => `<span class="sb">${what} ${sign>0?'늘어난':'줄어든'} 곳 없음 — ${sign>0?'감소폭이':'증가폭이'} 가장 작은 곳:</span> `;
+  // 전주 대비 한 줄: 시즌 대표 + 복종 대표 / 전년 대비 한 줄: 판매금액 대표 + 판매율 대표
+  const wkLine = sign => {
+    const out = ['s','i'].map(k=>best('wkD', sign, 0, k)).filter(Boolean)
+      .map(e=>`<b>${kn(e)}</b> 주간판매 ${pctS(e.wkP)}(${amtS(e.wkD)})`);
+    if(out.length) return out.join(' · ');
+    const f = ['s','i'].map(k=>rel('wkP', sign, k)).filter(Boolean).map(e=>`<b>${kn(e)}</b> 주간판매 ${pctS(e.wkP)}`);
+    return f.length ? fbHead(sign,'전주보다') + f.join(' · ') : '';
+  };
+  const yoyLine = sign => {
+    const out = [], y = best('ysP', sign, 0.5), r = best('rtD', sign, 0.5);
+    if(y) out.push(`<b>${kn(y)}</b> 누계 판매금액 ${pctS(y.ysP)}`);
+    if(r) out.push(`<b>${kn(r)}</b> 누계판매율 ${gvFmt(r.cr,'r')} (전년 ${gvFmt(r.pr,'r')}, ${ppS(r.rtD)})`);
+    if(out.length) return out.join(' · ');
+    const fy = rel('ysP', sign), fr = rel('rtD', sign), f = [];
+    if(fy) f.push(`<b>${kn(fy)}</b> 누계 판매금액 ${pctS(fy.ysP)}`);
+    if(fr) f.push(`<b>${kn(fr)}</b> 누계판매율 ${gvFmt(fr.cr,'r')} (전년 ${gvFmt(fr.pr,'r')}, ${ppS(fr.rtD)})`);
+    return f.length ? fbHead(sign,'전년보다') + f.join(' · ') : '';
+  };
+  const mk = (tag, sub, txt, none) => `<b>${tag}</b> <span class="sb">${sub}</span> — ` + (txt || none);
+  const l1 = mk('긍정적인 부분', '전주 대비', wkLine(+1), '전주보다 판매금액이 늘어난 시즌·복종이 없습니다');
+  const l2 = mk('긍정적인 부분', '전년 대비', yoyLine(+1), '전년 동시점보다 판매금액·판매율이 오른 시즌·복종이 없습니다');
+  const l3 = mk('부정적인 부분', '전주 대비', wkLine(-1), '전주보다 판매금액이 줄어든 시즌·복종이 없습니다');
+  const l4 = mk('부정적인 부분', '전년 대비', yoyLine(-1), '전년 동시점보다 판매금액·판매율이 내린 시즌·복종이 없습니다');
+
+  // ③ 종합 추세 — 전체(합계) 기준
+  const tot = sum3(seasons.map(x=>x[1]));
+  const trow = views[0].rows[0][1];
+  const ca = gvVal(trow && trow.c, mAmt), pa = gvVal(trow && trow.p, mAmt);
+  const cr = gvVal(trow && trow.c, mRate), pr = gvVal(trow && trow.p, mRate);
+  const wow = pctV(tot.c, tot.w), wyoy = pctV(tot.c, tot.p), cyoy = pctV(ca, pa);
+  let verdict = '판단 보류';
+  if(wow!=null && cyoy!=null){
+    verdict = cyoy < -10 ? (wow < 0 ? '전년 대비 부진 · 주간 판매도 둔화(하락 추세)' : '전년 대비 부진 · 주간은 반등')
+                         : (wow < 0 ? '전년 수준 · 주간 판매는 둔화' : '전년 수준 이상 · 주간 판매 회복(상승 추세)');
   }
-  return [l1,l2,l3];
+  const l5 = `<b>종합 추세</b> — <b>${verdict}</b>. 이번 주 판매 ${tot.c==null?'-':mm(tot.c)}, 전주 대비 ${pctS(wow)} · 전년 동주 대비 ${pctS(wyoy)} / `
+    + `누계 판매금액 전년 동시점 대비 ${pctS(cyoy)} / 누계판매율 ${gvFmt(cr,'r')}`
+    + (pr!=null ? ` (전년 ${gvFmt(pr,'r')}, ${ppS((cr-pr)*100)})` : ' <span class="sb">(전년 판매율은 비교불가)</span>')
+    + (GV.run && GV.stk ? ' <span class="sb">· 주간 비교의 러닝은 시점재고 제외 기준</span>' : '');
+  return [l1, l2, l3, l4, l5];
 }
 
 function gvRender(){
@@ -911,7 +958,7 @@ function gvRender(){
     `<div><span class="gvcap">${v.cap}</span><div class="gvcol" data-v="${i}" data-kind="${kind}" data-m="${m ? m.k : ''}"></div></div>`).join('') + '</div>';
   const sum = gvSummary();
   document.getElementById('gvbody').innerHTML =
-    `<div class="panel gvsum"><h3>이번 주 핵심 3줄</h3><div class="sub">집계표 데이터에서 자동으로 만든 요약 · 주간회의용</div><ol>`
+    `<div class="panel gvsum"><h3>이번 주 분석</h3><div class="sub">긍정 2 · 부정 2 · 종합 추세 1 — 집계표 데이터에서 자동으로 만든 요약 · 주간회의용</div><ol>`
       + sum.map((s,i)=>`<li><span class="no">${i+1}</span><span>${s}</span></li>`).join('') + `</ol></div>`
     + GV_MET.map(m=>panel(m.t, m.s, cols('chart', m))).join('')
     + panel('기획량 대비 소진 구조', '누적 막대 · 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 · 오른쪽 숫자 = 누계판매 비중',
