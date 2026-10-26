@@ -257,6 +257,16 @@
   #gview .gvna,#gview .gvz{color:#b4bbc7;margin-left:3px;font-size:10.5px}
   #gview .gvnote{font-size:11px;color:var(--muted);margin:2px 2px 16px;line-height:1.6}
   #gview svg{display:block;overflow:visible}
+  #gview .gvhit:hover{fill:rgba(91,115,166,.09)}
+  #gvtip{position:fixed;z-index:60;pointer-events:none;display:none;background:#111827;color:#fff;
+    border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.6;white-space:nowrap;
+    box-shadow:0 6px 18px rgba(16,24,40,.25)}
+  #gvtip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+  #gvtip .tn{font-weight:800;margin-bottom:2px}
+  #gvtip b{font-weight:700}
+  #gvtip .td{margin-top:2px;color:#cbd2de}
+  #gvtip .dt{font-weight:800;margin-left:2px} #gvtip .dt.up{color:#ff8a9d} #gvtip .dt.down{color:#8db4ff}
+  #gvtip .gvna,#gvtip .gvz{color:#9aa2ae;margin-left:2px}
   .chip.gvgo{margin-left:6px;border-color:var(--blue);color:var(--blue);font-weight:700}
   .chip.gvgo:hover{background:var(--blue-soft)}
 </style>
@@ -714,10 +724,16 @@ function gvTick(v,f){
   return v>=1e4 ? (v/1e4).toFixed(1).replace(/\.0$/,'')+'만' : fmtN(v);
 }
 const gvEsc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const gvAttr = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function gvTip(name, c, p, m){
+  const row = (col,l,v) => `<div><i style="background:${col}"></i>${l} <b>${gvFmt(v,m.f)}</b></div>`;
+  return `<div class="tn">${gvEsc(name)} · ${m.t}</div>` + row(GV_CUR,'26FW',c) + row(GV_PRV,'25FW',p)
+       + `<div class="td">전년 대비 ${gvDelta(c,p,m.f)}</div>`;
+}
 
 /* 막대(물량·금액) / 점 연결(비율) — 25FW 회색, 26FW 청색 */
 function gvChart(rows, m, W){
-  const H=176, L=42, R=6, T=10, B=24, n=rows.length, gw=(W-L-R)/n;
+  const H=141, L=42, R=6, T=10, B=24, n=rows.length, gw=(W-L-R)/n;
   const cs = rows.map(r=>gvVal(r[1] && r[1].c, m)), ps = rows.map(r=>gvVal(r[1] && r[1].p, m));
   const vals = cs.concat(ps).filter(v=>v!=null);
   const max = Math.max(0, ...vals);
@@ -734,24 +750,27 @@ function gvChart(rows, m, W){
     if(m.f==='r'){
       if(c!=null && p!=null)
         s += `<line x1="${cx}" x2="${cx}" y1="${y(p)}" y2="${y(c)}" stroke="#cfd6e4" stroke-width="3" stroke-linecap="round"/>`;
-      if(p!=null) s += `<circle cx="${cx}" cy="${y(p)}" r="5.5" fill="${GV_PRV}" stroke="#fff" stroke-width="2"><title>${gvEsc(r[0])} 25FW: ${gvFmt(p,m.f)}</title></circle>`;
-      if(c!=null) s += `<circle cx="${cx}" cy="${y(c)}" r="5.5" fill="${GV_CUR}" stroke="#fff" stroke-width="2"><title>${gvEsc(r[0])} 26FW: ${gvFmt(c,m.f)}</title></circle>`;
+      if(p!=null) s += `<circle cx="${cx}" cy="${y(p)}" r="5.5" fill="${GV_PRV}" stroke="#fff" stroke-width="2"/>`;
+      if(c!=null) s += `<circle cx="${cx}" cy="${y(c)}" r="5.5" fill="${GV_CUR}" stroke="#fff" stroke-width="2"/>`;
     }else{
       const bw = Math.min(20, gw*0.3), gap = 3;
       [[p,GV_PRV,'25FW',-bw-gap/2],[c,GV_CUR,'26FW',gap/2]].forEach(([v,col,lb,dx])=>{
         if(v==null) return;
         const yy = y(v), h = Math.max(v>0?1:0, y(0)-yy);
-        s += `<rect x="${cx+dx}" y="${y(0)-h}" width="${bw}" height="${h}" rx="3" fill="${col}"><title>${gvEsc(r[0])} ${lb}: ${gvFmt(v,m.f)}</title></rect>`;
+        s += `<rect x="${cx+dx}" y="${y(0)-h}" width="${bw}" height="${h}" rx="3" fill="${col}"/>`;
       });
     }
     s += `<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="11" font-weight="${i?500:800}" fill="${i?'#5b6472':'#111827'}">${gvEsc(r[0])}</text>`;
+  });
+  rows.forEach((r,i)=>{
+    s += `<rect class="gvhit" x="${L+gw*i}" y="${T}" width="${gw}" height="${H-T}" fill="transparent" data-tip="${gvAttr(gvTip(r[0], cs[i], ps[i], m))}"/>`;
   });
   return s + '</svg>';
 }
 
 /* 기획량 대비 소진 구조 — 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 (행마다 26FW, 25FW 두 줄) */
 function gvStack(rows, W){
-  const rh=19, gp=8, L=92, R=40, T=2, n=rows.length, H=T + n*(2*rh+gp) + 18, bw=W-L-R;
+  const rh=15, gp=6, L=92, R=40, T=2, n=rows.length, H=T + n*(2*rh+gp) + 18, bw=W-L-R;
   const seg = [['sold','#5b73a6'],['stock','#c3d0ea'],['un','#e4e7ed']];
   let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="기획량 대비 소진 구조">`;
   rows.forEach((r,i)=>{
@@ -764,11 +783,22 @@ function gvStack(rows, W){
       let x = L;
       seg.forEach(([k,col])=>{
         const w = Math.max(0, bw*f[k]);
-        if(w>0) s += `<rect x="${x}" y="${yy+2}" width="${w}" height="${rh-4}" fill="${col}"><title>${gvEsc(r[0])} ${yr} ${k==='sold'?'누계판매':k==='stock'?'입고 재고':'미입고'}: ${(f[k]*100).toFixed(1)}%</title></rect>`;
+        if(w>0) s += `<rect x="${x}" y="${yy+2}" width="${w}" height="${rh-4}" fill="${col}"/>`;
         x += w;
       });
       s += `<text x="${L+bw+6}" y="${yy+rh/2+3.5}" font-size="10.5" font-weight="700" fill="#5b6472">${Math.round(f.sold*100)}%</text>`;
     });
+  });
+  rows.forEach((r,i)=>{
+    const line = (yr,o,col) => {
+      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null;
+      if(!ok) return `<div><i style="background:${col}"></i>${yr} <span class="gvna">비교불가</span></div>`;
+      const pc = x => (x/o.plan*100).toFixed(1)+'%';
+      return `<div><i style="background:${col}"></i>${yr} 기획 <b>${fmtN(o.plan)}</b> · 입고 <b>${fmtN(o.qtyIn)}</b> · 판매 <b>${fmtN(o.sales)}</b></div>`
+           + `<div style="padding-left:13px;color:#cbd2de">판매 ${pc(o.sales)} · 재고 ${pc(o.qtyIn-o.sales)} · 미입고 ${pc(o.plan-o.qtyIn)}</div>`;
+    };
+    const tip = `<div class="tn">${gvEsc(r[0])} · 소진 구조 (기획 대비)</div>` + line('26FW', r[1] && r[1].c, GV_CUR) + line('25FW', r[1] && r[1].p, GV_PRV);
+    s += `<rect class="gvhit" x="0" y="${T + i*(2*rh+gp) - gp/2}" width="${W}" height="${2*rh+gp}" fill="transparent" data-tip="${gvAttr(tip)}"/>`;
   });
   const ay = H-14;
   for(let i=0;i<=2;i++){
@@ -786,6 +816,7 @@ function gvDeltaLine(rows, m){
 }
 
 function gvRender(){
+  const tp0 = document.getElementById('gvtip'); if(tp0) tp0.style.display = 'none';
   const views = gvViews();
   const lg = (col,t) => `<span><i style="background:${col}"></i>${t}</span>`;
   document.getElementById('gvhead').innerHTML =
@@ -851,6 +882,23 @@ function gvSet(on){
     });
     window.parent.postMessage({type:'gv-ready'}, '*');
   }
+  // 그래프 위에 마우스를 올리면 값 말풍선 (그룹 단위로 26FW · 25FW · 증감)
+  const tip = document.createElement('div');
+  tip.id = 'gvtip'; document.body.appendChild(tip);
+  const hide = () => { tip.style.display = 'none'; tip._src = null; };
+  gv.addEventListener('mousemove', e=>{
+    const t = e.target.closest && e.target.closest('[data-tip]');
+    if(!t){ hide(); return; }
+    if(tip._src!==t){ tip.innerHTML = t.getAttribute('data-tip'); tip._src = t; }
+    tip.style.display = 'block';
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    if(x + w > window.innerWidth - 6)  x = e.clientX - w - pad;
+    if(y + h > window.innerHeight - 6) y = e.clientY - h - pad;
+    tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px';
+  });
+  gv.addEventListener('mouseleave', hide);
+  window.addEventListener('scroll', hide, true);
   let rt = 0;
   window.addEventListener('resize', ()=>{ clearTimeout(rt); rt = setTimeout(()=>{ if(GV.on) gvRender(); }, 150); });
   if(location.hash==='#graph') gvSet(true);
