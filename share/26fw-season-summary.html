@@ -237,6 +237,28 @@
     background:var(--soft);border-radius:8px;padding:1px 6px}
   table.sum tr.srow th.nm.sub{padding-left:30px;font-weight:400;color:var(--sub)}
   table.sum tr.srow td,table.sum tr.srow th{background:#fafbfd}
+
+  /* ---------- 그래프로 보기 (전년 대비) ---------- */
+  #gview{margin:0}
+  #gview .gvbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;
+    position:sticky;top:0;z-index:8;background:var(--bg);padding:10px 0 8px}
+  #gview .gvt{font-size:13px;font-weight:800;margin-right:6px}
+  #gview .gvlg{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:11px;color:var(--sub);flex-wrap:wrap}
+  #gview .gvlg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  #gview .gvlg .rg{color:var(--muted)}
+  #gview .gvtwo{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:760px){#gview .gvtwo{grid-template-columns:1fr}}
+  #gview .gvcap{font-size:11px;font-weight:800;color:var(--sub);background:var(--soft);
+    border-radius:6px;padding:3px 8px;display:inline-block;margin:0 0 6px}
+  #gview .gvdl{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11.5px;color:var(--sub);margin-top:4px}
+  #gview .gvdl b{color:var(--ink);font-weight:700}
+  #gview .gvdl .dt{margin-left:3px;font-size:10.5px;font-weight:700}
+  #gview .gvdl .dt.up{color:var(--red)} #gview .gvdl .dt.down{color:var(--blue)}
+  #gview .gvna,#gview .gvz{color:#b4bbc7;margin-left:3px;font-size:10.5px}
+  #gview .gvnote{font-size:11px;color:var(--muted);margin:2px 2px 16px;line-height:1.6}
+  #gview svg{display:block;overflow:visible}
+  .chip.gvgo{margin-left:6px;border-color:var(--blue);color:var(--blue);font-weight:700}
+  .chip.gvgo:hover{background:var(--blue-soft)}
 </style>
 </head>
 <body>
@@ -623,6 +645,216 @@ document.querySelectorAll('#metrics .chip').forEach(b=>b.addEventListener('click
 }));
 
 renderSum();
+
+/* ---------- 그래프로 보기 (전년 대비) ----------
+   집계표와 같은 SUM 에서 바로 그린다 — 별도 데이터 없음, 표가 바뀌면 그래프도 같이 바뀐다.
+   26FW 대 25FW 동시점 고정. 시즌별·복종별을 한 번에 깔고, 첫 막대는 합계.
+   러닝 포함은 표의 러닝 행과 같은 값(시점재고 합산 칩도 표와 같은 RUNSTK 를 공유). */
+const GV = {on:false, run:false};
+const GV_ITEMS = ['OUTER','TOP','BOTTOM','ACC'];
+const GV_CUR = '#5b73a6', GV_PRV = '#9aa2ae';
+const GV_MET = [
+  {k:'plan',    t:'기획량',       s:'막대 · 물량 크기 비교',               f:'n'},
+  {k:'qtyIn',   t:'입고량',       s:'막대 · 물량 크기 비교',               f:'n'},
+  {k:'inRate',  t:'입고율',       s:'점 연결 · 전년에서 올해로 이동',       f:'r'},
+  {k:'sales',   t:'누계판매량',   s:'막대 · 물량 크기 비교',               f:'n'},
+  {k:'sellRate',t:'누계판매율',   s:'점 연결 · 전년에서 올해로 이동',       f:'r'},
+  {k:'salesAmt',t:'실판매금액',   s:'막대 · 금액 크기 비교 (단위 백만)',    f:'m'},
+  {k:'wkAmt',   t:'주간판매금액', s:'막대 · 금액 크기 비교 (단위 백만)',    f:'m'},
+];
+
+/* 시즌별·복종별 행 — 각 행은 [이름, {c: 26FW 값 객체, p: 25FW 값 객체 또는 null}] */
+function gvViews(){
+  const yr = fn => { const m = MODE; MODE = 'yr'; try{ return fn(); } finally{ MODE = m; } };
+  const b1 = (s,i) => SUM.block1.find(d=>d.mode==='new' && d.season===s && d.item===i);
+  const newTtl = SUM.block1.find(d=>d.kind==='신상품 TTL');
+  const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
+  const runIt  = i => SUM.runItem.find(d=>d.item===i);
+  const pair    = d => d ? {c:d.cur, p:d.py||null} : null;
+  const runPair = d => d ? {c:withStk(d), p:d.py||null} : null;
+  // 여러 행의 합 — 25FW 쪽은 구성요소 중 하나라도 값이 없으면 그 지표를 비운다(표의 합계 행과 같은 규칙)
+  const add = list => {
+    const ok = list.filter(Boolean);
+    if(!ok.length) return null;
+    return {c: sumRows(ok.map(x=>x.c)), p: yr(()=>cmpSum(ok.map(x=>({py:x.p}))))};
+  };
+  const run = GV.run;
+  const total = run ? add([pair(newTtl), runPair(runTtl)]) : pair(newTtl);
+  const bySeason = [['합계', total], ['가을', pair(b1('가을','TTL'))], ['겨울', pair(b1('겨울','TTL'))]];
+  if(run) bySeason.push(['러닝', runPair(runTtl)]);
+  const byItem = [['합계', total]].concat(GV_ITEMS.map(i=>{
+    const n = add([pair(b1('가을',i)), pair(b1('겨울',i))]);
+    return [i, run ? add([n, runPair(runIt(i))]) : n];
+  }));
+  return [{cap:'시즌별', rows:bySeason}, {cap:'복종별' + (run ? ' (러닝 포함)' : ' (신상품)'), rows:byItem}];
+}
+
+const gvVal = (o,m) => o ? valOf(o,{k:m.k}) : null;
+const gvFmt = (v,f) => v==null ? '-' : f==='r' ? fmtP1(v) : f==='m' ? fmtM(v) : fmtN(v);
+function gvDelta(c,p,f){
+  if(c==null || p==null) return '<span class="gvna">비교불가</span>';
+  if(f==='r'){
+    const d = (c-p)*100;
+    return Math.abs(d)<0.05 ? '<span class="gvz">-</span>'
+      : `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d).toFixed(1)}%p</span>`;
+  }
+  if(!p) return c ? '<span class="dt up">신규</span>' : '<span class="gvz">-</span>';
+  const d = (c/p-1)*100;
+  return Math.abs(d)<0.5 ? '<span class="gvz">-</span>'
+    : `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d).toFixed(0)}%</span>`;
+}
+function gvNice(max){
+  if(!(max>0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(max))), n = max/e;
+  return (n<=1 ? 1 : n<=2 ? 2 : n<=2.5 ? 2.5 : n<=5 ? 5 : 10) * e;
+}
+function gvTick(v,f){
+  if(f==='r') return Math.round(v*100)+'%';
+  if(f==='m'){ const x=v/1e6; return x>=10 ? String(Math.round(x)) : x.toFixed(1).replace(/\.0$/,''); }
+  return v>=1e4 ? (v/1e4).toFixed(1).replace(/\.0$/,'')+'만' : fmtN(v);
+}
+const gvEsc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* 막대(물량·금액) / 점 연결(비율) — 25FW 회색, 26FW 청색 */
+function gvChart(rows, m, W){
+  const H=176, L=42, R=6, T=10, B=24, n=rows.length, gw=(W-L-R)/n;
+  const cs = rows.map(r=>gvVal(r[1] && r[1].c, m)), ps = rows.map(r=>gvVal(r[1] && r[1].p, m));
+  const vals = cs.concat(ps).filter(v=>v!=null);
+  const max = Math.max(0, ...vals);
+  const top = m.f==='r' ? gvNice(max*100)/100 : gvNice(max);
+  const y = v => T + (H-T-B) * (1 - v/top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${m.t} 26FW와 25FW 동시점 비교">`;
+  for(let i=0;i<=4;i++){
+    const v=top*i/4, yy=y(v);
+    s += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="${i?'#eef0f4':'#d9dee7'}"/>`
+       + `<text x="${L-6}" y="${yy+3.5}" text-anchor="end" font-size="10" fill="#8b93a1">${gvTick(v,m.f)}</text>`;
+  }
+  rows.forEach((r,i)=>{
+    const cx = L + gw*(i+.5), c = cs[i], p = ps[i];
+    if(m.f==='r'){
+      if(c!=null && p!=null)
+        s += `<line x1="${cx}" x2="${cx}" y1="${y(p)}" y2="${y(c)}" stroke="#cfd6e4" stroke-width="3" stroke-linecap="round"/>`;
+      if(p!=null) s += `<circle cx="${cx}" cy="${y(p)}" r="5.5" fill="${GV_PRV}" stroke="#fff" stroke-width="2"><title>${gvEsc(r[0])} 25FW: ${gvFmt(p,m.f)}</title></circle>`;
+      if(c!=null) s += `<circle cx="${cx}" cy="${y(c)}" r="5.5" fill="${GV_CUR}" stroke="#fff" stroke-width="2"><title>${gvEsc(r[0])} 26FW: ${gvFmt(c,m.f)}</title></circle>`;
+    }else{
+      const bw = Math.min(20, gw*0.3), gap = 3;
+      [[p,GV_PRV,'25FW',-bw-gap/2],[c,GV_CUR,'26FW',gap/2]].forEach(([v,col,lb,dx])=>{
+        if(v==null) return;
+        const yy = y(v), h = Math.max(v>0?1:0, y(0)-yy);
+        s += `<rect x="${cx+dx}" y="${y(0)-h}" width="${bw}" height="${h}" rx="3" fill="${col}"><title>${gvEsc(r[0])} ${lb}: ${gvFmt(v,m.f)}</title></rect>`;
+      });
+    }
+    s += `<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="11" font-weight="${i?500:800}" fill="${i?'#5b6472':'#111827'}">${gvEsc(r[0])}</text>`;
+  });
+  return s + '</svg>';
+}
+
+/* 기획량 대비 소진 구조 — 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 (행마다 26FW, 25FW 두 줄) */
+function gvStack(rows, W){
+  const rh=19, gp=8, L=92, R=40, T=2, n=rows.length, H=T + n*(2*rh+gp) + 18, bw=W-L-R;
+  const seg = [['sold','#5b73a6'],['stock','#c3d0ea'],['un','#e4e7ed']];
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="기획량 대비 소진 구조">`;
+  rows.forEach((r,i)=>{
+    [['26FW', r[1] && r[1].c], ['25FW', r[1] && r[1].p]].forEach(([yr,o],j)=>{
+      const yy = T + i*(2*rh+gp) + j*rh;
+      s += `<text x="${L-8}" y="${yy+rh/2+3.5}" text-anchor="end" font-size="11" fill="${j?'#8b93a1':'#111827'}" font-weight="${j?400:700}">${gvEsc(r[0])} · ${yr}</text>`;
+      const ok = o && o.plan>0 && o.qtyIn!=null && o.qtyIn<=o.plan*1.0001 && o.sales!=null;
+      if(!ok){ s += `<text x="${L}" y="${yy+rh/2+3.5}" font-size="10.5" fill="#b4bbc7">비교불가</text>`; return; }
+      const f = {sold:o.sales/o.plan, stock:(o.qtyIn-o.sales)/o.plan, un:(o.plan-o.qtyIn)/o.plan};
+      let x = L;
+      seg.forEach(([k,col])=>{
+        const w = Math.max(0, bw*f[k]);
+        if(w>0) s += `<rect x="${x}" y="${yy+2}" width="${w}" height="${rh-4}" fill="${col}"><title>${gvEsc(r[0])} ${yr} ${k==='sold'?'누계판매':k==='stock'?'입고 재고':'미입고'}: ${(f[k]*100).toFixed(1)}%</title></rect>`;
+        x += w;
+      });
+      s += `<text x="${L+bw+6}" y="${yy+rh/2+3.5}" font-size="10.5" font-weight="700" fill="#5b6472">${Math.round(f.sold*100)}%</text>`;
+    });
+  });
+  const ay = H-14;
+  for(let i=0;i<=2;i++){
+    const x = L + bw*i/2;
+    s += `<text x="${x}" y="${ay+11}" text-anchor="${i==0?'start':i==2?'end':'middle'}" font-size="10" fill="#8b93a1">${i*50}%</text>`;
+  }
+  return s + '</svg>';
+}
+
+function gvDeltaLine(rows, m){
+  return '<div class="gvdl">' + rows.map(r=>{
+    const c = gvVal(r[1] && r[1].c, m), p = gvVal(r[1] && r[1].p, m);
+    return `<span>${gvEsc(r[0])} <b>${gvFmt(c,m.f)}</b>${gvDelta(c,p,m.f)}</span>`;
+  }).join('') + '</div>';
+}
+
+function gvRender(){
+  const views = gvViews();
+  const lg = (col,t) => `<span><i style="background:${col}"></i>${t}</span>`;
+  document.getElementById('gvhead').innerHTML =
+    `<button class="chip" id="gvBack">← 집계표</button>`
+    + `<span class="gvt">전년 대비 그래프</span>`
+    + `<button class="chip${GV.run?' on':''}" id="gvRun">${GV.run?'✓ ':'＋ '}러닝 ${GV.run?'포함':'제외'}</button>`
+    + (GV.run ? `<button class="stkbtn${RUNSTK?' on':''}" id="gvStk">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>` : '')
+    + `<span class="gvlg">${lg(GV_CUR,'26FW <span class="rg">'+RNG_CUR+'</span>')}${lg(GV_PRV,'25FW 동시점 <span class="rg">'+RNG_PREV+'</span>')}`
+    + `<span class="rg">증감: 수량·금액 %, 비율 %p</span></span>`;
+
+  const panel = (t, s, inner) => `<div class="panel"><h3>${t}</h3><div class="sub">${s}</div>${inner}</div>`;
+  const cols = (kind, m) => '<div class="gvtwo">' + views.map((v,i)=>
+    `<div><span class="gvcap">${v.cap}</span><div class="gvcol" data-v="${i}" data-kind="${kind}" data-m="${m ? m.k : ''}"></div></div>`).join('') + '</div>';
+  document.getElementById('gvbody').innerHTML =
+    GV_MET.map(m=>panel(m.t, m.s, cols('chart', m))).join('')
+    + panel('기획량 대비 소진 구조', '누적 막대 · 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 · 오른쪽 숫자 = 누계판매 비중',
+        `<div class="gvlg" style="margin:0 0 8px;justify-content:flex-start">${lg('#5b73a6','누계판매')}${lg('#c3d0ea','입고 재고')}${lg('#e4e7ed','미입고')}</div>` + cols('stack'))
+    + `<div class="gvnote">${GV.run
+        ? '러닝 포함: 26FW 러닝 ' + (RUNSTK ? '신품번 + 시점재고(26.07.31) 합산' : '신규 품번 기준') + ' 대 25FW 러닝(종합 시트 값 그대로). 기준이 달라 비교할 수 없는 칸은 "비교불가"로 둡니다.'
+        : '러닝 제외: 신상품(가을+겨울)만 집계하고, 합계 = 가을 + 겨울입니다.'} 값은 위 집계표와 같은 데이터입니다.</div>`;
+
+  document.querySelectorAll('#gview .gvcol').forEach(el=>{
+    const v = views[+el.dataset.v], W = Math.max(240, Math.floor(el.clientWidth));
+    if(el.dataset.kind==='stack'){ el.innerHTML = gvStack(v.rows, W); return; }
+    const m = GV_MET.find(x=>x.k===el.dataset.m);
+    el.innerHTML = gvChart(v.rows, m, W) + gvDeltaLine(v.rows, m);
+  });
+
+  document.getElementById('gvBack').onclick = () => gvSet(false);
+  document.getElementById('gvRun').onclick  = () => { GV.run = !GV.run; gvRender(); };
+  const stk = document.getElementById('gvStk');
+  if(stk) stk.onclick = () => { RUNSTK = !RUNSTK; renderSum(); gvRender(); };
+}
+
+function gvSet(on){
+  GV.on = on;
+  document.getElementById('metrics').style.display = on ? 'none' : '';
+  document.getElementById('panels').style.display  = on ? 'none' : '';
+  document.getElementById('gview').style.display   = on ? '' : 'none';
+  if(on) gvRender();
+  window.scrollTo(0,0);
+  if(window.parent!==window) window.parent.postMessage({type:'gv-state', on}, '*');
+}
+
+(function(){
+  const gv = document.createElement('div');
+  gv.id = 'gview'; gv.style.display = 'none';
+  gv.innerHTML = '<div class="gvbar" id="gvhead"></div><div id="gvbody"></div>';
+  document.getElementById('panels').after(gv);
+
+  // 단독으로 열었을 때(새 창)는 표 위 캡슐 줄에 버튼을 둔다. 공유파일 화면 안에서는 상단 머리줄의 버튼이 이 일을 한다.
+  if(window.parent===window){
+    const b = document.createElement('button');
+    b.className = 'chip gvgo'; b.textContent = '그래프로 보기';
+    b.onclick = () => gvSet(true);
+    document.querySelector('#metrics .chip[data-mode="yr"]').after(b);
+  }else{
+    // 공유파일 화면(index.html)의 '그래프로 보기' 버튼과 주고받는다
+    window.addEventListener('message', e=>{
+      if(e.source!==window.parent || !e.data) return;
+      if(e.data.type==='gv-toggle') gvSet(!GV.on);
+      if(e.data.type==='gv-ping')   window.parent.postMessage({type:'gv-ready'}, '*');
+    });
+    window.parent.postMessage({type:'gv-ready'}, '*');
+  }
+  let rt = 0;
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt = setTimeout(()=>{ if(GV.on) gvRender(); }, 150); });
+  if(location.hash==='#graph') gvSet(true);
+})();
 </script>
 </body>
 </html>
