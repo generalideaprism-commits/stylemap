@@ -1429,7 +1429,7 @@ if PY_RUN_INBOUND_WITH_CARRY and _stk25:
 # 판매가 쌓일수록 기획량이 줄어든다(101,408 -> 95,922 -> 84,433, 판매율 120%). 시트를 고치기 전까지 빌드에서
 # 공급 기준으로 다시 계산한다: 기획 = 시점재고(~25.07.31) 시트 '재고 전체'(러닝 행, 복종별) + 25FW 러닝 입고(AL, 7/31 이후 생산).
 # 판매율 = 누계 ÷ 기획, 입고율 = 입고 ÷ 기획. 시트 AI 수식을 같은 정의로 고치면 False 로 돌린다.
-PY_RUN_PLAN_SUPPLY = True
+PY_RUN_PLAN_SUPPLY = False   # 2026-10-26: 종합 시트 AI 수식을 같은 정의로 고침(7/31 시점재고 + 입고량 AL) — 시트 값 그대로
 if PY_RUN_PLAN_SUPPLY and _stk25:
     _ws = wb[_stk25]
     _h1 = [txt(v) for v in next(_ws.iter_rows(min_row=1, max_row=1, values_only=True))]
