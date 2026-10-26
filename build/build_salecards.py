@@ -169,6 +169,9 @@ GIFT_CAT, GIFT = '사은품', {}     # 사은품 스타일: 품번 -> 품명
 NAME_THEMES = {'온도업': '온도업'}   # 품명 접두어 -> 테마 (생판재 K열에 없는 테마 보강)
 # 품번으로 직접 빼는 스타일 (사용자 지시). 입고·판매가 있는 스타일은 기획만 빠지므로 빌드 로그 경고를 확인할 것
 EXCLUDE_CODES = {'GF3UJP011'}     # 2026-10-23 와플 후드집업
+# 실판매금액을 '판매수량 × 지정 단가'로 바로잡는 스타일 (ERP 판매금액이 TAG금액보다 크게 들어온 건, 사용자 지시)
+AMT_FIX = {'GF3LSA503': 65000}    # 2026-10-26 덤블 스티치 머플러: 7장 실판 565,540 > TAG 455,000 -> 65,000 기준
+AMT_FIX_DIFF = {}  # 품번 -> 시트 판매금액 - 고친 판매금액 (집계표에서 같은 만큼 뺀다)
 STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 시트 기준 값에서도 뺀다)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
@@ -196,6 +199,11 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         # 이 줄이 택가의 유일한 통로다 — 통합 카드 복사·집계도 전부 여기를 지난다.
         tag_erp, tag = tag, mdp_tag(code, tag)
         tag_amt, sale_amt = num(r[ST_['tag_amt']]), num(r[ST_['sale_amt']])
+        if code in AMT_FIX and is_main:
+            _qty_tot = num(r[ST_['tag_amt'] - 1]) or 0             # 판매(기간) 수량 (UP-TAG가금액 바로 왼쪽)
+            _fixed = _qty_tot * AMT_FIX[code]
+            AMT_FIX_DIFF[code] = {'tot': (sale_amt or 0) - _fixed, 'season': txt(r[ST_['season']]), 'cat': None}
+            sale_amt = _fixed
         # 이미지 폴더 후보: 품번 -> 러닝 시트 BR열 품번 -> 러닝 매핑표의 짝 품번 순으로 시도
         img_code = txt(r[ST_['img_code']]) if len(r) > ST_['img_code'] else ''
         cands = []
@@ -230,7 +238,8 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'multReal': round(real / cost / 1.1, 2) if real and cost else None,
             'tagAmt': tag_amt,
             'saleAmt': sale_amt,
-            'discount': (1 - sale_amt / tag_amt) if tag_amt else None,
+            # 판매금액 칸이 비는 행이 있다(261026 월레스 키링 GF4UET409·410: 수량·TAG금액만 있고 판매금액 공란)
+            'discount': (1 - sale_amt / tag_amt) if tag_amt and sale_amt is not None else None,
             'line': '메인' if is_main else '러닝',
             'colors': [], 'inDate': '', 'outDate': '',
         })
@@ -443,7 +452,7 @@ for g, members in groups.items():
     p['altStyle'] = g
     for f in ('tagAmt', 'saleAmt'):
         p[f] = (p[f] or 0) + (sub[f] or 0) if (p[f] or sub[f]) else None
-    p['discount'] = (1 - p['saleAmt'] / p['tagAmt']) if p['tagAmt'] else None
+    p['discount'] = (1 - p['saleAmt'] / p['tagAmt']) if p['tagAmt'] and p['saleAmt'] is not None else None
     p['arrived'] = '입고' if p['ttl']['qtyIn'] > 0 else '미입고'
     for key, fld in (('_in', 'inDate'), ('_out', 'outDate')):
         if sub.get(key) and (p.get(key) is None or sub[key] < p[key]):
@@ -1286,6 +1295,59 @@ for _name in ('seasonCat', 'newCat', 'genderCat'):
 if GIFT or _gn:
     print('사은품 제외: 카드 %d건(%s) · 집계표 사은품 행을 상위 합계에서 뺌' % (len(GIFT), ', '.join('%s %s' % kv for kv in GIFT.items())))
 
+# ---- 실판매금액 보정 (AMT_FIX) ----
+def _amt_sub(row, d_tot, d_wk):
+    if not row:
+        return
+    if row.get('salesAmt') is not None:
+        row['salesAmt'] -= d_tot
+    if row.get('wkAmt') is not None and d_wk:
+        row['wkAmt'] -= d_wk
+    row['disc'] = 1 - (row.get('salesAmt') or 0) / row['salesTag'] if row.get('salesTag') else None
+    if row.get('salesCost'):
+        row['muReal'] = round((row.get('salesAmt') or 0) / row['salesCost'] / 1.1, 2)
+
+
+if AMT_FIX_DIFF:
+    _ws = wb[ST_MAIN]
+    _st = st_cols(_ws)
+    _h1 = [txt(v) for v in next(_ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+    _iWk = _h1.index('판매(최근)')
+    for _r in _ws.iter_rows(min_row=4, values_only=True):
+        _code = txt(_r[_st['style']]) if len(_r) > _st['style'] else ''
+        if _code not in AMT_FIX_DIFF:
+            continue
+        _d = AMT_FIX_DIFF[_code]
+        _d['wk'] = (num(_r[_iWk + 2]) or 0) - (num(_r[_iWk]) or 0) * AMT_FIX[_code]   # 판매(최근) 판매금액 - 수량×단가
+    for _code, _d in AMT_FIX_DIFF.items():
+        _cat = _code[4:6]
+        _g = '여성' if _code[3] == 'L' else '남성'
+        _grp = next((x['item'] for x in SUM['newCat'] if x.get('code') == _cat), '')
+        _grpB = 'ACC' if _grp.startswith('ACC') else _grp
+        _se = _d['season']
+        for _b in SUM['block1']:
+            if (_b['mode'] == 'new' and ((_b['season'] == _se and _b['item'] == _grpB and _b.get('kind') == '항목')
+                                         or _b.get('kind') in ('%s TTL' % _se, '신상품 TTL'))) or _b.get('kind') == '전체 TTL':
+                _amt_sub(_b['cur'], _d['tot'], _d.get('wk', 0))
+        for _n in SUM['newItem']:
+            if _n['item'] in (_grp, 'TOTAL'):
+                _amt_sub(_n, _d['tot'], _d.get('wk', 0))
+        for _x in SUM['newCat']:
+            if _x.get('code') == _cat:
+                _amt_sub(_x, _d['tot'], _d.get('wk', 0))
+        for _x in SUM['seasonCat']:
+            if _x.get('code') == _cat and _x['season'] == _se:
+                _amt_sub(_x, _d['tot'], _d.get('wk', 0))
+        _gub = ''
+        for _x in SUM['genderCat']:
+            if _x['gender'] == _g and _x.get('code') == _cat:
+                _gub = _x['item']
+                _amt_sub(_x, _d['tot'], _d.get('wk', 0))
+        for _x in SUM['genderItem']:
+            if _x['gender'] == _g and (_x['item'] == 'TOTAL' or (_gub and (_gub.startswith(_x['item']) or _x['item'].startswith(_gub)))):
+                _amt_sub(_x, _d['tot'], _d.get('wk', 0))
+        print('실판매금액 보정: %s %s원 기준 — 누계 %+d원 · 주간 %+d원' % (_code, AMT_FIX[_code], -_d['tot'], -_d.get('wk', 0)))
+
 # ---- 25FW 동시점에서 빼는 품번 ----
 # 25FW 사은품이 기타액세서리로 들어와 전년 입고가 5만 장 부풀었다(QBE3U98007 드레스퍼퓸, 사용자 확인 2026-10-06).
 # '전년비교BACK(~동시점,생판재)' 시트에서 해당 품번 행을 읽어 25FW(py) 상위 합계에서 뺀다. 26FW 쪽은 건드리지 않는다.
@@ -1361,6 +1423,33 @@ if PY_RUN_INBOUND_WITH_CARRY and _stk25:
         _n += 1
     # runItem 의 py 는 block1 의 같은 dict 를 가리키므로 따로 더하지 않는다
     print('25FW 러닝 입고 이월 포함: 시점재고(~25.07.31) %s 를 복종별로 더함 (%d행)' % (dict(_carry), _n))
+
+# ---- 25FW 러닝 기획량 = 25.07.31 시점재고 + 이후 생산 (사용자 지시 2026-10-26, 안 ①) ----
+# 종합 시트 AI19/AI20 은 기획 열이 아니라 재고 열(BACK BN '재고 전체' − 시점재고 BN '재고 채널')을 더하고 있어
+# 판매가 쌓일수록 기획량이 줄어든다(101,408 -> 95,922 -> 84,433, 판매율 120%). 시트를 고치기 전까지 빌드에서
+# 공급 기준으로 다시 계산한다: 기획 = 시점재고(~25.07.31) 시트 '재고 전체'(러닝 행, 복종별) + 25FW 러닝 입고(AL, 7/31 이후 생산).
+# 판매율 = 누계 ÷ 기획, 입고율 = 입고 ÷ 기획. 시트 AI 수식을 같은 정의로 고치면 False 로 돌린다.
+PY_RUN_PLAN_SUPPLY = True
+if PY_RUN_PLAN_SUPPLY and _stk25:
+    _ws = wb[_stk25]
+    _h1 = [txt(v) for v in next(_ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+    _h2 = [txt(v) for v in next(_ws.iter_rows(min_row=2, max_row=2, values_only=True))]
+    _iG = _h2.index('품목')
+    _iStk = next(i for i in range(_h1.index('재고'), len(_h2)) if _h2[i] == '전체')
+    _stock = _dd(float)
+    for _r in _ws.iter_rows(min_row=4, values_only=True):
+        if len(_r) > _iStk and txt(_r[0]) == '러닝':
+            _g = txt(_r[_iG]).upper()
+            _stock['TOP' if _g.startswith(('KNIT', 'INNER')) else BOKMAP.get(_g, 'ACC')] += num(_r[_iStk]) or 0
+    for _b in SUM['block1']:
+        if _b['mode'] != 'run' or not _b.get('py') or _b.get('kind') == '전체 TTL':
+            continue
+        _py = _b['py']
+        _st = _stock.get(_b['item'], 0) if _b.get('kind') == '항목' else sum(_stock.values())
+        _py['plan'] = _st + (_py.get('qtyIn') or 0)
+        _py['sellRate'] = (_py.get('sales') or 0) / _py['plan'] if _py['plan'] else None
+        _py['inRate'] = (_py.get('qtyIn') or 0) / _py['plan'] if _py['plan'] else None
+    print('25FW 러닝 기획량 = 7/31 시점재고 %s + 이후 생산 (시트 AI 수식 대체)' % dict(_stock))
 
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
