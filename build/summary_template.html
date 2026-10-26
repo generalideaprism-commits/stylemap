@@ -255,6 +255,17 @@
   #gview .gvdl .dt{margin-left:3px;font-size:10.5px;font-weight:700}
   #gview .gvdl .dt.up{color:var(--red)} #gview .gvdl .dt.down{color:var(--blue)}
   #gview .gvna,#gview .gvz{color:#b4bbc7;margin-left:3px;font-size:10.5px}
+  #gview .gvsum ol{margin:0;padding:0;list-style:none}
+  #gview .gvsum li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:13px;line-height:1.6;
+    border-top:1px solid #f1f3f7}
+  #gview .gvsum li:first-child{border-top:0}
+  #gview .gvsum .no{flex:none;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;
+    font-size:11px;font-weight:800;text-align:center;line-height:20px;margin-top:2px}
+  #gview .gvsum b{font-weight:800}
+  #gview .gvsum .dt{font-weight:800}
+  #gview .gvsum .dt.up{color:var(--red)} #gview .gvsum .dt.down{color:var(--blue)}
+  #gview .gvsum .sb{color:var(--muted);font-size:11.5px}
+  #gview .gvsum .gvna,#gview .gvsum .gvz{color:var(--muted);margin-left:2px}
   #gview .gvnote{font-size:11px;color:var(--muted);margin:2px 2px 16px;line-height:1.6}
   #gview svg{display:block;overflow:visible}
   #gview .gvhit:hover{fill:rgba(91,115,166,.09)}
@@ -828,6 +839,61 @@ function gvDeltaLine(rows, m){
   }).join('') + '</div>';
 }
 
+/* 주간회의용 핵심 3줄 — 집계표 데이터에서 자동 생성.
+   ① 이번 주 판매금액 (전주·전년 동주 대비, 가을·겨울·러닝별)  ② 누계 실판매금액·판매율 (전년 동시점 대비)
+   ③ 복종별로 전주보다 가장 많이 줄고 늘어난 곳.
+   전주 값(was)에는 러닝 시점재고가 없어서 주간 비교(①③)의 러닝은 시점재고를 얹기 전 기획분 기준이다. */
+function gvSummary(){
+  const b1 = (s,i) => SUM.block1.find(d=>d.mode==='new' && d.season===s && d.item===i);
+  const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
+  const runIt  = i => SUM.runItem.find(d=>d.item===i);
+  const wk = o => (o && o.wkAmt!=null) ? o.wkAmt : null;
+  const trip = d => d ? {c:wk(d.cur||d), w:wk(d.was), p:wk(d.py)} : {c:null,w:null,p:null};
+  const sum3 = list => {
+    const r = {c:0,w:0,p:0};
+    ['c','w','p'].forEach(k=>{ r[k] = list.every(x=>x[k]!=null) ? list.reduce((s,x)=>s+x[k],0) : null; });
+    return r;
+  };
+  const mm = v => (v/1e6).toFixed(1) + '백만';
+  const pct = (c,b) => {
+    if(c==null || b==null || !b) return '<span class="gvna">비교불가</span>';
+    const d = (c/b-1)*100;
+    return Math.abs(d)<0.05 ? '<span class="gvz">-</span>'
+      : `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d).toFixed(1)}%</span>`;
+  };
+  const amt = d => `<span class="dt ${d>0?'up':'down'}">${d>0?'▲':'▼'}${mm(Math.abs(d))}</span>`;
+
+  // ① 이번 주 판매금액
+  const parts = [['가을', trip(b1('가을','TTL'))], ['겨울', trip(b1('겨울','TTL'))]];
+  if(GV.run) parts.push(['러닝', trip(runTtl)]);
+  const tot = sum3(parts.map(x=>x[1]));
+  const l1 = `<b>이번 주 판매 ${tot.c==null?'-':mm(tot.c)}</b> — 전주 대비 ${pct(tot.c,tot.w)} · 전년 동주 대비 ${pct(tot.c,tot.p)}`
+    + ` <span class="sb">(전주 대비 ${parts.map(([n,x])=>n+' '+(Math.max(x.c||0,x.w||0)<5e6 ? '<span class="sb">소액(5백만 미만)</span>' : pct(x.c,x.w))).join(' · ')}${GV.run&&GV.stk?' · 러닝은 시점재고 제외 기준':''})</span>`;
+
+  // ② 누계 실판매금액·판매율 (그래프와 같은 기준: 러닝·시점재고 토글 반영)
+  const row = gvViews()[0].rows[0][1];
+  const mAmt = GV_MET.find(m=>m.k==='salesAmt'), mRate = GV_MET.find(m=>m.k==='sellRate');
+  const ca = gvVal(row && row.c, mAmt), pa = gvVal(row && row.p, mAmt);
+  const cr = gvVal(row && row.c, mRate), pr = gvVal(row && row.p, mRate);
+  const l2 = `<b>누계 판매 ${ca==null?'-':mm(ca)}</b> — 전년 동시점 대비 ${pct(ca,pa)} · 누계판매율 <b>${gvFmt(cr,'r')}</b>`
+    + (pr!=null ? ` (전년 ${gvFmt(pr,'r')}, ${(cr-pr)>=0?'▲':'▼'}${Math.abs((cr-pr)*100).toFixed(1)}%p)` : ' <span class="sb">(전년 판매율은 비교불가)</span>');
+
+  // ③ 복종별 전주 대비 증감 — 가장 많이 줄어든 곳 / 늘어난 곳
+  const items = GV_ITEMS.map(i=>{
+    const x = sum3([trip(b1('가을',i)), trip(b1('겨울',i))].concat(GV.run ? [trip(runIt(i))] : []));
+    return {n:i, c:x.c, w:x.w, d:(x.c!=null && x.w!=null) ? x.c-x.w : null};
+  }).filter(x=>x.d!=null);
+  let l3 = '<b>복종별 변화</b> — 전주 대비 판매금액 증감을 계산할 수 없습니다';
+  if(items.length){
+    const dn = items.reduce((a,x)=>x.d<a.d?x:a), up = items.reduce((a,x)=>x.d>a.d?x:a);
+    const one = x => `<b>${x.n}</b> ${amt(x.d)}(${pct(x.c,x.w)})`;
+    l3 = '<b>복종별 변화</b> — 전주보다 '
+      + (dn.d<0 ? `가장 많이 줄어든 복종은 ${one(dn)}` : '줄어든 복종 없음')
+      + ' · ' + (up.d>0 ? `가장 많이 늘어난 복종은 ${one(up)}` : '늘어난 복종 없음');
+  }
+  return [l1,l2,l3];
+}
+
 function gvRender(){
   const tp0 = document.getElementById('gvtip'); if(tp0) tp0.style.display = 'none';
   const views = gvViews();
@@ -843,8 +909,11 @@ function gvRender(){
   const panel = (t, s, inner) => `<div class="panel"><h3>${t}</h3><div class="sub">${s}</div>${inner}</div>`;
   const cols = (kind, m) => '<div class="gvtwo">' + views.map((v,i)=>
     `<div><span class="gvcap">${v.cap}</span><div class="gvcol" data-v="${i}" data-kind="${kind}" data-m="${m ? m.k : ''}"></div></div>`).join('') + '</div>';
+  const sum = gvSummary();
   document.getElementById('gvbody').innerHTML =
-    GV_MET.map(m=>panel(m.t, m.s, cols('chart', m))).join('')
+    `<div class="panel gvsum"><h3>이번 주 핵심 3줄</h3><div class="sub">집계표 데이터에서 자동으로 만든 요약 · 주간회의용</div><ol>`
+      + sum.map((s,i)=>`<li><span class="no">${i+1}</span><span>${s}</span></li>`).join('') + `</ol></div>`
+    + GV_MET.map(m=>panel(m.t, m.s, cols('chart', m))).join('')
     + panel('기획량 대비 소진 구조', '누적 막대 · 기획 100% 중 누계판매 / 입고 후 재고 / 미입고 · 오른쪽 숫자 = 누계판매 비중',
         `<div class="gvlg" style="margin:0 0 8px;justify-content:flex-start">${lg(GV_PAL[0].sold,'26FW 누계판매')}${lg(GV_PAL[0].stock,'26FW 입고 재고')}${lg(GV_PAL[1].sold,'25FW 누계판매')}${lg(GV_PAL[1].stock,'25FW 입고 재고')}${lg(GV_PAL[0].un,'미입고')}</div>` + cols('stack'))
     + `<div class="gvnote">${GV.run
