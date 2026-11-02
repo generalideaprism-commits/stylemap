@@ -150,11 +150,7 @@ if '26FW 러닝스타일 리스트' in wb.sheetnames:
             run_group[old], run_group[new] = new, new
 # 러닝 시트는 판에 따라 전 브랜드 덤프(260914 PT2: 1,594 스타일)로 오기도 하므로 리스트 품번으로 한정한다
 run_codes = set(run_group)
-# 구품번 짝이 없는 신규 러닝 품번 — 리스트 시트에 없어도 카드로 만든다 (2026-11-02 MD '러닝리스트에 넣어')
-RUN_EXTRA_CODES = {'GF8LKP534'}   # 헤어리 스트라이프 루즈핏 풀오버 (겨울 러닝, 10/30 초입고)
-for _c in RUN_EXTRA_CODES:
-    run_group.setdefault(_c, _c)
-    run_codes.add(_c)
+# 리스트 시트에 없는 러닝 품번을 임시로 넣던 RUN_EXTRA_CODES 는 GF8LKP534 가 리스트(WBE4L05534 짝)에 들어가 치웠다 (2026-11-02)
 
 
 def mdp_tag(code, sheet_tag):
