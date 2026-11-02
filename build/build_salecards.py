@@ -81,12 +81,12 @@ def C(letter):
 ST = dict(season=C('D'), gender=C('E'), item=C('F'), item2=C('H'), theme=C('K'), style=C('M'), name=C('N'),
           vendor=C('P'), real=C('Y'), tag=C('Z'), cost=C('AA'),
           tag_amt=C('BH'), sale_amt=C('BI'), img_code=C('BR'),
-          plan_qty=C('AG'))                      # 기획 수량
+          plan_qty=C('AG'), plan0=C('AJ'))      # 기획 수량 / 최초기획 수량 (집계 기준은 최초기획, 2026-11-02)
 # CO 시트 열
 CO = dict(style=C('K'), color=C('M'), cname=C('N'), plan=C('R'),
           in_date=C('U'), qty_in=C('V'), out_date=C('Y'),
           w1=C('CE'), w2=C('CD'), total=C('CG'), rate=C('CH'), grp=C('CU'),
-          plan0=C('S'), plan_re=C('T'), in_re=C('X'))   # 최초기획 / 리오더기획 / 리오더입고
+          plan0=C('S'), plan_re=C('T'), in0=C('W'), in_re=C('X'))   # 최초기획 / 리오더기획 / 기획입고 / 리오더입고
 
 
 def cols_by_label(ws, base):
@@ -218,7 +218,7 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
         # EXCLUDE_CODES 는 품번으로 직접 지정한 제외 스타일 (같은 경로로 기획 ST수·SKU·기획량까지 뺀다)
         if txt(r[ST_['name']]).startswith('*') or code in EXCLUDE_CODES:
             STAR[code] = {'season': txt(r[ST_['season']]).replace('(러닝)', '').strip(), 'name': txt(r[ST_['name']]),
-                          'plan': num(r[ST_['plan_qty']]) if len(r) > ST_['plan_qty'] else None, 'main': is_main}
+                          'plan': num(r[ST_['plan0']]) if len(r) > ST_['plan0'] else None, 'main': is_main}
             continue
         season = txt(r[ST_['season']]).replace('(러닝)', '').strip()
         tag, cost, real = num(r[ST_['tag']]), num(r[ST_['cost']]), num(r[ST_['real']])
@@ -344,7 +344,7 @@ for co_sheet in (CO_MAIN, CO_RUN):
             'color': txt(r[co['color']]),
             'cname': txt(r[co['cname']]),
             'plan': num(r[co['plan']]),
-            'plan0': num(r[co['plan0']]), 'planRe': num(r[co['plan_re']]), 'inRe': num(r[co['in_re']]),
+            'plan0': num(r[co['plan0']]), 'planRe': num(r[co['plan_re']]), 'inRe': num(r[co['in_re']]), 'in0': num(r[co['in0']]),
             'qtyIn': num(r[co['qty_in']]),
             'w1': num(r[w1i]) if len(r) > w1i else None,
             'w2': num(r[w2i]) if len(r) > w2i else None,
@@ -432,12 +432,13 @@ CO_SPLIT = {(code, c['color']): (c.get('plan0'), c.get('planRe'), c.get('inRe'))
 # CO 시트의 작지(R) = 최초기획(S) + 리오더기획(T) 이다. 러닝 카드와 같은 방식으로
 # 본 카드는 최초 기획만 보여 주고, 클릭하면 리오더 기획을 합산한 팝업을 띄운다.
 for code, s in styles.items():
-    re_qty = sum(c.get('planRe') or 0 for c in s['colors']) if code in main_codes else 0
+    re_qty = sum(c.get('planRe') or 0 for c in s['colors'])      # 러닝도 같이 본다 (2026-11-02: 기획=최초기획으로 통일)
     s['reorder'] = 'O' if re_qty > 0 else 'X'
     for c in s['colors']:
-        c['_p0'], c['_pr'], c['_ir'] = c.pop('plan0', None), c.pop('planRe', None), c.pop('inRe', None)
+        c['_p0'], c['_pr'], c['_ir'], c['_i0'] = c.pop('plan0', None), c.pop('planRe', None), c.pop('inRe', None), c.pop('in0', None)
+    full = s['ttl']
+    s['ttlFull'] = {'plan': full['plan'], 'qtyIn': full['qtyIn']}      # 작지·전체입고 (차수 대조·러닝 현재고 팝업용)
     if re_qty > 0:
-        full = s['ttl']
         s['re'] = {'stat': {'plan0': sum(c['_p0'] or 0 for c in s['colors']), 'planRe': re_qty,
                             'plan': full['plan'], 'qtyIn': full['qtyIn'],
                             'inRe': sum(c['_ir'] or 0 for c in s['colors']),
@@ -446,11 +447,20 @@ for code, s in styles.items():
                                'planRe': c['_pr'] or 0, 'plan': c['plan'], 'qtyIn': c['qtyIn'],
                                'w1': c['w1'], 'w2': c['w2'], 'total': c['total'], 'rate': c['rate']}
                               for c in s['colors']]}
-        for c in s['colors']:
-            c['plan'] = c['_p0'] if c['_p0'] is not None else c['plan']
-        s['ttl'] = calc_ttl(s['colors'])
+    # 카드·집계 기준 = 최초기획 / 기획입고 — 리오더 기획·리오더 입고는 뺀다 (2026-11-02 MD, 종합 시트 I·L·BJ·BM열과 동일 정의)
+    # 판매·재고는 나눌 수 없으니 전체 그대로 → 판매율은 '최초입고 대비'가 된다. 전체값은 planFull/qtyInFull 에 남긴다.
     for c in s['colors']:
-        for k in ('_p0', '_pr', '_ir'):
+        c['planFull'], c['qtyInFull'] = c['plan'], c['qtyIn']
+        if c['_p0'] is not None:
+            c['plan'] = c['_p0']
+        if c['_i0'] is not None:                      # CO 기획입고 열 그대로 (입고 − 리오더입고 와 수십 장 다를 수 있어 열을 직접 쓴다)
+            c['qtyIn'] = c['_i0']
+        elif c['_ir']:
+            c['qtyIn'] = (c['qtyIn'] or 0) - c['_ir']
+        c['rate'] = (c['total'] / c['qtyIn'] * 100) if c['qtyIn'] and c.get('total') is not None else c.get('rate')
+    s['ttl'] = calc_ttl(s['colors'])
+    for c in s['colors']:
+        for k in ('_p0', '_pr', '_ir', '_i0'):
             c.pop(k, None)
 
 # ---- CU열 기준 품번 통합 (기존품번 + 러닝 신규품번) ----
@@ -535,7 +545,8 @@ for s in data:
         continue
     sub = s['sub'] if s.get('sub') else s          # 신규품번 (짝 없는 GF7 단독 카드는 자기 자신)
     tt = sub['ttl']
-    new_in = tt['qtyIn'] or 0
+    ttF = sub.get('ttlFull') or tt                  # 현재고(보유) 개념이라 리오더입고까지 포함한 전체값을 쓴다
+    new_in = ttF['qtyIn'] or 0
     codes = [s['style']] + s['imgCodes']
     base_code = next((c for c in codes if c in point_stock), None)
     base = point_stock.get(base_code, 0)
@@ -543,7 +554,7 @@ for s in data:
     # 현재고 기준 판매: 구품번의 8/1 이후 판매 + 신규품번 누계판매
     run_sales = ((s.get('augSales') or 0) if s.get('sub') else 0) + (tt['total'] or 0)
     s['stock'] = stock
-    stat = {'base': base, 'addPlan': tt['plan'] or 0, 'newIn': new_in,
+    stat = {'base': base, 'addPlan': ttF['plan'] or 0, 'newIn': new_in,
             'stock': stock, 'sales': run_sales,
             'rate': (run_sales / stock * 100) if stock else None}
     # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규 기획량,
@@ -555,11 +566,11 @@ for s in data:
     for sc in sub['colors']:
         mc = next((c for c in merged_colors if c['color'] == sc['color']), None) or sc
         base_c = point_stock_color.get((base_code, sc['color']), 0) if base_code else 0
-        in_c = sc['qtyIn'] or 0
+        in_c = sc.get('qtyInFull', sc['qtyIn']) or 0
         stock_c = base_c + in_c
         tot = mc.get('aug') or 0
         prows.append({'color': sc['color'], 'cname': sc['cname'],
-                      'plan': base_c + (sc['plan'] or 0), 'qtyIn': stock_c,
+                      'plan': base_c + (sc.get('planFull', sc['plan']) or 0), 'qtyIn': stock_c,
                       'w1': mc.get('w1'), 'w2': mc.get('w2'),
                       'total': tot, 'rate': (tot / stock_c * 100) if stock_c else None})
     # 26FW 미진행 컬러(구품번에서만 진행, 시점재고만 있음): 기획 = 입고 = 시점재고, 판매는 구품번 8/1 이후
@@ -573,7 +584,7 @@ for s in data:
                       'plan': base_c, 'qtyIn': base_c,
                       'w1': mc.get('w1'), 'w2': mc.get('w2'),
                       'total': tot, 'rate': (tot / base_c * 100) if base_c else None})
-    stat['plan'] = base + (tt['plan'] or 0)          # 컬러 표 TTL 기획 = 기초재고 + 추가 기획량
+    stat['plan'] = base + (ttF['plan'] or 0)         # 컬러 표 TTL 기획 = 기초재고 + 추가 기획량(리오더 포함)
     stat['colorBase'] = bool(base_code) and any(k[0] == base_code for k in point_stock_color)
     s['popup'] = {'stat': stat, 'colors': prows}
     # 차수 분해용 이월재고(구품번 7/31 시점재고) — 컬러별 시점재고와 구품번 8/1~ 판매(구 = 합산 aug − 신규 aug)
@@ -628,7 +639,7 @@ if INTAKE_ROWS:
             if p0 is None:
                 p0 = (c.get('plan') or 0) - (pr or 0)
             cols.append({'color': c['color'], 'cname': c['cname'], 'p0': int(p0 or 0), 'pr': int(pr or 0), 'ir': int(ir or 0),
-                         'qtyIn': int(c['qtyIn'] or 0), 'total': int(c['total'] or 0)})
+                         'qtyIn': int(c.get('qtyInFull', c['qtyIn']) or 0), 'total': int(c['total'] or 0)})
         base = LOTS_RUN.get(s['style']) if is_run and s.get('popup') else None
         try:
             res = LOTMOD.make_lots(key, cols, INTAKE_ROWS, _lot_today, base=base, first_in_date=s.get('inDate') or '')
@@ -639,7 +650,7 @@ if INTAKE_ROWS:
         # 합계 대조 — 입고·판매 합이 카드(러닝은 팝업 현재고·판매)와 같아야 한다
         in_sum = sum(L['recv'] for L in lots)
         sold_sum = sum(L['sold'] for L in lots)
-        in_card = s['popup']['stat']['stock'] if base is not None else (s['ttl']['qtyIn'] or 0)
+        in_card = s['popup']['stat']['stock'] if base is not None else ((s.get('ttlFull') or s['ttl'])['qtyIn'] or 0)
         sold_card = s['popup']['stat']['sales'] if base is not None else (s['ttl']['total'] or 0)
         if abs(in_sum - in_card) > 0.5 or abs(sold_sum - sold_card) > 0.5:
             # 합이 카드와 다르면 화면에 다른 숫자를 보이느니 이 카드는 차수 정보를 빼고 옛 팝업으로 둔다
