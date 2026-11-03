@@ -1126,6 +1126,71 @@
    "src": "UNI/26FW/26FW_2차/GF7MPT006/BK/제품컷/general idea29702.jpg",
    "kind": "제품컷",
    "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF7MPT006"
+  },
+  "GF3LSS510": {
+   "file": "img_override/GF3LSS510.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 446, 560]"
+  },
+  "GF3LKP526": {
+   "file": "img_override/GF3LKP526.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 302, 421]"
+  },
+  "GF3LKP527": {
+   "file": "img_override/GF3LKP527.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 318, 467]"
+  },
+  "GF3LKP528": {
+   "file": "img_override/GF3LKP528.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 228, 301]"
+  },
+  "GF3LKP530": {
+   "file": "img_override/GF3LKP530.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 411, 555]"
+  },
+  "GF3LPT510": {
+   "file": "img_override/GF3LPT510.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 414, 560]"
+  },
+  "GF3LPT513": {
+   "file": "img_override/GF3LPT513.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 203, 339]"
+  },
+  "GF3LSK508": {
+   "file": "img_override/GF3LSK508.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [6, 8, 284, 426]"
+  },
+  "GF3LSK509": {
+   "file": "img_override/GF3LSK509.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [53, 0, 328, 422]"
+  },
+  "GF3LSK510": {
+   "file": "img_override/GF3LSK510.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 315, 404]"
+  },
+  "GF3LET502": {
+   "file": "img_override/GF3LET502.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 560, 420]"
+  },
+  "GF4LCT527": {
+   "file": "img_override/GF4LCT527.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → MDP 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 7, 214, 289]"
+  },
+  "GF4UCP015": {
+   "file": "img_override/GF4UCP015.jpg",
+   "kind": "제품컷(MDP 정리)",
+   "note": "2026-11-03 NAS 제품컷 없음 → 현재 사진을 NAS 제품컷 프레이밍(540x720, 제품 높이 55%, 배경 #e9e9e9, 가장자리 페더)으로 정리. 원본 bbox [0, 0, 420, 508]"
   }
  }
 }
