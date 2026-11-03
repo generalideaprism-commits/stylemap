@@ -928,14 +928,14 @@
    "note": "자동 선별 프레임 0/3 · 폴더 UNI\\월레스\\GF4UET408"
   },
   "GF4UET409": {
-   "src": "UNI/월레스/GF4UET409/MT/제품컷/general idea30049.png",
+   "file": "img_override/GF4UET409.jpg",
    "kind": "제품컷",
-   "note": "자동 선별 프레임 0/5 · 폴더 UNI\\월레스\\GF4UET409"
+   "note": "2026-11-03 사용자 제공 이미지(박스+양말 3족 세트컷)로 교체 — NAS UNI/월레스 폴더 대신 build/img_override 파일 사용"
   },
   "GF4UET410": {
-   "src": "UNI/월레스/GF4UET410/MT/제품컷/general idea30049.jpg",
+   "file": "img_override/GF4UET410.jpg",
    "kind": "제품컷",
-   "note": "자동 선별 프레임 0/5 · 폴더 UNI\\월레스\\GF4UET410"
+   "note": "2026-11-03 사용자 제공 이미지(박스+양말 3족 세트컷)로 교체 — NAS UNI/월레스 폴더 대신 build/img_override 파일 사용"
   },
   "GF4UET412": {
    "src": "UNI/월레스/GF4UET412/BE/제품컷/general idea29819.jpg",
