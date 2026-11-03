@@ -736,7 +736,8 @@ if os.path.exists(_nas_path):
             continue
         name = s['style'].upper() + '.jpg'
         path = os.path.join(IMG_DIR, name)
-        src = _root + '/' + ent['src']
+        # 'file' = build/ 기준 로컬 파일(사용자 제공 이미지 등) · 'src' = NAS root 기준 경로
+        src = os.path.join(HERE, ent['file']) if ent.get('file') else _root + '/' + ent['src']
         if os.path.exists(src):
             try:
                 from PIL import Image, ImageOps

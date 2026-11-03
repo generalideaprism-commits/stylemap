@@ -573,9 +573,9 @@
    "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UTS003"
   },
   "GF3USH001": {
-   "src": "UNI/26FW/26FW_1차/GF3USH001/M/GN/제품컷/제네럴아이디어_73541_.png",
+   "file": "img_override/GF3USH001.jpg",
    "kind": "제품컷",
-   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3USH001"
+   "note": "2026-11-03 사용자 제공 이미지(보정본 정면)로 교체 — NAS UNI/26FW_1차/GF3USH001/M/GN/제품컷 대신 build/img_override 파일 사용"
   },
   "GF3USH002": {
    "src": "UNI/26FW/26FW_1차/GF3USH002/M/CH/제품컷/제네럴아이디어_73537.jpg",
