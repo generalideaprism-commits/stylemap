@@ -1,71 +1,1131 @@
 {
  "root": "//DiskStation/촬영사진",
- "note": "Supabase·도식화에 없는 카드의 NAS 제품 정면 컷 (2026-10-19). 경로는 root 기준 상대 경로.",
+ "note": "26FW 판매카드 제품컷 정면 매핑 (2026-11-03 사용자 지시: 전 카드 NAS 제품컷 정면, 스타일만 일치하면 컬러 무관). 선별: 품번(및 카드 imgCodes 의 신/구 품번)으로 WOMEN·UNI·월레스 폴더 탐색 → 제품컷 폴더 첫 프레임(jpg 우선), 몽타주 눈검수 후 예외 3건 수동 지정. 제품컷 폴더가 없는 14품번은 기존 이미지(Supabase/도식화/MDP) 유지.",
  "images": {
+  "GF1LSS506": {
+   "src": "WOMEN/26SS/26SS_2차/GF1LSS506/제품컷/제네럴아이디어_26032.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/12 · 폴더 WOMEN\\26SS\\26SS_2차\\GF1LSS506"
+  },
+  "GF3LSS507": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSS507/BE/제품컷/general idea29885.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSS507"
+  },
+  "GF3LTS501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS501/BK/제품컷/general idea29313.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS501"
+  },
+  "GF3LTS502": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS502/BE/제품컷/general idea29037.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS502"
+  },
+  "GF3LTS503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS503/BK/제품컷/general idea29321.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS503"
+  },
+  "GF3LTS504": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS504/BK/제품컷/general idea28983.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS504"
+  },
+  "GF3LTS505": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS505/BK/제품컷/general idea29295.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS505"
+  },
+  "GF3LTS506": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS506/BK/제품컷/general idea29043.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS506"
+  },
+  "GF3LTS508": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS508/BK/제품컷/general idea29301.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS508"
+  },
+  "GF3LTS509": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LTS509/BK/제품컷/general idea29307.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LTS509"
+  },
+  "GF3LTS511": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS511/BK/제품컷/general idea29449.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS511"
+  },
+  "GF3LTS512": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS512/AP/제품컷/general idea29437.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS512"
+  },
+  "GF3LTS513": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS513/BK/제품컷/general idea29459.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS513"
+  },
+  "GF3LTS514": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS514/CH/제품컷/general idea29473.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS514"
+  },
+  "GF3LTS515": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS515/CH/제품컷/general idea29465.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS515"
+  },
+  "GF3LTS517": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LTS517/CH/제품컷/general idea29441.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LTS517"
+  },
   "GF3LTS526": {
    "src": "WOMEN/26FW/26FW_3차/GF3LTS526/CH/제품컷/general idea29937.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LTS526"
+  },
+  "GF3LSH501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH501/BK/제품컷/general idea28970.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH501"
+  },
+  "GF3LSH503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH503/BR/제품컷/general idea29276.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH503"
+  },
+  "GF3LSH504": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH504/BL/제품컷/general idea29289.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH504"
+  },
+  "GF3LSH505": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH505/BK/제품컷/general idea28965.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH505"
+  },
+  "GF3LSH506": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH506/BK/제품컷/general idea29889.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH506"
+  },
+  "GF3LSH507": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSH507/BE/제품컷/general idea29278.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSH507"
+  },
+  "GF3LSH508": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSH508/BK/제품컷/general idea29469.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSH508"
+  },
+  "GF3LOP501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LOP501/BK/제품컷/general idea29343.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LOP501"
+  },
+  "GF3LOP503": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LOP503/BK/제품컷/general idea29732.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LOP503"
+  },
+  "GF3LOP515": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LOP515/BK/제품컷/general idea29560.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LOP515"
+  },
+  "GF3LKC502": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKC502/BK/제품컷/general idea28935.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKC502"
+  },
+  "GF3LKC503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKC503/CH/제품컷/general idea29365.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKC503"
+  },
+  "GF3LKC504": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKC504/AP/제품컷/general idea28953.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKC504"
+  },
+  "GF3LKC510": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKC510/CH/제품컷/general idea28939.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKC510"
+  },
+  "GF3LKC514": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKC514/DR/제품컷/general idea29483.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKC514"
+  },
+  "GF3LKC515": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKC515/BK/제품컷/general idea29479.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKC515"
+  },
+  "GF3LKC517": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LKC517/DR/제품컷/general idea29498.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LKC517"
+  },
+  "GF3LKC518": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKC518/BK/제품컷/general idea29493.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKC518"
+  },
+  "GF3LKC520": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKC520/BK/제품컷/GI_black_widened.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKC520"
+  },
+  "GF3LKP501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP501/CH/제품컷/general idea29252.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP501"
+  },
+  "GF3LKP505": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP505/CH/제품컷/GI_charcoal_front_widened.png",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 1/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP505"
+  },
+  "GF3LKP506": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP506/BK/제품컷/general idea29256.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP506"
+  },
+  "GF3LKP507": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP507/BK/제품컷/general idea29057.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP507"
+  },
+  "GF3LKP508": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP508/CH/제품컷/general idea28941.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP508"
+  },
+  "GF3LKP509": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKP509/BK/제품컷/general idea29025.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKP509"
+  },
+  "GF3LKP513": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP513/GR/제품컷/general idea29506.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP513"
+  },
+  "GF3LKP521": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP521/BE/제품컷/general idea29514.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP521"
+  },
+  "GF3LKP522": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP522/MG/제품컷/general idea29510.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP522"
+  },
+  "GF3LKP523": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP523/BK/제품컷/general idea29522.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP523"
+  },
+  "GF3LKP524": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP524/BE/제품컷/general idea29524.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP524"
+  },
+  "GF3LKP525": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP525/CH/제품컷/general idea29540.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP525"
+  },
+  "GF3LKP529": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKP529/BK/제품컷/general idea29534.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKP529"
+  },
+  "GF3LKP531": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LKP531/BK/제품컷/general idea30067.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LKP531"
+  },
+  "GF3LKV511": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKV511/BR/제품컷/general idea29270.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKV511"
+  },
+  "GF3LKV512": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LKV512/BK/제품컷/general idea29031.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LKV512"
+  },
+  "GF3LKV519": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LKV519/BK/제품컷/general idea29361.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LKV519"
+  },
+  "GF3LWV517": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LWV517/BK/제품컷/general idea29423.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LWV517"
+  },
+  "GF1LJK514": {
+   "src": "WOMEN/26FW/26FW_1차/GF1LJK514/BE/제품컷/제네럴아이디어_31615.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/9 · 폴더 WOMEN\\26FW\\26FW_1차\\GF1LJK514"
+  },
+  "GF3LJK504": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LJK504/BE/제품컷/general idea29397.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LJK504"
+  },
+  "GF3LJK510": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJK510/BK/제품컷/general idea28923.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJK510"
+  },
+  "GF3LJK511": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJK511/DG/제품컷/general idea29738.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJK511"
+  },
+  "GF1LJP516": {
+   "src": "WOMEN/26FW/26FW_1차/GF1LJP516/KH/제품컷/제네럴아이디어_31632.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/8 · 폴더 WOMEN\\26FW\\26FW_1차\\GF1LJP516"
+  },
+  "GF3LJP501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJP501/BK/제품컷/general idea28911.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJP501"
+  },
+  "GF3LJP502": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJP502/BK/제품컷/general idea28927.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJP502"
+  },
+  "GF3LJP503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJP503/CA/제품컷/general idea29019.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJP503"
+  },
+  "GF3LJP512": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LJP512/BR/제품컷/general idea29877.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LJP512"
+  },
+  "GF3LJP520": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LJP520/BL/제품컷/general idea29964.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LJP520"
+  },
+  "GF3LJP525": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LJP525/CH/제품컷/general idea30073.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LJP525"
   },
   "GF3LJP526": {
    "src": "WOMEN/26FW/26FW_3차/GF3LJP526/CH/제품컷/general idea29941.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LJP526"
+  },
+  "GF3LCT508": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LCT508/BK/제품컷/general idea28915.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LCT508"
+  },
+  "GF3LCT516": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LCT516/BT/제품컷/general idea29389.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LCT516"
+  },
+  "GF3LHP501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LHP501/BK/제품컷/general idea29339.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LHP501"
+  },
+  "GF3LHP508": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LHP508/BK/제품컷/general idea29728.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LHP508"
+  },
+  "GF3LPT501": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT501/BK/제품컷/general idea28991.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT501"
+  },
+  "GF3LPT502": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT502/BK/제품컷/general idea28995.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT502"
+  },
+  "GF3LPT503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT503/BK/제품컷/general idea29001.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT503"
+  },
+  "GF3LPT504": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT504/CH/제품컷/general idea29053.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT504"
+  },
+  "GF3LPT505": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT505/BK/제품컷/general idea29047.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT505"
+  },
+  "GF3LPT507": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT507/BL/제품컷/general idea29722.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT507"
+  },
+  "GF3LPT509": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT509/BK/제품컷/general idea29578.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT509"
+  },
+  "GF3LPT511": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT511/BK/제품컷/general idea30075.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT511"
+  },
+  "GF3LPT512": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LPT512/BR/제품컷/general idea29879.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LPT512"
+  },
+  "GF3LPT514": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT514/BK/제품컷/general idea29592.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT514"
+  },
+  "GF3LPT515": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT515/BK/제품컷/general idea29594.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT515"
+  },
+  "GF3LPT516": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LPT516/DN/제품컷/general idea29857.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LPT516"
+  },
+  "GF3LPT517": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LPT517/BK/제품컷/general idea30077.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LPT517"
   },
   "GF3LPT526": {
    "src": "WOMEN/26FW/26FW_3차/GF3LPT526/CH/제품컷/general idea29933.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LPT526"
+  },
+  "GF3LSK502": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK502/BK/제품컷/general idea29331.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK502"
+  },
+  "GF3LSK503": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK503/BK/제품컷/general idea29003.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK503"
+  },
+  "GF3LSK504": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK504/BK/제품컷/general idea29325.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK504"
+  },
+  "GF3LSK505": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK505/BK/제품컷/general idea28989.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK505"
+  },
+  "GF3LSK506": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK506/BE/제품컷/general idea29333.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK506"
+  },
+  "GF3LSK507": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK507/BK/제품컷/2_미리보기_GF3LSK507_BK_1_front_(2).jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK507"
+  },
+  "GF3LSK511": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK511/BK/제품컷/general idea29564.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK511"
+  },
+  "GF3LSK512": {
+   "src": "WOMEN/26FW/26FW_1차/GF3LSK512/BR/제품컷/general idea29881.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_1차\\GF3LSK512"
+  },
+  "GF3LSK513": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK513/BK/제품컷/general idea29602.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK513"
+  },
+  "GF3LSK514": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK514/BE/제품컷/general idea29584.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK514"
+  },
+  "GF3LSK515": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK515/BE/제품컷/general idea29606.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK515"
+  },
+  "GF3LSK516": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK516/BE/제품컷/general idea29572.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK516"
+  },
+  "GF3LSK517": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK517/CH/제품컷/general idea29582.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK517"
+  },
+  "GF3LSK518": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSK518/BK/제품컷/general idea29568.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSK518"
+  },
+  "GF3LET501": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LET501/BK/제품컷/general idea29859.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LET501"
   },
   "GF3LET506": {
    "src": "WOMEN/26FW/26FW_3차/GF3LET506/BK/제품컷/general idea29863.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LET506"
+  },
+  "GF3LET511": {
+   "src": "WOMEN/26FW/26FW_3차/GF3LET511/BK/제품컷/general idea29867.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF3LET511"
+  },
+  "GF3LSA503": {
+   "src": "WOMEN/26FW/26FW_2차/GF3LSA503/BE/제품컷/general idea29610.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF3LSA503"
+  },
+  "GF1MSH004": {
+   "src": "UNI/26SS/26SS_2차/GF1MSH004/제품컷/제네럴아이디어_39082.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/14 · 폴더 UNI\\26SS\\26SS_2차\\GF1MSH004"
+  },
+  "GF3MKP005": {
+   "src": "UNI/26FW/26FW_2차/GF3MKP005/BK/제품컷/제네럴아이디어_73535.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3MKP005"
+  },
+  "GF3MKP007": {
+   "src": "UNI/26FW/26FW_2차/GF3MKP007/BE/제품컷/general idea29678.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3MKP007"
+  },
+  "GF3MCT001": {
+   "src": "UNI/26FW/26FW_1차/GF3MCT001/BK/제품컷/general idea29061.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3MCT001"
+  },
+  "GF3MPT001": {
+   "src": "UNI/26FW/26FW_1차/GF3MPT001/BR/제품컷/general idea29101.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3MPT001"
+  },
+  "GF3MPT002": {
+   "src": "UNI/26FW/26FW_1차/GF3MPT002/BL/제품컷/general idea29107.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3MPT002"
+  },
+  "GF3MPT003": {
+   "src": "UNI/26FW/26FW_3차/GF3MPT003/BE/제품컷/general idea29696.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3MPT003"
+  },
+  "GF3USS004": {
+   "src": "UNI/26FW/26FW_1차/GF3USS004/M/BK/제품컷/general idea29087.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3USS004"
+  },
+  "GF3USS005": {
+   "src": "UNI/26FW/26FW_3차/GF3USS005/M/BK/제품컷/general idea29674.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 UNI\\26FW\\26FW_3차\\GF3USS005"
+  },
+  "GF3USS006": {
+   "src": "UNI/26FW/26FW_3차/GF3USS006/M/BE/제품컷/general idea29658.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\26FW\\26FW_3차\\GF3USS006"
+  },
+  "GF3UTS001": {
+   "src": "UNI/26FW/26FW_1차/GF3UTS001/M/CH/제품컷/제네럴아이디어_73527.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UTS001"
+  },
+  "GF3UTS003": {
+   "src": "UNI/26FW/26FW_1차/GF3UTS003/M/KH/제품컷/제네럴아이디어_73547.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UTS003"
+  },
+  "GF3USH001": {
+   "src": "UNI/26FW/26FW_1차/GF3USH001/M/GN/제품컷/제네럴아이디어_73541_.png",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3USH001"
+  },
+  "GF3USH002": {
+   "src": "UNI/26FW/26FW_1차/GF3USH002/M/CH/제품컷/제네럴아이디어_73537.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3USH002"
+  },
+  "GF3UKC002": {
+   "src": "UNI/26FW/26FW_1차/GF3UKC002/M/CH/제품컷/general idea29873.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UKC002"
+  },
+  "GF3UKC006": {
+   "src": "UNI/26FW/26FW_2차/GF3UKC006/M/BR/제품컷/general idea29694.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3UKC006"
+  },
+  "GF3UKC021": {
+   "src": "UNI/26FW/26FW_3차/GF3UKC021/M/CH/제품컷/general idea29911.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UKC021"
   },
   "GF3UKC024": {
    "src": "UNI/26FW/26FW_3차/GF3UKC024/M/CH/제품컷/general idea29907.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UKC024"
+  },
+  "GF3UKP001": {
+   "src": "UNI/26FW/26FW_1차/GF3UKP001/M/DR/제품컷/제네럴아이디어_73533.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UKP001"
+  },
+  "GF3UKP004": {
+   "src": "UNI/26FW/26FW_2차/GF3UKP004/M/CH/제품컷/general idea29684.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3UKP004"
+  },
+  "GF3UKP008": {
+   "src": "UNI/26FW/26FW_2차/GF3UKP008/M/CH/제품컷/general idea29688.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3UKP008"
+  },
+  "GF3UWV005": {
+   "src": "UNI/26FW/26FW_2차/GF3UWV005/M/BK/제품컷/general idea29644.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 UNI\\26FW\\26FW_2차\\GF3UWV005"
+  },
+  "GF3UJK007": {
+   "src": "UNI/26FW/26FW_3차/GF3UJK007/M/BR/제품컷/general idea29638.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UJK007"
+  },
+  "GF3UJK012": {
+   "src": "UNI/26FW/26FW_1차/GF3UJK012/M/BK/제품컷/general idea29085.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJK012"
+  },
+  "GF3UJK013": {
+   "src": "UNI/26FW/26FW_3차/GF3UJK013/M/BK/제품컷/general idea29652.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UJK013"
+  },
+  "GF3UJP001": {
+   "src": "UNI/26FW/26FW_1차/GF3UJP001/M/BK/제품컷/general idea29069.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJP001"
+  },
+  "GF3UJP002": {
+   "src": "UNI/26FW/26FW_1차/GF3UJP002/M/BR/제품컷/general idea29077.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJP002"
+  },
+  "GF3UJP003": {
+   "src": "UNI/26FW/26FW_3차/GF3UJP003/M/BK/제품컷/general idea29622.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 UNI\\26FW\\26FW_3차\\GF3UJP003"
+  },
+  "GF3UJP004": {
+   "src": "UNI/26FW/26FW_1차/GF3UJP004/M/BE/제품컷/general idea29071.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJP004"
+  },
+  "GF3UJP006": {
+   "src": "UNI/26FW/26FW_1차/GF3UJP006/M/BK/제품컷/general idea29063.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJP006"
+  },
+  "GF3UJP009": {
+   "src": "UNI/26FW/26FW_1차/GF3UJP009/M/BK/제품컷/general idea29095.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 UNI\\26FW\\26FW_1차\\GF3UJP009"
+  },
+  "GF3UJP010": {
+   "src": "UNI/26FW/26FW_2차/GF3UJP010/M/GR/제품컷/general idea29650.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF3UJP010"
+  },
+  "GF3UPT004": {
+   "src": "UNI/26FW/26FW_3차/GF3UPT004/M/BK/제품컷/제네럴아이디어_73525.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UPT004"
+  },
+  "GF3UPT009": {
+   "src": "UNI/26FW/26FW_3차/GF3UPT009/M/BK/제품컷/general idea29111.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF3UPT009"
+  },
+  "GF3UCP001": {
+   "src": "UNI/26FW/26FW_1차/GF3UCP001/M/BK/제품컷/general idea29113.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\26FW\\26FW_1차\\GF3UCP001"
+  },
+  "GF3UCP002": {
+   "src": "UNI/26FW/26FW_1차/GF3UCP002/M/BR/제품컷/제네럴아이디어_73553.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\26FW\\26FW_1차\\GF3UCP002"
+  },
+  "GF3UET003": {
+   "src": "UNI/26FW/26FW_1차/GF3UET003/M/BE/제품컷/general idea29369.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UET003"
+  },
+  "GF3UET004": {
+   "src": "UNI/26FW/26FW_1차/GF3UET004/M/BK/제품컷/제네럴아이디어_73556.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UET004"
+  },
+  "GF3UET005": {
+   "src": "UNI/26FW/26FW_1차/GF3UET005/M/BK/제품컷/general idea29134.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_1차\\GF3UET005"
+  },
+  "GF3UET006": {
+   "src": "UNI/26FW/26FW_2차/GF3UET006/BR/제품컷/general idea29708.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 UNI\\26FW\\26FW_2차\\GF3UET006"
   },
   "GF4LOP504": {
    "src": "WOMEN/26FW/26FW_3차/GF4LOP504/BK/제품컷/general idea29957.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LOP504"
   },
   "GF4LKC534": {
    "src": "WOMEN/26FW/26FW_3차/GF4LKC534/BK/제품컷/general idea29837.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LKC534"
   },
   "GF4LKC536": {
    "src": "WOMEN/26FW/26FW_3차/GF4LKC536/BK/제품컷/general idea29949.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LKC536"
   },
   "GF4LKP537": {
    "src": "WOMEN/26FW/26FW_3차/GF4LKP537/BK/제품컷/general idea29955.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LKP537"
+  },
+  "GF4LWV501": {
+   "src": "WOMEN/26FW/26FW_1차/GF4LWV501/BK/제품컷/2_미리보기_GF4LWV501_BK_1_front_(2).jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF4LWV501"
+  },
+  "GF4LJK508": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJK508/BK/제품컷/general idea29827.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJK508"
+  },
+  "GF4LJK514": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJK514/BE/제품컷/general idea29411.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJK514"
+  },
+  "GF4LJP505": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJP505/BK/제품컷/general idea29385.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJP505"
+  },
+  "GF4LJP513": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJP513/BG/제품컷/general idea29970.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJP513"
+  },
+  "GF4LJP515": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJP515/BR/제품컷/general idea29959.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJP515"
+  },
+  "GF4LJP521": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LJP521/BE/제품컷/general idea29829.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LJP521"
+  },
+  "GF4LCT502": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LCT502/CH/제품컷/general idea29407.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LCT502"
+  },
+  "GF4LCT507": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LCT507/BE/제품컷/general idea29375.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LCT507"
+  },
+  "GF4LCT509": {
+   "src": "WOMEN/26FW/26FW_1차/GF4LCT509/BK/제품컷/general idea29011.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF4LCT509"
+  },
+  "GF4LCT518": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LCT518/BR/제품컷/general idea29429.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LCT518"
+  },
+  "GF4LCT519": {
+   "src": "WOMEN/26FW/26FW_3차/GF4LCT519/BK/제품컷/general idea29972.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF4LCT519"
+  },
+  "GF4LSA505": {
+   "src": "WOMEN/26FW/26FW_2차/GF4LSA505/BK/제품컷/general idea29395.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 WOMEN\\26FW\\26FW_2차\\GF4LSA505"
   },
   "GF4MKP022": {
-   "src": "UNI/26FW/26FW_3차/GF4MKP022/BK/제품컷/general idea29788.jpg",
+   "src": "UNI/26FW/26FW_3차/GF4MKP022/BE/제품컷/general idea30081.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4MKP022"
   },
   "GF4MKP023": {
-   "src": "UNI/26FW/26FW_3차/GF4MKP023/MG/제품컷/general idea29790.jpg",
+   "src": "UNI/26FW/26FW_3차/GF4MKP023/BR/제품컷/general idea30083.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4MKP023"
+  },
+  "GF4USH403": {
+   "src": "UNI/월레스/GF4USH403/DN/제품컷/general idea29752.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4USH403"
+  },
+  "GF4USH404": {
+   "src": "UNI/월레스/GF4USH404/BE/제품컷/general idea29748.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4USH404"
+  },
+  "GF4UKC411": {
+   "src": "UNI/월레스/GF4UKC411/GN/제품컷/general idea29784.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKC411"
+  },
+  "GF4UKC413": {
+   "src": "UNI/월레스/GF4UKC413/MU/제품컷/general idea29776.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKC413"
+  },
+  "GF4UKC415": {
+   "src": "UNI/월레스/GF4UKC415/KH/제품컷/general idea29780.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKC415"
+  },
+  "GF4UKC419": {
+   "src": "UNI/월레스/GF4UKC419/BE/제품컷/general idea29766.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\월레스\\GF4UKC419"
+  },
+  "GF4UKP020": {
+   "src": "UNI/26FW/26FW_3차/GF4UKP020/M/BK/제품컷/general idea29923.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4UKP020"
   },
   "GF4UKP025": {
    "src": "UNI/26FW/26FW_3차/GF4UKP025/M/CH/제품컷/general idea29919.jpg",
    "kind": "제품컷",
-   "note": "제품컷 정면 (첫 jpg)"
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4UKP025"
   },
-  "GF3LJP525": {
-   "src": "WOMEN/26FW/26FW_3차/GF3LJP525/CH/260909gs1416.jpg",
-   "kind": "모델컷",
-   "note": "제품컷 없음 — 모델 정면 컷 임시 사용"
+  "GF4UKP409": {
+   "src": "UNI/월레스/GF4UKP409/BK/제품컷/general idea29770.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP409"
+  },
+  "GF4UKP410": {
+   "src": "UNI/월레스/GF4UKP410/BE/제품컷/general idea29754.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP410"
+  },
+  "GF4UKP412": {
+   "src": "UNI/월레스/GF4UKP412/BL/제품컷/general idea29823.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP412"
+  },
+  "GF4UKP414": {
+   "src": "UNI/월레스/GF4UKP414/MU/제품컷/general idea29804.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP414"
+  },
+  "GF4UKP416": {
+   "src": "UNI/월레스/GF4UKP416/BK/제품컷/general idea29762.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP416"
+  },
+  "GF4UKP417": {
+   "src": "UNI/월레스/GF4UKP417/BR/제품컷/general idea29800.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP417"
+  },
+  "GF4UKP418": {
+   "src": "UNI/월레스/GF4UKP418/BK/제품컷/general idea29792.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UKP418"
+  },
+  "GF4UJP001": {
+   "src": "UNI/26FW/26FW_3차/GF4UJP001/M/BK/제품컷/general idea29897.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4UJP001"
+  },
+  "GF4UJP008": {
+   "src": "UNI/26FW/26FW_3차/GF4UJP008/M/BK/제품컷/general idea29893.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4UJP008"
+  },
+  "GF4UJP014": {
+   "src": "UNI/26FW/26FW_3차/GF4UJP014/M/BK/제품컷/general idea29903.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 UNI\\26FW\\26FW_3차\\GF4UJP014"
+  },
+  "GF4UJP415": {
+   "src": "UNI/월레스/GF4UJP415/BK/제품컷/general idea29744.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UJP415"
+  },
+  "GF4UPT008": {
+   "src": "UNI/26FW/26FW_3차/GF4UPT008/BK/제품컷/general idea29927.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_3차\\GF4UPT008"
+  },
+  "GF4UPT407": {
+   "src": "UNI/월레스/GF4UPT407/BE/제품컷/general idea30058.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UPT407"
+  },
+  "GF4UCP407": {
+   "src": "UNI/월레스/GF4UCP407/RE/제품컷/general idea29806.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UCP407"
+  },
+  "GF4UCP411": {
+   "src": "UNI/월레스/GF4UCP411/BK/제품컷/general idea29815.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UCP411"
+  },
+  "GF4UET408": {
+   "src": "UNI/월레스/GF4UET408/BK/제품컷/general idea29808.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\월레스\\GF4UET408"
+  },
+  "GF4UET409": {
+   "src": "UNI/월레스/GF4UET409/MT/제품컷/general idea30049.png",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/5 · 폴더 UNI\\월레스\\GF4UET409"
+  },
+  "GF4UET410": {
+   "src": "UNI/월레스/GF4UET410/MT/제품컷/general idea30049.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/5 · 폴더 UNI\\월레스\\GF4UET410"
+  },
+  "GF4UET412": {
+   "src": "UNI/월레스/GF4UET412/BE/제품컷/general idea29819.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\월레스\\GF4UET412"
+  },
+  "WBD3L04524": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKC524/DR/제품컷/1.png",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKC524"
+  },
+  "WBD3L04501": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKC501/BK/제품컷/general idea19219.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKC501"
+  },
+  "WBD3L04503": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKC503/BE/제품컷/1.png",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKC503"
+  },
+  "WBD3L04505": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LKC505/BU/제품컷/general idea16011.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LKC505"
+  },
+  "WBD3L05527": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LKP527/BK/제품컷/general idea16911.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LKP527"
+  },
+  "WBD3L11502": {
+   "src": "WOMEN/26FW/26FW_1차/GF8LPT502/BK/제품컷/general idea17771.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_1차\\GF8LPT502"
+  },
+  "WBD4L04550": {
+   "src": "WOMEN/26FW/26FW_3차/GF8LKC550/GR/제품컷/general idea17939.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF8LKC550"
+  },
+  "WBE1L03507": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LSH507/BK/제품컷/general idea19185.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LSH507"
+  },
+  "WBE1L04507": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LKC507/BK/제품컷/general idea20064.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LKC507"
+  },
+  "WBE1L12504": {
+   "src": "WOMEN/26SS/26SS_2차/WBE1L12504/제품컷/제네럴아이디어_31273.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26SS\\26SS_2차\\WBE1L12504"
+  },
+  "WBE1L13505": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LSK505/BK/제품컷/general idea20320.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LSK505"
+  },
+  "WBE2L11505": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LPT505/BK/제품컷/general idea20738.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LPT505"
+  },
+  "WBE3L01502": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LTS502/BK/제품컷/general idea23422.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LTS502"
+  },
+  "WBE3L01503": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LTS503/BK/제품컷/general idea22547.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LTS503"
+  },
+  "WBE3L04511": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LKC511/BK/제품컷/general idea22649.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LKC511"
+  },
+  "WBE3L04530": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKC530/BK/제품컷/general idea23092.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKC530"
+  },
+  "WBE3L05504": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LKP504/BK/제품컷/general idea22713.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LKP504"
+  },
+  "WBE3L05512": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKP512/BK/제품컷/general idea22697.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKP512"
+  },
+  "WBE3L06519": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKV519/BK/제품컷/general idea22531.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKV519"
+  },
+  "WBE3L09502": {
+   "src": "WOMEN/26FW/26FW_2차/GF7LJK502/BE/제품컷/general idea22437.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_2차\\GF7LJK502"
+  },
+  "SBE3U07006": {
+   "src": "UNI/26FW/26FW_2차/GF7UJP006/M/BK/제품컷/general idea23879.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 UNI\\26FW\\26FW_2차\\GF7UJP006"
+  },
+  "WBE4L05534": {
+   "src": "WOMEN/25FW/25FW_3차/WBE4L05534/제품컷/general idea23701.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/12 · 폴더 WOMEN\\25FW\\25FW_3차\\WBE4L05534"
+  },
+  "WBE4L05550": {
+   "src": "WOMEN/26FW/26FW_3차/GF8LKP550/GR/제품컷/general idea29851.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/4 · 폴더 WOMEN\\26FW\\26FW_3차\\GF8LKP550"
+  },
+  "WBE4L07536": {
+   "src": "WOMEN/26FW/26FW_3차/GF7LJP536/BE/제품컷/general idea26272.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/11 · 폴더 WOMEN\\26FW\\26FW_3차\\GF7LJP536"
+  },
+  "WBE4L07538": {
+   "src": "WOMEN/26FW/26FW_3차/GF8LJP538/BR/제품컷/general idea25673.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/7 · 폴더 WOMEN\\26FW\\26FW_3차\\GF8LJP538"
+  },
+  "WBE4L10522": {
+   "src": "WOMEN/26FW/26FW_3차/GF8LCT522/BK/제품컷/general idea24606.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/10 · 폴더 WOMEN\\26FW\\26FW_3차\\GF8LCT522"
+  },
+  "WBE4L11517": {
+   "src": "WOMEN/26FW/26FW_3차/GF8LPT517/BK/제품컷/general idea24485.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/6 · 폴더 WOMEN\\26FW\\26FW_3차\\GF8LPT517"
+  },
+  "GF1LTS505": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LTS505/BK/제품컷/general idea27020.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 3/9 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LTS505"
+  },
+  "GF1LKC509": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKC509/BK/제품컷/general idea26585.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/5 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKC509"
+  },
+  "GF1LKP502": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKP502/BK/제품컷/general idea26697.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/7 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKP502"
+  },
+  "GF1LKP510": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LKP510/AP/제품컷/general idea26812.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/5 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LKP510"
+  },
+  "GF1LJK506": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LJK506/BK/제품컷/general idea26749.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 1/9 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LJK506"
+  },
+  "GF1LJK507": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LJK507/BK/제품컷/제네럴아이디어_31596.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/10 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LJK507"
+  },
+  "GF1LCT501": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LCT501/BE/제품컷/general idea26546.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/10 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LCT501"
+  },
+  "GF1LPT501": {
+   "src": "WOMEN/26FW/26FW_1차/GF7LPT501/BK/제품컷/general idea25981.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/5 · 폴더 WOMEN\\26FW\\26FW_1차\\GF7LPT501"
+  },
+  "GF1MPT005": {
+   "src": "UNI/26FW/26FW_1차/GF7MPT005/BK/제품컷/제네럴아이디어_26415.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/9 · 폴더 UNI\\26FW\\26FW_1차\\GF7MPT005"
+  },
+  "GF1MPT006": {
+   "src": "UNI/26FW/26FW_2차/GF7MPT006/BK/제품컷/general idea29702.jpg",
+   "kind": "제품컷",
+   "note": "자동 선별 프레임 0/2 · 폴더 UNI\\26FW\\26FW_2차\\GF7MPT006"
   }
  }
 }
