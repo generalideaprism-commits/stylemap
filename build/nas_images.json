@@ -688,9 +688,9 @@
    "note": "자동 선별 프레임 0/3 · 폴더 UNI\\26FW\\26FW_1차\\GF3UCP001"
   },
   "GF3UCP002": {
-   "src": "UNI/26FW/26FW_1차/GF3UCP002/M/BR/제품컷/제네럴아이디어_73553.jpg",
+   "file": "img_override/GF3UCP002.jpg",
    "kind": "제품컷",
-   "note": "자동 선별 프레임 0/3 · 폴더 UNI\\26FW\\26FW_1차\\GF3UCP002"
+   "note": "2026-11-03 사용자 제공 이미지(퍼플 L 이니셜 정면)로 교체 — NAS UNI/26FW_1차/GF3UCP002 제품컷 대신 build/img_override 파일 사용"
   },
   "GF3UET003": {
    "src": "UNI/26FW/26FW_1차/GF3UET003/M/BE/제품컷/general idea29369.jpg",
