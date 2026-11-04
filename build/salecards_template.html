@@ -147,6 +147,7 @@
   .prices span{font-size:9.5px;font-size:clamp(4.5px,3.6cqw,9.5px);color:var(--muted)}
   .prices i b{font-size:8.5px;font-size:clamp(4px,3.2cqw,8.5px);font-weight:700;color:var(--ink)}
   .prices i span{font-size:8px;font-size:clamp(4px,3cqw,8px)}
+  .prices p.v{flex-direction:column;gap:2px;align-items:center}   /* 할인율: 숫자 위 · 항목명 아래 */
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:12px 4px 10px}
@@ -421,9 +422,9 @@ function card(s){
       <span class="noimg">NO IMAGE</span>
     </div>
     <div class="prices">
-      <div${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><p><span>TAG가${s.tagNA?'·미확인':''}</span><b>${won(s.tag)}</b></p><i><span>실판가</span><b>${won(s.real)}</b></i></div>
+      <div${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><p><span>TAG가${s.tagNA?'·미확인':''}</span><b>${won(s.tag)}</b></p>${s.real>0 && s.real!==s.tag ? `<i><span>실판가</span><b>${won(s.real)}</b></i>` : ''}</div>
       <div title="배수(실판) = 실판가 ÷ 원가(VAT 포함)"><p><span>원가(VAT 포함)</span><b>${won(s.costV)}</b></p><i><span>배수(실판)</span><b>${s.multReal ?? '-'}</b></i></div>
-      <div class="r"><p><span>할인율</span><b>${s.discount==null?'-':pct(s.discount*100,0)}</b></p></div>
+      <div class="r"><p class="v"><b>${s.discount==null?'-':pct(s.discount*100,0)}</b><span>할인율</span></p></div>
     </div>
     <div class="stats">
       <div><b>${n0(t.plan)}</b><span>기획량</span></div>
