@@ -137,7 +137,7 @@
   .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--soft)}
   .thumb .noimg{font-size:11px;color:#c3c9d2;letter-spacing:1px}
 
-  .prices{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line);
+  .prices{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:1px solid var(--line);
           border-bottom:1px solid var(--line);background:#fff}
   .prices div{padding:8px 4px;text-align:center;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-start;gap:2px}
   .prices div:last-child{border-right:0}
@@ -147,6 +147,15 @@
   .prices i{display:block;font-style:normal;font-size:9.5px;font-size:clamp(5px,3.6cqw,9.5px);font-weight:700;color:var(--ink);white-space:nowrap}
   /* 할인율 · 실판가 줄이 없는 TAG가: 타이틀 아래 남은 공간의 정중앙에 숫자 */
   .prices .r b,.prices .solo b{flex:1;display:flex;align-items:center;justify-content:center}
+  /* 플로팅 툴팁(배수 칸: 마우스 올리면 배수(택가)) */
+  .prices .tip{position:relative;cursor:default}
+  .prices .tip::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% - 2px);transform:translateX(-50%) translateY(4px);
+    background:var(--ink);color:#fff;font-size:10px;font-weight:600;line-height:1;padding:6px 8px;border-radius:6px;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .prices .tip::before{content:'';position:absolute;left:50%;bottom:calc(100% - 8px);transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink);
+    opacity:0;pointer-events:none;transition:opacity .12s;z-index:5}
+  .prices .tip:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+  .prices .tip:hover::before{opacity:1}
   .prices .r b{color:var(--red)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);padding:12px 4px 10px}
@@ -422,7 +431,8 @@ function card(s){
     </div>
     <div class="prices">
       <div${s.real>0 && s.real!==s.tag ? '' : ' class="solo"'}${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><span>TAG가${s.tagNA?'·미확인':''}${s.real>0 && s.real!==s.tag ? ' (실판가)' : ''}</span><b>${won(s.tag)}</b>${s.real>0 && s.real!==s.tag ? `<i>${won(s.real)}</i>` : ''}</div>
-      <div title="원가는 VAT 포함 · 배수 = 실판가 ÷ 원가(VAT 포함)"><span>원가 (배수)</span><b>${won(s.costV)}</b><i>${s.multReal==null?'-':'x'+s.multReal}</i></div>
+      <div class="solo" title="원가(VAT 포함)"><span>원가</span><b>${won(s.costV)}</b></div>
+      <div class="solo${s.mult!=null && s.multReal!=null && s.mult!==s.multReal ? ' tip' : ''}"${s.mult!=null && s.multReal!=null && s.mult!==s.multReal ? ` data-tip="배수(택가) x${s.mult}"` : ''}><span>배수(실판)</span><b>${s.multReal==null?'-':'x'+s.multReal}</b></div>
       <div class="r"><span>할인율</span><b>${s.discount==null?'-':pct(s.discount*100,0)}</b></div>
     </div>
     <div class="stats">
