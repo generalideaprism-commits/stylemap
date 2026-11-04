@@ -427,6 +427,7 @@ CO_SPLIT = {(code, c['color']): (c.get('plan0'), c.get('planRe'), c.get('inRe'))
 # 리오더 기획 수량은 주간판매-26FW(CO) T열(컬러별 리오더기획)의 합. 26FW 신상만 본다 — 러닝은 항상 X.
 # CO 시트의 작지(R) = 최초기획(S) + 리오더기획(T) 이다. 러닝 카드와 같은 방식으로
 # 본 카드는 최초 기획만 보여 주고, 클릭하면 리오더 기획을 합산한 팝업을 띄운다.
+REORDER = {}          # 시즌('가을'/'겨울'/'러닝') -> 26FW 리오더 집계 (아래 루프에서 채움, 집계표 SUM['reorder'] 로 넘긴다)
 for code, s in styles.items():
     re_qty = sum(c.get('planRe') or 0 for c in s['colors'])      # 러닝도 같이 본다 (2026-11-02: 기획=최초기획으로 통일)
     s['reorder'] = 'O' if re_qty > 0 else 'X'
@@ -455,6 +456,24 @@ for code, s in styles.items():
             c['qtyIn'] = (c['qtyIn'] or 0) - c['_ir']
         c['rate'] = (c['total'] / c['qtyIn'] * 100) if c['qtyIn'] and c.get('total') is not None else c.get('rate')
     s['ttl'] = calc_ttl(s['colors'])
+    # ---- 26FW 리오더 집계 (집계표 ① 시즌 요약 '리오더' 행, 2026-11-04) ----
+    # 26FW 신품번만 센다: GF3/GF4 = 신상(가을·겨울), 러닝 시트 품번(GF7/GF8) = 러닝. 구품번(WB…·GF1…)의
+    # 리오더기획은 지난 시즌 것이라 뺀다. 판매는 차수로 나뉘지 않으므로 기획·입고·원가·TAG 만 싣는다.
+    if re_qty > 0 and code.startswith('GF') and code[2] in '3478':
+        _rk = '러닝' if s['line'] == '러닝' else s['season']
+        _ir = sum(c['_ir'] or 0 for c in s['colors'])
+        _t = REORDER.setdefault(_rk, {'styles': 0, 'sku': 0, 'plan': 0, 'inM': 0, 'inSku': 0, 'qtyIn': 0,
+                                      'planCost': 0, 'cost': 0, 'tag': 0, 'codes': []})
+        _t['styles'] += 1
+        _t['sku'] += sum(1 for c in s['colors'] if (c['_pr'] or 0) > 0)
+        _t['plan'] += re_qty
+        _t['inM'] += 1 if _ir > 0 else 0
+        _t['inSku'] += sum(1 for c in s['colors'] if (c['_ir'] or 0) > 0)
+        _t['qtyIn'] += _ir
+        _t['planCost'] += re_qty * (s['cost'] or 0)      # 기획원가 = 리오더기획 × 원가(VAT 미포함)
+        _t['cost'] += _ir * (s['cost'] or 0)             # 생산원가 = 리오더입고 × 원가 (종합 시트 O열과 같은 입고 기준)
+        _t['tag'] += _ir * (s['tag'] or 0)               # TAG 금액 = 리오더입고 × 택가
+        _t['codes'].append(code)
     for c in s['colors']:
         for k in ('_p0', '_pr', '_ir', '_i0'):
             c.pop(k, None)
@@ -807,6 +826,28 @@ PY_OFF = 26
 SUM = {'block1': [], 'newItem': [], 'newCat': [], 'runItem': [], 'runCat': [], 'seasonCat': [],
        'genderItem': [], 'genderCat': []}
 
+
+# 26FW 리오더 행(시즌별 + TTL) — 판매 지표는 없다(차수로 못 나눔). 화면의 '리오더 수량 포함' 버튼이 켜지면
+# 기획량·입고량·원가·TAG 를 시즌·러닝·합계 행에 더한다(스타일수·SKU 는 같은 스타일이라 더하지 않는다).
+def _re_row(name, t):
+    d = {'name': name, 'styles': t['styles'], 'sku': t['sku'], 'plan': t['plan'], 'inM': t['inM'], 'inSku': t['inSku'],
+         'qtyIn': t['qtyIn'], 'planCost': t['planCost'], 'cost': t['cost'], 'tag': t['tag'], 'codes': sorted(t['codes'])}
+    d['inRate'] = t['qtyIn'] / t['plan'] if t['plan'] else None
+    d['costV'] = round(t['cost'] * 1.1) if t['cost'] else None
+    d['mu'] = round(t['tag'] / t['cost'] / 1.1, 2) if t['tag'] and t['cost'] else None
+    d['muPlan'] = None
+    d['_k'] = 'reorder|%s' % name
+    return d
+
+
+_reTTL = {'styles': 0, 'sku': 0, 'plan': 0, 'inM': 0, 'inSku': 0, 'qtyIn': 0, 'planCost': 0, 'cost': 0, 'tag': 0, 'codes': []}
+for _t in REORDER.values():
+    for _k in _reTTL:
+        _reTTL[_k] += _t[_k]
+SUM['reorder'] = [_re_row(_n, REORDER[_n]) for _n in ('가을', '겨울', '러닝') if _n in REORDER] + [_re_row('TTL', _reTTL)]
+print('26FW 리오더: ' + ' · '.join('%s %d스타일/%dSKU 기획 %s 입고 %s' % (d['name'], d['styles'], d['sku'], format(int(d['plan']), ','), format(int(d['qtyIn']), ','))
+                                  for d in SUM['reorder']))
+
 if '종합' in wb.sheetnames:
     rows = list(wb['종합'].iter_rows(min_row=1, max_row=400, values_only=True))   # 성별 블록이 234행까지 온다
 
@@ -1039,6 +1080,8 @@ def all_rows():
     for rows_ in SUM.get('gift', {}).values():      # 사은품('기타') 행도 스냅샷·전주 대비에 넣는다
         for d in rows_:
             yield d
+    for d in SUM.get('reorder', []):                # 26FW 리오더 행도 스냅샷·전주 대비에 넣는다
+        yield d
 
 
 SNAP = os.path.join(HERE, 'sum_prev.json')

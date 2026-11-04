@@ -102,6 +102,9 @@
   /* 시점재고 버튼 오른쪽 — 지금 보고 있는 러닝 데이터 기준 */
   .panel h3 .stknote{margin-left:8px;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0}
   .panel h3 .stkbtn.gift{margin-left:14px}
+  .panel h3 .stkbtn.reo{margin-left:14px}
+  tr.reorow.off td,tr.reorow.off th{color:var(--muted)}
+  tr.reorow .gx{font-size:10px;font-weight:500;color:var(--muted);margin-left:4px}
   /* 사은품(기타) 하위행 — 꺼져 있으면 흐리게 */
   tr.srow.gift.off td,tr.srow.gift.off th{color:var(--muted)}
   tr.srow.gift .gx{font-size:10px;font-weight:500;color:var(--muted);margin-left:4px}
@@ -542,6 +545,40 @@ const giftChip = () =>
   `<button class="stkbtn gift${GIFTON?' on':''}" title="종합 시트의 사은품 카테고리(ACC 아래 ‘기타’ 행)를 ACC·시즌·신상품·전체 합계에 넣거나 뺍니다">${GIFTON?'사은품 포함':'＋ 사은품 포함'}</button>`
   + `<span class="stknote">${GIFTON ? '사은품(기타)이 ACC·시즌 TTL·신상품·합계에 들어 있음' : '사은품 제외 · ACC 아래 ‘기타’ 행은 참고용'}</span>`;
 
+/* ---------- 26FW 리오더 ----------
+   빌더가 CO 시트의 리오더기획(T)·리오더입고(X)를 26FW 신품번(신상 GF3/GF4 · 러닝 GF7/GF8)만 모아 SUM.reorder 로 넘긴다.
+   ① 시즌 요약의 러닝 아래 '리오더' 행으로 항상 보여 주고, '리오더 수량 포함' 버튼을 켜면 기획량·입고량·원가·TAG 를
+   가을·겨울·러닝·합계 행에 더한다. 판매는 차수로 나눌 수 없어 리오더 행에서는 비워 둔다(합계의 판매는 원래 전체 판매).
+   스타일수·SKU 는 같은 스타일의 추가 기획이라 더하지 않는다. */
+let REON = false;
+const REO = SUM.reorder || [];
+const reoOf = name => REO.find(d=>d.name===name) || null;
+const REO_KEYS = ['plan','qtyIn','planCost','cost','tag'];
+function addR(a, r){
+  if(!REON || !a || !r) return a;
+  const t = Object.assign({}, a);
+  REO_KEYS.forEach(k=>{ if(a[k]!=null || r[k]!=null) t[k] = (a[k]||0) + (r[k]||0); });
+  t.inRate   = t.plan ? (t.qtyIn||0)/t.plan : null;
+  t.sellRate = t.qtyIn ? (t.sales||0)/t.qtyIn : null;
+  t.costV    = t.cost!=null ? Math.round(t.cost*1.1) : null;
+  t.mu       = t.cost ? (t.tag||0)/t.cost/1.1 : null;
+  t.muPlan   = t.planCost ? (t.tag||0)/t.planCost/1.1 : null;
+  return t;
+}
+// 비교 상대(py/was)는 리오더 쪽에도 값이 있을 때만 더한다 — 없으면 기준이 어긋나므로 증감을 비운다(첫 스냅샷 주 · 25FW 는 없음)
+const cmpR = (a, r) => (a && r) ? addR(a, r) : null;
+const rowR = (d, r) => (!d || !REON || !r) ? d : Object.assign({}, d, {cur: addR(d.cur, r), py: cmpR(d.py, r.py), was: cmpR(d.was, r.was)});
+const reoRowName = () => '리오더' + (REON ? '' : ' <small class="gx">26FW 리오더 · 합계 제외</small>');
+const reoRow = (name, cls) => {
+  const r = reoOf('TTL');
+  if(!r) return '';
+  const tip = `26FW 리오더 ${r.styles}스타일 · ${r.sku}SKU — 가을 ${fmtN((reoOf('가을')||{}).plan)} · 겨울 ${fmtN((reoOf('겨울')||{}).plan)} · 러닝 ${fmtN((reoOf('러닝')||{}).plan)} · 판매는 차수로 나눌 수 없어 비움`;
+  return `<tr class="${cls||''} reorow${REON?'':' off'}" title="${tip}"><th class="nm">${name}</th>${cellsOf(r, cmpOf(r))}</tr>`;
+};
+const reoChip = () =>
+  `<button class="stkbtn reo${REON?' on':''}" title="26FW 신품번의 리오더 기획·입고(CO 시트 리오더기획·리오더입고)를 가을·겨울·러닝·합계 행의 기획량·입고량·원가·TAG 에 넣거나 뺍니다">${REON?'리오더 수량 포함':'＋ 리오더 수량 포함'}</button>`
+  + `<span class="stknote">${REON ? '리오더 기획·입고가 가을·겨울·러닝·합계의 기획량·입고량·원가·TAG 에 들어 있음 (카테고리 표는 미포함)' : '리오더 제외 · ‘리오더’ 행은 참고용'}</span>`;
+
 /* ---------- 접이식 행 (복종 클릭 -> 하위 카테고리) ---------- */
 const matchItem = (a,b) => a===b || a.startsWith(b) || b.startsWith(a);   // ACC <-> ACCESSORY
 const isAcc = it => matchItem(String(it||''), 'ACC');
@@ -649,22 +686,31 @@ function renderSum(){
     : '값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감';
 
   // 사은품 포함이 켜지면 시즌 TTL·신상품 TTL 에 사은품(기타) 행을 더한다
-  const fall = rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='가을' && d.item==='TTL'), giftSeason('가을'));
-  const wint = rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='겨울' && d.item==='TTL'), giftSeason('겨울'));
-  const newTtl = rowG(SUM.block1.find(d=>d.kind==='신상품 TTL'), giftAll());
-  const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
-
-  const run1 = withStk(runTtl);
+  // 리오더 수량 포함이 켜지면 가을·겨울·러닝·합계 행의 기획량·입고량·원가·TAG 에 26FW 리오더를 더한다
+  const reoNew = REON ? (()=>{ const rs = ['가을','겨울'].map(reoOf).filter(Boolean); if(!rs.length) return null;
+                               const t = sumRows(rs); t.py = null; t.was = rs.every(r=>r.was) ? sumRows(rs.map(r=>r.was)) : null; return t; })() : null;
+  const fall = rowR(rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='가을' && d.item==='TTL'), giftSeason('가을')), reoOf('가을'));
+  const wint = rowR(rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='겨울' && d.item==='TTL'), giftSeason('겨울')), reoOf('겨울'));
+  const newTtl = rowR(rowG(SUM.block1.find(d=>d.kind==='신상품 TTL'), giftAll()), reoNew);
+  const runTtl0 = SUM.runItem.find(d=>d.item==='TOTAL');
+  const reoRun = reoOf('러닝');
+  // 러닝은 값이 바로 들어 있는 행 — 시점재고(withStk) 위에 리오더를 얹고, 비교 상대도 같은 기준으로 맞춘다
+  const runTtl = (REON && runTtl0 && reoRun)
+    ? Object.assign({}, runTtl0, {py: cmpR(runTtl0.py, null), was: cmpR(runTtl0.was, reoRun.was)}) : runTtl0;
+  const run1 = addR(withStk(runTtl0), reoRun);
+  const runCmp = (REON && reoRun) ? cmpR(cmpRun(runTtl0), MODE==='wk' ? reoRun.was : null) : cmpRun(runTtl0);
   const t1 = table(
     (fall ? dataRow('가을', fall.cur, '', cmpOf(fall)) : '') +
     (wint ? dataRow('겨울', wint.cur, '', cmpOf(wint)) : '') +
-    (runTtl ? dataRow('러닝', run1, 'runrow', cmpRun(runTtl)) : '') +
+    (runTtl ? dataRow('러닝', run1, 'runrow', runCmp) : '') +
+    reoRow('리오더') +
     dataRow('합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
             (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
   const grand = table(
     (newTtl ? dataRow('신상품 TTL', newTtl.cur, '', cmpOf(newTtl)) : '') +
-    (runTtl ? dataRow('러닝 TTL', run1, 'runrow', cmpRun(runTtl)) : '') +
+    (runTtl ? dataRow('러닝 TTL', run1, 'runrow', runCmp) : '') +
+    reoRow('리오더 TTL') +
     dataRow('전체 합계', sumRows([newTtl && newTtl.cur, run1]), 'ttl grand',
             (RUNSTK && MODE==='wk') ? null : cmpSum([newTtl, runTtl])));
 
@@ -674,7 +720,7 @@ function renderSum(){
     '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote;
 
   document.getElementById('panels').innerHTML = [
-    panel('① 시즌 요약' + runChip() + giftChip(), '', t1),
+    panel('① 시즌 요약' + runChip() + giftChip() + reoChip(), '', t1),
     panel('② 가을 카테고리', '', table(seasonCatTable('가을'))),
     panel('③ 겨울 카테고리', '', table(seasonCatTable('겨울'))),
     panel('④ 성별 카테고리', '', table(genderCatTable())),
@@ -684,8 +730,10 @@ function renderSum(){
 
   const toggleRun = e => { e.stopPropagation(); RUNSTK = !RUNSTK; renderSum(); };
   const toggleGift = e => { e.stopPropagation(); GIFTON = !GIFTON; renderSum(); };
-  document.querySelectorAll('.stkbtn:not(.gift)').forEach(b=>b.addEventListener('click', toggleRun));
+  const toggleReo = e => { e.stopPropagation(); REON = !REON; renderSum(); };
+  document.querySelectorAll('.stkbtn:not(.gift):not(.reo)').forEach(b=>b.addEventListener('click', toggleRun));
   document.querySelectorAll('.stkbtn.gift').forEach(b=>b.addEventListener('click', toggleGift));
+  document.querySelectorAll('.stkbtn.reo').forEach(b=>b.addEventListener('click', toggleReo));
   document.querySelectorAll('tr.runrow').forEach(tr=>{
     tr.title = RUNSTK ? '누르면 26FW 기획분만 봅니다'
                       : '누르면 26.07.31 시점재고까지 합산해 봅니다';
