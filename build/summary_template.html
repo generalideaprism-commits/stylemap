@@ -542,8 +542,7 @@ const rowG  = (d, g) => (!d || !GIFTON || !g) ? d : Object.assign({}, d, {cur: a
 const flatG = (d, g) => (!d || !GIFTON || !g) ? d : Object.assign({}, d, sumRows([d, g]), {py: cmpG(d.py, g.py), was: cmpG(d.was, g.was)});       // 값이 바로 들어 있는 행
 const giftRowName = () => '기타' + (GIFTON ? '' : ' <small class="gx">사은품 · 합계 제외</small>');
 const giftChip = () =>
-  `<button class="stkbtn gift${GIFTON?' on':''}" title="종합 시트의 사은품 카테고리(ACC 아래 ‘기타’ 행)를 ACC·시즌·신상품·전체 합계에 넣거나 뺍니다">${GIFTON?'사은품 포함':'＋ 사은품 포함'}</button>`
-  + `<span class="stknote">${GIFTON ? '사은품(기타)이 ACC·시즌 TTL·신상품·합계에 들어 있음' : '사은품 제외 · ACC 아래 ‘기타’ 행은 참고용'}</span>`;
+  `<button class="stkbtn gift${GIFTON?' on':''}" title="종합 시트의 사은품 카테고리(ACC 아래 ‘기타’ 행)를 ACC·시즌·신상품·전체 합계에 넣거나 뺍니다">${GIFTON?'사은품 포함':'＋ 사은품 포함'}</button>`;
 
 /* ---------- 26FW 리오더 ----------
    빌더가 CO 시트의 리오더기획(T)·리오더입고(X)를 26FW 신품번(신상 GF3/GF4 · 러닝 GF7/GF8)만 모아 SUM.reorder 로 넘긴다.
@@ -576,8 +575,7 @@ const reoRow = (name, cls) => {
   return `<tr class="${cls||''} reorow${REON?'':' off'}" title="${tip}"><th class="nm">${name}</th>${cellsOf(r, cmpOf(r))}</tr>`;
 };
 const reoChip = () =>
-  `<button class="stkbtn reo${REON?' on':''}" title="26FW 신품번의 리오더 기획·입고(CO 시트 리오더기획·리오더입고)를 가을·겨울·러닝·합계 행의 기획량·입고량·원가·TAG 에 넣거나 뺍니다">${REON?'리오더 수량 포함':'＋ 리오더 수량 포함'}</button>`
-  + `<span class="stknote">${REON ? '리오더 기획·입고가 가을·겨울·러닝·합계의 기획량·입고량·원가·TAG 에 들어 있음 (카테고리 표는 미포함)' : '리오더 제외 · ‘리오더’ 행은 참고용'}</span>`;
+  `<button class="stkbtn reo${REON?' on':''}" title="26FW 신품번의 리오더 기획·입고(CO 시트 리오더기획·리오더입고)를 가을·겨울·러닝·합계 행의 기획량·입고량·원가·TAG 에 넣거나 뺍니다">${REON?'리오더 수량 포함':'＋ 리오더 수량 포함'}</button>`;
 
 /* ---------- 접이식 행 (복종 클릭 -> 하위 카테고리) ---------- */
 const matchItem = (a,b) => a===b || a.startsWith(b) || b.startsWith(a);   // ACC <-> ACCESSORY
@@ -675,9 +673,7 @@ function cmpSum(rows){
 
 /* 러닝 보기 전환 — 설명줄의 칩과 러닝 행 클릭, 둘 다 같은 토글이다 */
 const runChip = () =>
-  `<button class="stkbtn${RUNSTK?' on':''}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`
-  + `<span class="stknote">${RUNSTK ? '기획량·입고량 = 26FW 러닝 신품번 + 구품번 이월(26.07.31 시점재고) · 판매 = 구+신 합산'
-                                    : '26FW 러닝 신품번 기준 데이터'}</span>`;
+  `<button class="stkbtn${RUNSTK?' on':''}" title="${RUNSTK ? '기획량·입고량 = 26FW 러닝 신품번 + 구품번 이월(26.07.31 시점재고) · 판매 = 구+신 합산' : '누르면 26.07.31 시점재고까지 합산해 봅니다'}">${RUNSTK?'기획 + 시점재고':'＋ 시점재고 합산'}</button>`;
 
 function renderSum(){
   const yr = MODE==='yr';
