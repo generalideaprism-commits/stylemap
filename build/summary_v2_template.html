@@ -519,8 +519,11 @@ function withStk(o){
 }
 
 /* 직전 스타일맵 대비 증감. 증가 = 빨강 ▲, 감소 = 파랑 ▼ */
+// 2026-11-04 사용자 지시: 이번 주차(기준일 2026-11-02)만 기획량 옆 전주 대비 등락을 뺀다 — 다음 빌드부터 자동 복귀
+const WK_DELTA_SKIP = UPDATED === '2026-11-02' ? ['plan'] : [];
 function deltaHtml(v, was, col){
   if(v==null || was==null) return '';
+  if(MODE==='wk' && WK_DELTA_SKIP.includes(col.k)) return '';
   const d = v - was;
   if(!d) return '';
   let txt;
