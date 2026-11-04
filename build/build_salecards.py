@@ -1036,6 +1036,9 @@ def all_rows():
     for name in ('block1', 'newItem', 'newCat', 'runItem', 'runCat', 'seasonCat', 'genderItem', 'genderCat'):
         for d in SUM[name]:
             yield d
+    for rows_ in SUM.get('gift', {}).values():      # 사은품('기타') 행도 스냅샷·전주 대비에 넣는다
+        for d in rows_:
+            yield d
 
 
 SNAP = os.path.join(HERE, 'sum_prev.json')
@@ -1333,7 +1336,11 @@ for _d in SUM['genderCat']:
         for _n in SUM['genderItem']:
             if _n['gender'] == _d['gender'] and _n['item'] in ('ACC', 'TOTAL'):
                 _gift_sub(_n, _d)
+# 2026-11-04: 사은품 행은 지우지 않고 '기타' 하위행으로 따로 넘긴다(SUM['gift']) — 집계표 화면의 ACC 아래 '기타' 행,
+# '사은품 포함' 버튼을 켜면 화면에서 상위 합계에 다시 더한다(기본은 위에서 뺀 값 = 사은품 제외).
+SUM['gift'] = {}
 for _name in ('seasonCat', 'newCat', 'genderCat'):
+    SUM['gift'][_name] = [dict(_d, cat='기타', srcCat=GIFT_CAT) for _d in SUM[_name] if _d['cat'] == GIFT_CAT]
     SUM[_name] = [_d for _d in SUM[_name] if _d['cat'] != GIFT_CAT]
 if GIFT or _gn:
     print('사은품 제외: 카드 %d건(%s) · 집계표 사은품 행을 상위 합계에서 뺌' % (len(GIFT), ', '.join('%s %s' % kv for kv in GIFT.items())))

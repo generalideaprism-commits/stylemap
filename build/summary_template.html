@@ -101,6 +101,10 @@
   .panel h3 .stkbtn{margin-left:8px;vertical-align:1px}
   /* 시점재고 버튼 오른쪽 — 지금 보고 있는 러닝 데이터 기준 */
   .panel h3 .stknote{margin-left:8px;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0}
+  .panel h3 .stkbtn.gift{margin-left:14px}
+  /* 사은품(기타) 하위행 — 꺼져 있으면 흐리게 */
+  tr.srow.gift.off td,tr.srow.gift.off th{color:var(--muted)}
+  tr.srow.gift .gx{font-size:10px;font-weight:500;color:var(--muted);margin-left:4px}
   table.sum.yr thead th.gh.cur{color:#fff;background:#5b73a6}
   table.sum.yr thead th.gh.prv{color:#fff;background:#9aa2ae}
   /* 아래 줄(지표명)의 sticky top 은 윗줄 실제 높이에 맞춰 렌더 후 JS 가 채운다 */
@@ -507,29 +511,64 @@ function sumRows(list){
   return t;
 }
 
+/* ---------- 사은품('기타') ----------
+   빌더는 종합 시트의 사은품 카테고리 행을 상위 합계(ACC·시즌 TTL·신상품 TTL·전체)에서 뺀 뒤 SUM.gift 로 따로 넘긴다.
+   화면에서는 ACC 아래 '기타' 하위행으로 항상 보여 주고, '사은품 포함' 버튼을 켜면 상위 합계에 다시 더한다(끄면 제외). */
+let GIFTON = false;
+const GIFTS = SUM.gift || {seasonCat:[], newCat:[], genderCat:[]};
+function giftOf(list, pred){
+  const rs = (list||[]).filter(pred);
+  if(!rs.length) return null;
+  if(rs.length===1) return rs[0];
+  const t = sumRows(rs);
+  t.py  = rs.every(r=>r.py)  ? sumRows(rs.map(r=>r.py))  : null;
+  t.was = rs.every(r=>r.was) ? sumRows(rs.map(r=>r.was)) : null;
+  return t;
+}
+const giftSeason = se => giftOf(GIFTS.seasonCat, x=>x.season===se);
+const giftGender = g  => giftOf(GIFTS.genderCat, x=>x.gender===g);
+const giftAll    = () => giftOf(GIFTS.seasonCat, x=>true);          // 가을+겨울 = 신상품 전체 사은품
+/* a 에 사은품 g 를 더한 값 — 켜져 있을 때만. sumRows 가 기본 키만 돌려주므로 stk 등 나머지 필드는 유지 */
+const addG  = (a, g) => (GIFTON && a && g) ? Object.assign({}, a, sumRows([a, g])) : a;
+// 비교 상대(py/was)는 사은품 쪽에도 값이 있을 때만 더한다 — 없으면 기준이 어긋나므로 증감을 비운다(첫 스냅샷 주)
+const cmpG  = (a, g) => (a && g) ? addG(a, g) : null;
+const rowG  = (d, g) => (!d || !GIFTON || !g) ? d : Object.assign({}, d, {cur: addG(d.cur, g), py: cmpG(d.py, g.py), was: cmpG(d.was, g.was)});   // cur/py/was 구조
+const flatG = (d, g) => (!d || !GIFTON || !g) ? d : Object.assign({}, d, sumRows([d, g]), {py: cmpG(d.py, g.py), was: cmpG(d.was, g.was)});       // 값이 바로 들어 있는 행
+const giftRowName = () => '기타' + (GIFTON ? '' : ' <small class="gx">사은품 · 합계 제외</small>');
+const giftChip = () =>
+  `<button class="stkbtn gift${GIFTON?' on':''}" title="종합 시트의 사은품 카테고리(ACC 아래 ‘기타’ 행)를 ACC·시즌·신상품·전체 합계에 넣거나 뺍니다">${GIFTON?'사은품 포함':'＋ 사은품 포함'}</button>`
+  + `<span class="stknote">${GIFTON ? '사은품(기타)이 ACC·시즌 TTL·신상품·합계에 들어 있음' : '사은품 제외 · ACC 아래 ‘기타’ 행은 참고용'}</span>`;
+
 /* ---------- 접이식 행 (복종 클릭 -> 하위 카테고리) ---------- */
 const matchItem = (a,b) => a===b || a.startsWith(b) || b.startsWith(a);   // ACC <-> ACCESSORY
+const isAcc = it => matchItem(String(it||''), 'ACC');
 function parentRow(name, o, cmp, gid, subCount, cls, parent, base){
   const tg = subCount ? `<span class="tg">▸</span>` : `<span class="tg none"></span>`;
   const nest = parent ? ` data-p="${parent}" style="display:none"` : '';
   return `<tr class="prow${subCount?' has':''} ${cls||''}${parent?' lv2':''}" data-g="${gid}"${nest}>
     <th class="nm">${tg}${name}${subCount?`<span class="cnt">${subCount}</span>`:''}</th>${cellsOf(o,cmp,base)}</tr>`;
 }
-function subRow(name, o, cmp, gid, base){
-  return `<tr class="srow" data-p="${gid}" style="display:none">
+function subRow(name, o, cmp, gid, base, cls){
+  return `<tr class="srow${cls?' '+cls:''}" data-p="${gid}" style="display:none">
     <th class="nm sub">${name}</th>${cellsOf(o,cmp,base)}</tr>`;
 }
+// ACC 아래 '기타'(사은품) 하위행 — 꺼져 있으면 흐리게(합계 제외 표시)
+const giftSubRow = (g, gid, base) => g ? subRow(giftRowName(), g, cmpOf(g), gid, base, 'gift' + (GIFTON ? '' : ' off')) : '';
 
 function seasonCatTable(season){
   const parents = SUM.block1.filter(d=>d.mode==='new' && d.season===season && d.item!=='TTL');
   const ttl = SUM.block1.find(d=>d.mode==='new' && d.season===season && d.item==='TTL');
+  const g = giftSeason(season);
   const rows = parents.map(d=>{
     const subs = SUM.seasonCat.filter(x=>x.season===season && matchItem(x.item, d.item));
     const gid = season+'-'+d.item;
-    return parentRow(d.item, d.cur, cmpOf(d), gid, subs.length)
-      + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid)).join('');
+    const acc = isAcc(d.item), dg = acc ? rowG(d, g) : d;
+    return parentRow(d.item, dg.cur, cmpOf(dg), gid, subs.length + (acc && g ? 1 : 0))
+      + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid)).join('')
+      + (acc ? giftSubRow(g, gid) : '');
   }).join('');
-  return rows + (ttl ? dataRow(season+' TTL', ttl.cur, 'ttl grand', cmpOf(ttl)) : '');
+  const tg = rowG(ttl, g);
+  return rows + (tg ? dataRow(season+' TTL', tg.cur, 'ttl grand', cmpOf(tg)) : '');
 }
 
 /* 성별(여성/유니맨) 카테고리 — 한 표 안에 성별 묶음 두 개, 시즌 블록과 같은 접이식. 25FW 짝이 없어 전년 모드에서는 오른쪽이 비고,
@@ -538,20 +577,25 @@ const GENDER_LABEL = {'여성': '여성', '남성': '유니맨'};   // 화면 �
 /* 성별 카테고리: 성별 TTL 행만 보이고, 클릭하면 복종(OUTER·TOP·BOTTOM·ACC), 복종을 또 클릭하면 하위 카테고리.
    기획량·입고량·주간판매량·주간판매금액·누계판매량·원가 옆에는 전체(여성+유니맨) 대비 비중을 붙인다. */
 function genderCatTable(){
-  const base = sumRows(SUM.genderItem.filter(d=>d.item==='TOTAL'));   // 여성+유니맨 = 신상품 전체 (비율은 다시 계산)
+  const totals = SUM.genderItem.filter(d=>d.item==='TOTAL');
+  const base = sumRows(GIFTON ? totals.concat(GIFTS.genderCat) : totals);   // 여성+유니맨 = 신상품 전체 (비율은 다시 계산) · 사은품 포함 시 더한다
   return ['여성', '남성'].map(g=>{
     const label = GENDER_LABEL[g] || g;
     const parents = SUM.genderItem.filter(d=>d.gender===g && d.item!=='TOTAL');
     const ttl = SUM.genderItem.find(d=>d.gender===g && d.item==='TOTAL');
     if(!ttl) return '';
+    const gf = giftGender(g);
     const gid0 = 'g-'+g;
     const rows = parents.map(d=>{
       const subs = SUM.genderCat.filter(x=>x.gender===g && matchItem(x.item, d.item));
       const gid = gid0+'-'+d.item;
-      return parentRow(d.item, d, cmpOf(d), gid, subs.length, '', gid0, base)
-        + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid, base)).join('');
+      const acc = isAcc(d.item), dg = acc ? flatG(d, gf) : d;
+      return parentRow(d.item, dg, cmpOf(dg), gid, subs.length + (acc && gf ? 1 : 0), '', gid0, base)
+        + subs.map(x=>subRow(x.cat, x, cmpOf(x), gid, base)).join('')
+        + (acc ? giftSubRow(gf, gid, base) : '');
     }).join('');
-    return parentRow(label+' TTL', ttl, cmpOf(ttl), gid0, parents.length, 'ttl gttl', null, base) + rows;
+    const tg = flatG(ttl, gf);
+    return parentRow(label+' TTL', tg, cmpOf(tg), gid0, parents.length, 'ttl gttl', null, base) + rows;
   }).join('') + dataRow('신상품 전체', base, 'ttl grand', null, base);
 }
 
@@ -601,9 +645,10 @@ function renderSum(){
     ? '왼쪽 블록이 <b>26FW</b>, 오른쪽 블록이 <b>25FW</b> 동시점 실적 · 26FW 값의 ▲▼ 는 전년 대비 증감 방향'
     : '값 오른쪽 ▲▼ 는 직전 스타일맵 대비 증감';
 
-  const fall = SUM.block1.find(d=>d.mode==='new' && d.season==='가을' && d.item==='TTL');
-  const wint = SUM.block1.find(d=>d.mode==='new' && d.season==='겨울' && d.item==='TTL');
-  const newTtl = SUM.block1.find(d=>d.kind==='신상품 TTL');
+  // 사은품 포함이 켜지면 시즌 TTL·신상품 TTL 에 사은품(기타) 행을 더한다
+  const fall = rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='가을' && d.item==='TTL'), giftSeason('가을'));
+  const wint = rowG(SUM.block1.find(d=>d.mode==='new' && d.season==='겨울' && d.item==='TTL'), giftSeason('겨울'));
+  const newTtl = rowG(SUM.block1.find(d=>d.kind==='신상품 TTL'), giftAll());
   const runTtl = SUM.runItem.find(d=>d.item==='TOTAL');
 
   const run1 = withStk(runTtl);
@@ -626,7 +671,7 @@ function renderSum(){
     '가을 · 겨울 = 신상품, 러닝 = 26FW 신규 러닝 품번 · ' + note + planNote;
 
   document.getElementById('panels').innerHTML = [
-    panel('① 시즌 요약' + runChip(), '', t1),
+    panel('① 시즌 요약' + runChip() + giftChip(), '', t1),
     panel('② 가을 카테고리', '', table(seasonCatTable('가을'))),
     panel('③ 겨울 카테고리', '', table(seasonCatTable('겨울'))),
     panel('④ 성별 카테고리', '', table(genderCatTable())),
@@ -635,7 +680,9 @@ function renderSum(){
   ].join('');
 
   const toggleRun = e => { e.stopPropagation(); RUNSTK = !RUNSTK; renderSum(); };
-  document.querySelectorAll('.stkbtn').forEach(b=>b.addEventListener('click', toggleRun));
+  const toggleGift = e => { e.stopPropagation(); GIFTON = !GIFTON; renderSum(); };
+  document.querySelectorAll('.stkbtn:not(.gift)').forEach(b=>b.addEventListener('click', toggleRun));
+  document.querySelectorAll('.stkbtn.gift').forEach(b=>b.addEventListener('click', toggleGift));
   document.querySelectorAll('tr.runrow').forEach(tr=>{
     tr.title = RUNSTK ? '누르면 26FW 기획분만 봅니다'
                       : '누르면 26.07.31 시점재고까지 합산해 봅니다';
