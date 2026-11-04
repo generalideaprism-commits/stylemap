@@ -449,14 +449,15 @@ function card(s){
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
     ${lotLine(s)}
     <div class="meta">
+      <!-- 2열 그리드(행 순서 채움): 왼쪽 원가·입고·출고·입고여부 / 오른쪽 배수(택가)·배수(실판)·TAG판매금액·실판매금액 -->
       <div><span>원가(VAT 포함)</span><b>${won(s.costV)}</b></div>
       <div><span title="마크업 = 택가 ÷ 원가(VAT 포함)">배수(택가)</span><b>${s.mult ?? '-'}</b></div>
       <div><span>입고</span><b>${s.inDate||'-'}</b></div>
+      <div><span title="실판 마크업 = 실판가 ÷ 원가(VAT 포함)">배수(실판)</span><b>${s.multReal ?? '-'}</b></div>
       <div><span>출고</span><b>${s.outDate||'-'}</b></div>
       <div><span>TAG판매금액</span><b>${n0(s.tagAmt)}</b></div>
-      <div><span>실판매금액</span><b>${n0(s.saleAmt)}</b></div>
-      <div><span title="실판 마크업 = 실판가 ÷ 원가(VAT 포함)">배수(실판)</span><b>${s.multReal ?? '-'}</b></div>
       <div><span>입고여부</span><b>${s.arrived}</b></div>
+      <div><span>실판매금액</span><b>${n0(s.saleAmt)}</b></div>
     </div>
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
