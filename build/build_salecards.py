@@ -135,8 +135,37 @@ def dkey(v):
 
 wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
 
-ST_MAIN, ST_RUN = sheet('생판재', '26FW'), sheet('생판재', '러닝')
-CO_MAIN, CO_RUN = sheet('주간판매', '26FW'), sheet('주간판매', '러닝')
+# 2026-11-09 판부터 '구조조정' 구조: 생판재-26FW/러닝(ST)·주간판매-26FW/러닝(CO) 4장 대신 전 스타일 통합 시트
+# '생판재(ST)'·'주간판매(CO)' 2장에 A열 '신상'(2026 가을·겨울 = 1)·B열 '러닝여부'·C열 '신규품번/스타일 수' 플래그가 붙고,
+# 집계 시트는 '종합(2)' 다. 통합 시트가 있으면 그것을 플래그로 걸러 분리 시트처럼 읽고(SheetView), 없으면 예전 분리 시트를 읽는다.
+MERGED = '생판재(ST)' in wb.sheetnames and '주간판매(CO)' in wb.sheetnames
+if MERGED:
+    ST_MAIN, ST_RUN = '생판재(ST)#메인', '생판재(ST)#러닝'
+    CO_MAIN, CO_RUN = '주간판매(CO)#메인', '주간판매(CO)#러닝'
+else:
+    ST_MAIN, ST_RUN = sheet('생판재', '26FW'), sheet('생판재', '러닝')
+    CO_MAIN, CO_RUN = sheet('주간판매', '26FW'), sheet('주간판매', '러닝')
+SUM_SHEET = '종합(2)' if MERGED and '종합(2)' in wb.sheetnames else '종합'
+print('시트 구조: %s · 집계 시트 %s' % ('통합(생판재(ST)/주간판매(CO) + 플래그)' if MERGED else '분리(26FW/러닝)', SUM_SHEET))
+
+
+class SheetView:
+    """통합 시트를 분리 시트처럼 보여 준다 — 1~3행(머리글·합계)은 그대로, 4행부터 pred(row) 가 참인 행만 낸다."""
+    def __init__(self, ws, title, pred):
+        self.ws, self.title, self.pred = ws, title, pred
+
+    def iter_rows(self, min_row=1, max_row=None, values_only=True, **kw):
+        for i, r in enumerate(self.ws.iter_rows(min_row=min_row, max_row=max_row, values_only=True, **kw), start=min_row):
+            if i < 4 or self.pred(r):
+                yield r
+
+
+VIEWS = {}
+
+
+def ws_of(name):
+    """시트 이름(또는 '#메인'/'#러닝' 가상 이름) -> 워크시트/SheetView"""
+    return VIEWS.get(name) or wb[name]
 
 # '26FW 러닝스타일 리스트' 시트: 기존품번 <-> 신규러닝품번 상호 매핑 (이미지 폴더 후보용)
 pair = {}
@@ -151,6 +180,30 @@ if '26FW 러닝스타일 리스트' in wb.sheetnames:
 # 러닝 시트는 판에 따라 전 브랜드 덤프(260914 PT2: 1,594 스타일)로 오기도 하므로 리스트 품번으로 한정한다
 run_codes = set(run_group)
 # 리스트 시트에 없는 러닝 품번을 임시로 넣던 RUN_EXTRA_CODES 는 GF8LKP534 가 리스트(WBE4L05534 짝)에 들어가 치웠다 (2026-11-02)
+
+if MERGED:
+    # 메인 = A열 '신상' 플래그 1 (2026 가을·겨울 — 예전 생판재-26FW/주간판매-26FW 와 같은 집합)
+    # 러닝 = 러닝스타일 리스트 품번(구품번 + 신품번). 통합 시트의 B열 '러닝여부' 는 구품번에만 붙어 있어 쓰지 않는다
+    def _view(sheet_name, kind):
+        ws = wb[sheet_name]
+        hdr = [txt(v) for v in next(ws.iter_rows(min_row=2, max_row=2, values_only=True))]
+        a3 = txt(next(ws.iter_rows(min_row=3, max_row=3, values_only=True))[0])
+        if '스타일' not in hdr or a3 != '신상':
+            raise SystemExit('%s 의 머리글이 구조조정 판과 다릅니다 (2행에 스타일, 3행 A열에 신상 이어야 함): 3행 A=%r' % (sheet_name, a3))
+        si = hdr.index('스타일')
+        if kind == '메인':
+            pred = lambda r: (num(r[0]) or 0) == 1
+        else:
+            pred = lambda r: len(r) > si and txt(r[si]) in run_codes
+        return SheetView(ws, '%s#%s' % (sheet_name, kind), pred)
+    for _nm in (ST_MAIN, ST_RUN, CO_MAIN, CO_RUN):
+        _sheet, _kind = _nm.split('#')
+        VIEWS[_nm] = _view(_sheet, _kind)
+    _n_main = sum(1 for _ in VIEWS[ST_MAIN].iter_rows(min_row=4)) ; _n_run = sum(1 for _ in VIEWS[ST_RUN].iter_rows(min_row=4))
+    _c_main = sum(1 for _ in VIEWS[CO_MAIN].iter_rows(min_row=4)); _c_run = sum(1 for _ in VIEWS[CO_RUN].iter_rows(min_row=4))
+    print('통합 시트 분리: 메인 %d스타일/%d컬러행 · 러닝 %d스타일/%d컬러행' % (_n_main, _c_main, _n_run, _c_run))
+    if not _n_main or not _c_main:
+        raise SystemExit('통합 시트에서 신상(A열=1) 행을 찾지 못했습니다 — 플래그 열을 확인하세요')
 
 
 def mdp_tag(code, sheet_tag):
@@ -184,7 +237,7 @@ STAR = {}        # '*' 스타일: 품번 -> 시즌/품명/기획량 (집계표 �
 # 입고 대기 품번: 주간판매(CO) 시트 입고 합이 0 보다 크면 제외 목록에서 푼다
 _inb = {}
 if EXCLUDE_UNTIL_INBOUND:
-    _wsc = wb[CO_MAIN]
+    _wsc = ws_of(CO_MAIN)
     _cc = co_cols(_wsc)
     for _r in _wsc.iter_rows(min_row=4, values_only=True):
         _c = txt(_r[_cc['style']]) if len(_r) > _cc['style'] else ''
@@ -198,7 +251,7 @@ if EXCLUDE_UNTIL_INBOUND:
             print('입고 대기: %s 입고 없음 — 제외 유지' % _c)
 
 for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
-    ws = wb[st_sheet]
+    ws = ws_of(st_sheet)
     ST_ = st_cols(ws)
     for r in ws.iter_rows(min_row=4, values_only=True):
         code = txt(r[ST_['style']] if len(r) > ST_['style'] else '')
@@ -283,13 +336,13 @@ if TAGMAP:
 # 메인/러닝: 26FW 시트(ST/CO)에 존재하면 메인
 main_codes = set()
 for st_sheet in (ST_MAIN,):
-    _st = st_cols(wb[st_sheet])
-    for r in wb[st_sheet].iter_rows(min_row=4, values_only=True):
+    _st = st_cols(ws_of(st_sheet))
+    for r in ws_of(st_sheet).iter_rows(min_row=4, values_only=True):
         c = txt(r[_st['style']] if len(r) > _st['style'] else '')
         if c and c != '스타일':
             main_codes.add(c)
-_co = co_cols(wb[CO_MAIN])
-for r in wb[CO_MAIN].iter_rows(min_row=4, values_only=True):
+_co = co_cols(ws_of(CO_MAIN))
+for r in ws_of(CO_MAIN).iter_rows(min_row=4, values_only=True):
     c = txt(r[_co['style']] if len(r) > _co['style'] else '')
     if c and c != '스타일':
         main_codes.add(c)
@@ -300,7 +353,7 @@ FILE_YEAR = 2000 + int(_m.group(1)) if _m else 2026
 
 _star_colors = set()
 for co_sheet in (CO_MAIN, CO_RUN):
-    ws = wb[co_sheet]
+    ws = ws_of(co_sheet)
     co = co_cols(ws)                 # 판마다 열이 밀릴 수 있어 시트별로 잡는다
     # 주간 열은 매주 한 칸씩 밀리는 롤링 구조라 라벨(W1=최근 완료 주)로 찾는다
     hdr = next(ws.iter_rows(min_row=2, max_row=2, values_only=True))
@@ -848,8 +901,8 @@ SUM['reorder'] = [_re_row(_n, REORDER[_n]) for _n in ('가을', '겨울', '러�
 print('26FW 리오더: ' + ' · '.join('%s %d스타일/%dSKU 기획 %s 입고 %s' % (d['name'], d['styles'], d['sku'], format(int(d['plan']), ','), format(int(d['qtyIn']), ','))
                                   for d in SUM['reorder']))
 
-if '종합' in wb.sheetnames:
-    rows = list(wb['종합'].iter_rows(min_row=1, max_row=400, values_only=True))   # 성별 블록이 234행까지 온다
+if SUM_SHEET in wb.sheetnames:
+    rows = list(wb[SUM_SHEET].iter_rows(min_row=1, max_row=400, values_only=True))   # 성별 블록이 234행까지 온다
 
     def cell(r, col, off=0):
         row = rows[r - 1]
@@ -1402,7 +1455,7 @@ def _amt_sub(row, d_tot, d_wk):
 
 
 if AMT_FIX_DIFF:
-    _ws = wb[ST_MAIN]
+    _ws = ws_of(ST_MAIN)
     _st = st_cols(_ws)
     _h1 = [txt(v) for v in next(_ws.iter_rows(min_row=1, max_row=1, values_only=True))]
     _iWk = _h1.index('판매(최근)')

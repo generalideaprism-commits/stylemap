@@ -100,16 +100,23 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40, 
     unlisted_rows = [{'code': c, 'inNas': c in (nas_all or []), 'in25': c in i25} for c in unlisted if c not in lf_now_u]      # SS 스타일맵에 자료가 없어 넣지 못한 품번(있으면 알린다)
     extra_codes = [c for c in unlisted if c in lf_now_u]                    # 자료가 있는 것 = 러닝 원본에만 있는 과년 러닝 → 구품번 추가(SS 기준)
     # --- FW: 주간판매-러닝(CO), 러닝 ST(누계), 시점재고(7/31) ---
-    wl, fww = weekly(fw_wb['주간판매-러닝(CO)'], 13, 33)
+    # 2026-11-09 판부터는 전 스타일 통합 시트 '주간판매(CO)'/'생판재(ST)' (구조조정) — 러닝 분리 시트와 열 배치가 같거나(CO) 한 칸 밀려(ST) 있어
+    # '스타일' 머리글 위치로 오프셋을 잡는다. 통합 시트는 전 스타일을 담고 있어 러닝 분리 시트(전 브랜드 덤프)와 같은 집합이다.
+    co_sheet = '주간판매(CO)' if '주간판매(CO)' in fw_wb.sheetnames else '주간판매-러닝(CO)'
+    st_sheet = '생판재(ST)' if '생판재(ST)' in fw_wb.sheetnames else '생판재-러닝(ST)'
+    co_hdr = [txt(v) for v in next(fw_wb[co_sheet].iter_rows(min_row=2, max_row=2, values_only=True))]
+    wl, fww = weekly(fw_wb[co_sheet], co_hdr.index('스타일'), co_hdr.index('재고합'))
+    st_hdr = [txt(v) for v in next(fw_wb[st_sheet].iter_rows(min_row=2, max_row=2, values_only=True))]
+    off = st_hdr.index('스타일') - 14                     # 러닝 분리 시트(스타일 O열=14) 기준 열 번호에 더할 오프셋
     st, name = collections.defaultdict(lambda: collections.defaultdict(float)), {}
-    for r in fw_wb['생판재-러닝(ST)'].iter_rows(min_row=4, max_row=4997, max_col=70, values_only=True):
-        if len(r) > 14 and r[14]:
-            c = txt(r[14])
-            name[c] = txt(r[15])
+    for r in fw_wb[st_sheet].iter_rows(min_row=4, max_row=4997, max_col=70 + off, values_only=True):
+        if len(r) > 14 + off and r[14 + off]:
+            c = txt(r[14 + off])
+            name[c] = txt(r[15 + off])
             a = st[c]
-            a['grp'] = GRP.get(txt(r[7]), '?')
+            a['grp'] = GRP.get(txt(r[7 + off]), '?')
             for k, j in dict(sales=60, salesTag=61, salesAmt=62, wkQty=56, wkAmt=58, stock=66, salesCost=63).items():
-                a[k] += num(r[j])
+                a[k] += num(r[j + off])
     sn = collections.defaultdict(lambda: collections.defaultdict(float))
     for r in fw_wb['시점재고(~26.07.31, 컬러생판재)'].iter_rows(min_row=4, max_row=5800, max_col=75, values_only=True):
         if len(r) > 70 and r[16]:
@@ -275,7 +282,14 @@ def build(fw_wb, ss_path, ss_list, old36, fw_stk_total=None, week_start_idx=40, 
 
     fw_new = {txt(r[1]) for r in fw_wb['26FW 러닝스타일 리스트'].iter_rows(min_row=2, max_row=300, max_col=2, values_only=True) if r and len(r) > 1 and r[1]}      # FW 신품번 목록(B열)
     checks['extraInFwNew'] = sorted(set(extra_codes) & fw_new)
-    new_blocks = set(ssn) | {txt(r[14]) for r in fw_wb['생판재-26FW(ST)'].iter_rows(min_row=4, max_row=4997, max_col=16, values_only=True) if len(r) > 14 and r[14]}      # SS 신상품('생,판,재') + FW 신상품(생판재-26FW)
+    # FW 신상품 품번: 통합 시트면 A열 '신상'=1 행, 분리 시트면 생판재-26FW(ST) 전체 — 둘 다 '스타일' 머리글 위치로 읽는다
+    if '생판재(ST)' in fw_wb.sheetnames:
+        fw_new_codes = {txt(r[14 + off]) for r in fw_wb['생판재(ST)'].iter_rows(min_row=4, max_row=4997, max_col=16 + off, values_only=True) if len(r) > 14 + off and r[14 + off] and num(r[0]) == 1}
+    else:
+        _h = [txt(v) for v in next(fw_wb['생판재-26FW(ST)'].iter_rows(min_row=2, max_row=2, values_only=True))]
+        _si = _h.index('스타일')
+        fw_new_codes = {txt(r[_si]) for r in fw_wb['생판재-26FW(ST)'].iter_rows(min_row=4, max_row=4997, max_col=_si + 2, values_only=True) if len(r) > _si and r[_si]}
+    new_blocks = set(ssn) | fw_new_codes      # SS 신상품('생,판,재') + FW 신상품
     all_only = [r_['code'] for r_ in rows_only + rows_extra]
     checks['onlyInNew'] = sorted(set(all_only) & new_blocks)                          # 구품번 추가가 신상품 합계에 이미 들어 있으면 두 번 세는 것
     checks['onlyInSsRun'] = sorted(set(all_only) & set(ss_list))                       # 구품번 추가가 SS 러닝 31개에도 있으면 두 번 세는 것
