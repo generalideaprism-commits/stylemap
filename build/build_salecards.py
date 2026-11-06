@@ -19,9 +19,21 @@ SHARE_DIR = os.path.join(ROOT, 'share')
 IMG_DIR = os.path.join(SHARE_DIR, 'img')
 os.makedirs(IMG_DIR, exist_ok=True)
 
-# data/ 에서 날짜가 가장 큰 스타일맵 파일 사용 (인자로 경로를 주면 그 파일)
-if len(sys.argv) > 1:
-    SRC = sys.argv[1]
+# 원천 두 가지
+#   · 구글 시트(--sheet 또는 환경변수 STYLEMAP_SOURCE=sheet): ERP 직접 조회분이 매주 들어오는 '대쉬보드PIP업데이트파일'.
+#     원자료 탭을 읽고 종합 시트는 빌드가 직접 계산한다(gsource.py · jonghap.py). 파일 날짜는 '기준 일요일 다음 날(월)'로 잡아
+#     엑셀 시절 파일명 관례(261102 = 판매 ~11/01)와 같게 둔다.
+#   · 엑셀: data/ 에서 날짜가 가장 큰 스타일맵 파일 (인자로 경로를 주면 그 파일)
+SHEET_MODE = '--sheet' in sys.argv or os.environ.get('STYLEMAP_SOURCE') == 'sheet'
+_argv = [a for a in sys.argv[1:] if not a.startswith('--')]
+GS = None
+if SHEET_MODE:
+    sys.path.insert(0, HERE)
+    import gsource
+    GS = gsource.load()
+    SRC = os.path.join(DATA_DIR, '%s_26FW 스타일맵(구글시트)' % (GS['ref'] + datetime.timedelta(days=1)).strftime('%y%m%d'))
+elif _argv:
+    SRC = _argv[0]
 else:
     cands = sorted(f for f in os.listdir(DATA_DIR)
                    if re.match(r'^\d{6}_26FW 스타일맵.*\.xlsx$', f) and not f.startswith('~$'))
@@ -133,7 +145,14 @@ def dkey(v):
     return txt(v)[:10]
 
 
-wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
+wb = GS['wb'] if GS else openpyxl.load_workbook(SRC, read_only=True, data_only=True)
+
+
+def theme_val(code, r, cols):
+    """스타일의 테마 원천. 구글 시트: 생판재 탭 D열(IMC) — 사용자 지정 2026-11-06. 엑셀: 생판재 K열(컨셉)."""
+    # IMC 는 러닝 신품번(GF7·GF8)에만 적혀 있어, 구품번(통합 카드의 대표 품번)은 짝 신품번의 테마를 물려받는다.
+    if GS is not None: return GS['themes'].get(code) or GS['themes'].get(run_group.get(code) or '', '')
+    return txt(r[cols['theme']])
 
 # 2026-11-09 판부터 '구조조정' 구조: 생판재-26FW/러닝(ST)·주간판매-26FW/러닝(CO) 4장 대신 전 스타일 통합 시트
 # '생판재(ST)'·'주간판매(CO)' 2장에 A열 '신상'(2026 가을·겨울 = 1)·B열 '러닝여부'·C열 '신규품번/스타일 수' 플래그가 붙고,
@@ -296,9 +315,9 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'cat2': txt(r[ST_['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
             # 테마 = 생판재 시트 K열(컨셉). '노르딕,패턴' 도 통째로 하나의 테마다
             # '컨셉1' 은 ERP 덤프의 자리표시 값 — 테마가 아니다
-            'themes': ([txt(r[ST_['theme']])] if txt(r[ST_['theme']]) not in ('', '컨셉1') else [])
+            'themes': ([theme_val(code, r, ST_)] if theme_val(code, r, ST_) not in ('', '컨셉1') else [])
                       # 시트 컨셉 열에 없어도 품명 앞머리로 붙는 테마 (사용자 지시 2026-10-22: '온도업')
-                      + [th for pre, th in NAME_THEMES.items() if txt(r[ST_['name']]).startswith(pre) and th != txt(r[ST_['theme']])],
+                      + [th for pre, th in NAME_THEMES.items() if txt(r[ST_['name']]).startswith(pre) and th != theme_val(code, r, ST_)],
             'vendor': txt(r[ST_['vendor']]),
             'tag': tag,
             'tagErp': tag_erp,              # 시트 Z열 원본 택가 — 덮기 전 값 보존(실판가 대타는 이 값을 쓴다)
