@@ -20,12 +20,12 @@ IMG_DIR = os.path.join(SHARE_DIR, 'img')
 os.makedirs(IMG_DIR, exist_ok=True)
 
 # 원천 두 가지
-#   · 구글 시트(--sheet 또는 환경변수 STYLEMAP_SOURCE=sheet): ERP 직접 조회분이 매주 들어오는 '대쉬보드PIP업데이트파일'.
+#   · 구글 시트 [기본, 2026-11-09 주부터 — 사용자 지시 2026-11-06]: ERP 직접 조회분이 매주 들어오는 '대쉬보드PIP업데이트파일'.
 #     원자료 탭을 읽고 종합 시트는 빌드가 직접 계산한다(gsource.py · jonghap.py). 파일 날짜는 '기준 일요일 다음 날(월)'로 잡아
 #     엑셀 시절 파일명 관례(261102 = 판매 ~11/01)와 같게 둔다.
-#   · 엑셀: data/ 에서 날짜가 가장 큰 스타일맵 파일 (인자로 경로를 주면 그 파일)
-SHEET_MODE = '--sheet' in sys.argv or os.environ.get('STYLEMAP_SOURCE') == 'sheet'
+#   · 엑셀: 인자로 경로를 주거나 --xlsx(data/ 에서 날짜가 가장 큰 스타일맵 파일) 또는 환경변수 STYLEMAP_SOURCE=xlsx
 _argv = [a for a in sys.argv[1:] if not a.startswith('--')]
+SHEET_MODE = not _argv and '--xlsx' not in sys.argv and os.environ.get('STYLEMAP_SOURCE') != 'xlsx'
 GS = None
 if SHEET_MODE:
     sys.path.insert(0, HERE)
