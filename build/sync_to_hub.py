@@ -80,6 +80,8 @@ print('데이터 날짜:', date)
 idx = open(INDEX, encoding='utf-8').read()
 if _st_ok:                                      # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
     KEYS.append('status26fw')
+if '26ss-sales-cards.html' in htmls:            # 26SS 판매자료 카드(2026-11-09 부터 같은 빌드 --ss 로 생성)
+    KEYS.append('cards26ss')
 for key in KEYS:
     i = idx.find("key:'%s'" % key)
     if i < 0:
@@ -97,7 +99,7 @@ print('카탈로그 갱신: %s (updated=%s%s)' % (', '.join(KEYS), date, ', hist
 
 # 4) 커밋 --------------------------------------------------------------------
 if a.commit:
-    msg = '공유파일 26FW 판매카드·집계표 갱신 (%s)' % date + (('\n\n- ' + a.note) if a.note else '')
+    msg = '공유파일 26FW%s 판매카드·집계표 갱신 (%s)' % ('·26SS' if 'cards26ss' in KEYS else '', date) + (('\n\n- ' + a.note) if a.note else '')
     subprocess.run(['git', 'add', 'share'], cwd=a.hub, check=True)
     r = subprocess.run(['git', 'commit', '-m', msg], cwd=a.hub)
     if r.returncode == 0:
