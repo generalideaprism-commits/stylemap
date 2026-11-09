@@ -1726,6 +1726,20 @@ try:
             print('  ⚠ 두 파일 대조가 오차 %d장을 넘거나 이월 계산이 종합 시트와 다릅니다 — 연간 러닝 숫자를 쓰기 전에 확인하세요' % run_annual.TOL)
 except Exception as _e:
     print('[경고] 연간 러닝(시즌 기준) 자료를 만들지 못했습니다:', type(_e).__name__, _e)
+# 연간 — 단일 원천(구글 시트 ERP 자동 조회) 2단계(2026-11-09 사용자): 26SS 신상·26FW 신상·러닝 구/신품번을 품번 하나 = 묶음 하나로 세어
+# NAS 26SS 스타일맵(SS)·두 파일 대조(RUNY) 대신 쓴다. 탭(26년생판재(1.1~,ST)·시점재고(~25.12.31,ST))이 없으면 예전 방식 그대로.
+ANN = {}
+if GS:
+    try:
+        import annual_gs
+        _ss_gs, ANN = annual_gs.build(GS)
+        SS = _ss_gs
+        RUNY = {}
+        json.dump({'ss': SS, 'ann': ANN}, open(os.path.join(HERE, 'annual_snapshot.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    except SystemExit as _e:
+        print('[경고] 연간 단일 원천을 만들지 못해 예전 방식(NAS 26SS + 두 파일 대조)으로 둡니다:', _e)
+    except Exception as _e:
+        print('[경고] 연간 단일 원천 계산 실패 — 예전 방식으로 둡니다:', type(_e).__name__, _e)
 # 온·오프 탭 — 판매 카드의 채널 판매(허브 MARK 채널 자료)를 시즌(가을·겨울·러닝)×복종으로 합친다.
 # 러닝은 카드가 신품번 기준이라 신품번 판매만(구품번 이월 판매는 채널 자료가 없다). 판매 원가 = 스타일 원가(VAT 포함) × 판매량 — 채널에 따라 달라지지 않는 단가라 정확하다.
 def _bok_of(it):
@@ -1778,7 +1792,7 @@ CHN = {'at': CH_AT, 'src': CH_SRC, 'end': DATA_END,
        'rows': [dict(g=_k[0], bok=_k[1], **{_x: (round(_y) if isinstance(_y, float) else _y) for _x, _y in _v.items()}) for _k, _v in sorted(_chn.items())]}
 print('온·오프 탭: %d행 · 채널 판매 합 %d장 (카드 판매 %d장)' % (len(CHN['rows']), sum(r['on'] + r['off'] + r['etc'] for r in CHN['rows']), sum(r['sales'] for r in CHN['rows'])))
 render('summary_v2_template.html', OUT_SUM2,
-       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '/*__RUNY__*/{}': json.dumps(RUNY, ensure_ascii=False), '__DATAEND__': DATA_END})
+       **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '/*__RUNY__*/{}': json.dumps(RUNY, ensure_ascii=False), '/*__ANN__*/{}': json.dumps(ANN, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
     print('removed:', OUT_CMP)
