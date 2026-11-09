@@ -37,17 +37,17 @@ if not os.path.exists(INDEX):
 # 1) 파일 복사 --------------------------------------------------------------
 htmls = [f for f in os.listdir(SRC_SHARE) if f.endswith('.html')]
 # 시즌 판매 현황 페이지는 허브가 원본(다른 PC 의 생성기도 쓴다) — 이번 빌드가 새로 만든 것일 때만 덮는다
-_st = '26fw-season-status.html'
-_st_ok = False                                   # 카탈로그(status26fw) 날짜를 맞출지
-if _st in htmls:
+_st_keys = []                                    # 카탈로그 날짜를 맞출 시즌 판매 현황 항목
+for _st, _key in (('26fw-season-status.html', 'status26fw'), ('26ss-season-status.html', 'status26ss')):
+    if _st not in htmls: continue
     _src_st, _hub_st = os.path.join(SRC_SHARE, _st), os.path.join(HUB_SHARE, _st)
     if os.path.exists(_hub_st) and open(_src_st, 'rb').read() == open(_hub_st, 'rb').read():
-        htmls.remove(_st); _st_ok = True         # 이미 같은 내용(앞서 복사됨)
+        htmls.remove(_st); _st_keys.append(_key)  # 이미 같은 내용(앞서 복사됨)
     elif os.path.exists(_hub_st) and os.path.getmtime(_src_st) < os.path.getmtime(_hub_st):
         htmls.remove(_st)
-        print('시즌 판매 현황: 허브 쪽이 더 새것이라 복사하지 않음')
+        print('%s: 허브 쪽이 더 새것이라 복사하지 않음' % _st)
     else:
-        _st_ok = True
+        _st_keys.append(_key)
 for f in htmls:
     shutil.copy2(os.path.join(SRC_SHARE, f), os.path.join(HUB_SHARE, f))
 print('HTML 복사:', ', '.join(htmls))
@@ -78,8 +78,7 @@ print('데이터 날짜:', date)
 
 # 3) 허브 카탈로그 갱신 ------------------------------------------------------
 idx = open(INDEX, encoding='utf-8').read()
-if _st_ok:                                      # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
-    KEYS.append('status26fw')
+KEYS.extend(_st_keys)                           # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
 if '26ss-sales-cards.html' in htmls:            # 26SS 판매자료 카드(2026-11-09 부터 같은 빌드 --ss 로 생성)
     KEYS.append('cards26ss')
 for key in KEYS:

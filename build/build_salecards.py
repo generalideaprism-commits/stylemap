@@ -973,6 +973,13 @@ if SEASON == 'SS':
     base = os.path.basename(SRC)
     updated = '20%s-%s-%s' % (base[0:2], base[2:4], base[4:6]) if base[:6].isdigit() else ''
     render('salecards_template.html', OUT_CARD, **card_tokens())
+    # 26SS 시즌 판매 현황(허브, KWAN 의 G.I 종합 셀 화면)에도 같은 원천으로 계산한 26SS 종합값을 이번 주차로 넣는다 (2026-11-09 사용자)
+    try:
+        import annual_gs, ss_status
+        _ss_block, _ = annual_gs.build(GS, verbose=False)
+        ss_status.update(_ss_block, GS['ref'], os.path.basename(SRC))
+    except Exception as _e:
+        print('[경고] 26SS 시즌 판매 현황 갱신 실패 — 카드는 정상:', type(_e).__name__, _e)
     print('26SS 카드 완료 — 집계표·연간은 FW 빌드에서 만든다')
     sys.exit(0)
 
