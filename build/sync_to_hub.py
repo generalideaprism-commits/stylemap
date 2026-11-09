@@ -38,11 +38,16 @@ if not os.path.exists(INDEX):
 htmls = [f for f in os.listdir(SRC_SHARE) if f.endswith('.html')]
 # 시즌 판매 현황 페이지는 허브가 원본(다른 PC 의 생성기도 쓴다) — 이번 빌드가 새로 만든 것일 때만 덮는다
 _st = '26fw-season-status.html'
+_st_ok = False                                   # 카탈로그(status26fw) 날짜를 맞출지
 if _st in htmls:
-    _hub_st = os.path.join(HUB_SHARE, _st)
-    if os.path.exists(_hub_st) and os.path.getmtime(os.path.join(SRC_SHARE, _st)) <= os.path.getmtime(_hub_st):
+    _src_st, _hub_st = os.path.join(SRC_SHARE, _st), os.path.join(HUB_SHARE, _st)
+    if os.path.exists(_hub_st) and open(_src_st, 'rb').read() == open(_hub_st, 'rb').read():
+        htmls.remove(_st); _st_ok = True         # 이미 같은 내용(앞서 복사됨)
+    elif os.path.exists(_hub_st) and os.path.getmtime(_src_st) < os.path.getmtime(_hub_st):
         htmls.remove(_st)
         print('시즌 판매 현황: 허브 쪽이 더 새것이라 복사하지 않음')
+    else:
+        _st_ok = True
 for f in htmls:
     shutil.copy2(os.path.join(SRC_SHARE, f), os.path.join(HUB_SHARE, f))
 print('HTML 복사:', ', '.join(htmls))
@@ -58,7 +63,7 @@ for n in names:
         copied += 1
 removed = 0
 for n in os.listdir(dst_img):
-    if n not in names:
+    if n not in names and os.path.isfile(os.path.join(dst_img, n)):      # 하위 폴더(26ss 등 다른 페이지 이미지)는 건드리지 않는다
         os.remove(os.path.join(dst_img, n))
         removed += 1
 print('이미지 %d장 (변경 %d, 삭제 %d)' % (len(names), copied, removed))
@@ -73,7 +78,7 @@ print('데이터 날짜:', date)
 
 # 3) 허브 카탈로그 갱신 ------------------------------------------------------
 idx = open(INDEX, encoding='utf-8').read()
-if '26fw-season-status.html' in htmls:          # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
+if _st_ok:                                      # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
     KEYS.append('status26fw')
 for key in KEYS:
     i = idx.find("key:'%s'" % key)
@@ -96,7 +101,12 @@ if a.commit:
     subprocess.run(['git', 'add', 'share'], cwd=a.hub, check=True)
     r = subprocess.run(['git', 'commit', '-m', msg], cwd=a.hub)
     if r.returncode == 0:
-        subprocess.run(['git', 'push', 'origin', 'HEAD'], cwd=a.hub, check=True)
+        p = subprocess.run(['git', 'push', 'origin', 'HEAD'], cwd=a.hub)
+        if p.returncode != 0:                      # 자동 커밋이 먼저 올라간 경우: 받아서 얹고 다시 민다
+            print('push 거부 — origin/main 을 받아 rebase 후 다시 push')
+            subprocess.run(['git', 'fetch', '-q', 'origin'], cwd=a.hub, check=True)
+            subprocess.run(['git', 'rebase', 'origin/main'], cwd=a.hub, check=True)
+            subprocess.run(['git', 'push', 'origin', 'HEAD'], cwd=a.hub, check=True)
         print('허브 저장소에 커밋·푸시 완료')
     else:
         print('변경 사항이 없어 커밋하지 않았습니다')
