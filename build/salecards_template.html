@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>26FW 판매자료 카드</title>
+<title>__SEASON__ 판매자료 카드</title>
 <style>
   :root{
     --bg:#eef1f5; --card:#fff; --line:#e6e9ef; --soft:#f6f8fa;
@@ -177,7 +177,20 @@
 
   table{width:100%;border-collapse:collapse;table-layout:auto}
   /* 표 글씨는 카드 폭에 맞춰 줄어든다(cqw) — 어떤 화면 폭·확대에서도 숫자가 말줄임(…)으로 잘리지 않는다 */
-  .card table{font-size:11px;font-size:clamp(4.5px,3.0cqw,11px)}   /* 폰트가 넓어져도 안 잘리게 여유를 둔다 */
+  .card table{font-size:11px;font-size:clamp(4.5px,3.0cqw,11px)}
+  /* 주차별 판매 추이(2026-11-09): 막대 = 주간 판매, 마지막 주 = 전주(파랑). 제목을 누르면 컬러별 주차 표 */
+  .trend{margin:8px 10px 0;border-top:1px dashed var(--line);padding-top:6px}
+  .trend .tl{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;color:var(--sub);cursor:pointer}
+  .trend .tl b{color:var(--ink)} .trend .tl small{color:var(--muted)}
+  .trend .bars{display:flex;align-items:flex-end;gap:1.5px;height:44px;margin-top:4px}
+  .trend .bars i{flex:1 1 0;background:#c9d3e3;border-radius:1px 1px 0 0;min-height:1px;position:relative}
+  .trend .bars i.last{background:var(--blue)} .trend .bars i.peak{background:#7f93b8}
+  .trend .bars i:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:10px;padding:2px 5px;border-radius:4px;white-space:nowrap;z-index:5}
+  .trend .ax{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px}
+  .trend table.tt{width:100%;border-collapse:collapse;margin-top:6px;font-size:10px}
+  .trend table.tt th,.trend table.tt td{padding:2px 3px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  .trend table.tt th{color:var(--sub);font-weight:600;background:var(--soft)} .trend table.tt td:first-child,.trend table.tt th:first-child{text-align:left}
+  .trend table.tt tr.ttl td{font-weight:700} .trend .tw{overflow:auto;max-height:220px}   /* 폰트가 넓어져도 안 잘리게 여유를 둔다 */
   .recard table,.lotcard table{font-size:11px;font-size:clamp(4.5px,2.6cqw,11px)}   /* 8열 표라 조금 더 줄인다 — 좁은 팝업에서도 판매율 열이 안 잘리게 */
   th,td{font-size:1em;padding:.32em .38em;text-align:right;white-space:nowrap;line-height:1.25}
   th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:#fff}
@@ -368,7 +381,7 @@
       <input id="q" placeholder="품번 검색  (예: GF1LJK502)">
       <button id="reset">초기화</button>
       <div class="meta-right">
-        <div class="upd">업데이트 날짜 <b>__UPDATED__</b></div>
+        <div class="upd"><b style="color:var(--blue)">__SEASON__</b> 판매자료 카드 · 업데이트 날짜 <b>__UPDATED__</b></div>
         <div id="count"></div>
       </div>
     </div>
@@ -387,6 +400,8 @@
 
 <script>
 const DATA = /*__DATA__*/[];
+const TREND = /*__TREND__*/{};          // 주차별 판매 추이 — weeks: [시즌 시작 주 월요일 ISO …], 카드 s.wk = {ttl:[…], colors:{컬러:[…]}} (2026-11-09)
+const SEASON_TAG = "__SEASON__";        // '26FW' / '26SS' — 같은 템플릿을 두 시즌이 쓴다
 // 상품 이미지: {IMG_BASE}{품번}/cut_0.jpg — 후보 품번을 순서대로 시도
 const IMG_BASE = "https://ijawemotwqhlilagqwfs.supabase.co/storage/v1/object/public/product-gallery/";
 
@@ -400,6 +415,23 @@ function nextImg(el){
   if(i >= list.length){ el.remove(); return; }
   el.dataset.i = i;
   el.src = IMG_BASE + encodeURIComponent(list[i]) + '/cut_0.jpg';
+}
+
+/* ---------- 주차별 판매 추이 ---------- */
+const TW = (TREND && TREND.weeks) || [];
+const wkLabel = iso => { const d = new Date(iso + 'T00:00:00'); return (d.getMonth()+1) + '/' + d.getDate(); };
+function trendBlock(s){
+  const w = s.wk; if(!w || !w.ttl || !w.ttl.length || !TW.length) return '';
+  const n = w.ttl.length, weeks = TW.slice(TW.length - n);           // 카드 배열은 뒤(최근)에서 맞춘다
+  const max = Math.max(1, ...w.ttl), pk = w.ttl.indexOf(max);
+  const first = w.ttl.findIndex(v => v > 0), from = first < 0 ? 0 : first;   // 첫 판매 주부터 그린다(그 앞 0 주는 생략)
+  const bars = w.ttl.slice(from).map((v, i) => { const k = from + i; return `<i class="${k === n-1 ? 'last' : (k === pk ? 'peak' : '')}" style="height:${Math.max(2, Math.round(v / max * 100))}%" data-t="${wkLabel(weeks[k])}주 ${n0(v)}장"></i>`; }).join('');
+  const shown = n - from, avg4 = w.ttl.slice(-4).reduce((a, b) => a + b, 0) / Math.min(4, n);
+  const cols = Object.keys(w.colors || {});
+  const tbl = `<div class="tw"><table class="tt"><thead><tr><th>주</th>${cols.map(c => `<th>${esc(c)}</th>`).join('')}<th>TTL</th></tr></thead><tbody>${
+    w.ttl.map((v, k) => k < from ? '' : `<tr${k === n-1 ? ' class="ttl"' : ''}><td>${wkLabel(weeks[k])}</td>${cols.map(c => `<td>${n0((w.colors[c] || [])[k])}</td>`).join('')}<td>${n0(v)}</td></tr>`).reverse().join('')}</tbody></table></div>`;
+  return `<details class="trend"><summary class="tl"><span>주차별 판매 추이 <small>${shown}주 · 최근 4주 평균 <b>${n0(Math.round(avg4))}</b>장 · 최고 ${wkLabel(weeks[pk])}주 <b>${n0(max)}</b>장</small></span><small>▾ 컬러별 표</small></summary>${tbl}</details>
+    <div class="trend" style="border-top:0;padding-top:0;margin-top:2px"><div class="bars">${bars}</div><div class="ax"><span>${wkLabel(weeks[from])}주</span><span>${wkLabel(weeks[n-1])}주(전주)</span></div></div>`;
 }
 
 function card(s){
@@ -456,6 +488,7 @@ function card(s){
           <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td>${pct(t.rate)}</td></tr>
       </tbody>
     </table>
+    ${trendBlock(s)}
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
     ${lotLine(s)}
     <div class="meta">

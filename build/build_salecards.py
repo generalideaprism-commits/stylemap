@@ -26,12 +26,15 @@ os.makedirs(IMG_DIR, exist_ok=True)
 #   · 엑셀: 인자로 경로를 주거나 --xlsx(data/ 에서 날짜가 가장 큰 스타일맵 파일) 또는 환경변수 STYLEMAP_SOURCE=xlsx
 _argv = [a for a in sys.argv[1:] if not a.startswith('--')]
 SHEET_MODE = not _argv and '--xlsx' not in sys.argv and os.environ.get('STYLEMAP_SOURCE') != 'xlsx'
+# 시즌: 'FW'(기본, 카드 + 집계표 + 연간) / 'SS'(26SS 판매자료 카드만 — 2026-11-09 사용자 "26SS 판매자료도 구글 시트로 통일", 구글 시트 모드 전용)
+SEASON = 'SS' if ('--ss' in sys.argv or os.environ.get('STYLEMAP_SEASON', '').upper() == 'SS') else 'FW'
+if SEASON == 'SS' and not SHEET_MODE: raise SystemExit('26SS 카드는 구글 시트 모드에서만 만듭니다 (엑셀 인자 없이 --ss)')
 GS = None
 if SHEET_MODE:
     sys.path.insert(0, HERE)
     import gsource
-    GS = gsource.load()
-    SRC = os.path.join(DATA_DIR, '%s_26FW 스타일맵(구글시트)' % (GS['ref'] + datetime.timedelta(days=1)).strftime('%y%m%d'))
+    GS = gsource.load(season=SEASON)
+    SRC = os.path.join(DATA_DIR, '%s_26%s 스타일맵(구글시트)' % ((GS['ref'] + datetime.timedelta(days=1)).strftime('%y%m%d'), SEASON))
 elif _argv:
     SRC = _argv[0]
 else:
@@ -41,7 +44,7 @@ else:
         raise SystemExit('%s 에 "YYMMDD_26FW 스타일맵.xlsx" 파일이 없습니다.' % DATA_DIR)
     SRC = os.path.join(DATA_DIR, cands[-1])
 print('원본:', os.path.basename(SRC))
-OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html')
+OUT_CARD = os.path.join(SHARE_DIR, '26fw-sales-cards.html' if SEASON == 'FW' else '26ss-sales-cards.html')
 OUT_SUM = os.path.join(SHARE_DIR, '26fw-season-summary.html')
 OUT_SUM2 = os.path.join(SHARE_DIR, '26fw-season-summary-v2.html')      # 그래프 중심 제안안 (기존 집계표는 그대로)
 OUT_CMP = os.path.join(SHARE_DIR, '26fw-season-compare.html')
@@ -210,7 +213,10 @@ if MERGED:
         if '스타일' not in hdr or a3 != '신상':
             raise SystemExit('%s 의 머리글이 구조조정 판과 다릅니다 (2행에 스타일, 3행 A열에 신상 이어야 함): 3행 A=%r' % (sheet_name, a3))
         si = hdr.index('스타일')
-        if kind == '메인':
+        if kind == '메인' and SEASON == 'SS':                  # 26SS 신상 = ERP 년도 2026 · 시즌 봄/여름 (플래그 열은 26FW 용이라 안 쓴다)
+            yi, sei = hdr.index('년도'), hdr.index('시즌')
+            pred = lambda r: len(r) > sei and txt(r[yi]) == '2026' and txt(r[sei]) in ('봄', '여름')
+        elif kind == '메인':
             pred = lambda r: (num(r[0]) or 0) == 1
         else:
             pred = lambda r: len(r) > si and txt(r[si]) in run_codes
@@ -246,6 +252,8 @@ EXCLUDE_CODES = {'GF3UJP011',      # 2026-10-23 와플 후드집업
                  'GF3LPT518', 'GF3LBG508', 'GF3LBG509', 'GF3LBG510',          # 샘플 단계('*') 데님 팬츠·가방 3종
                  'GF3UFG101', 'GF4LFG512', 'GF4LFG513', 'GF4UFG101',          # 사은품 (키링·핸드크림 2종·핫팩)
                  }                                                            # GF4UCP016 볼캡은 2026-11-02 포함으로 전환(입고 전)
+if SEASON == 'SS':
+    EXCLUDE_CODES = {'QBF1U98001'}       # GNRL 2026 다이어리 — 사은품성 품번, 26SS 집계·카드에서 제외(MD 2026-10-22). 26FW 제외 목록은 26SS 에 해당 없음
 # 입고가 잡히기 전까지만 빼는 품번 (입고 수량 > 0 이 되면 자동으로 카드·집계에 들어온다)
 EXCLUDE_UNTIL_INBOUND = set()           # GF4UCP016 볼캡은 2026-11-02 MD '입고 전이라도 포함' — 비움
 # 실판매금액을 '판매수량 × 지정 단가'로 바로잡는 스타일 (ERP 판매금액이 TAG금액보다 크게 들어온 건, 사용자 지시)
@@ -388,14 +396,18 @@ for co_sheet in (CO_MAIN, CO_RUN):
                 if _m and w1_start > datetime.date(FILE_YEAR, int(_m.group(2)), int(_m.group(3))) + datetime.timedelta(days=7):
                     w1_start = w1_start.replace(year=FILE_YEAR - 1)
     w1i, w2i = wk.get(1, co['w1']), wk.get(2, co['w2'])
-    # 8/1 이후 판매 = 시작일이 8/1 이상인 주들의 합 (러닝 현재고 판매율용)
+    # 시즌 시작 이후 판매 = 주 끝날짜가 시즌 시작일 이상인 주들의 합 (러닝 현재고 판매율용) — FW 8/1, SS 1/1
     aug_cols = []
     if w1_start:
-        # 8/1 이 포함된 주(W5, 07/27~08/02)까지 포함 — 주 끝날짜가 8/1 이상인 주
-        # 시즌 시작 8/1 — FW 는 이듬해 1~2월까지 이어지므로 그때는 전년도 8/1 이다
-        aug1 = datetime.date(w1_start.year - 1 if w1_start.month < 3 else w1_start.year, 8, 1)
+        # FW 는 이듬해 1~2월까지 이어지므로 그때는 전년도 8/1 이다
+        aug1 = (datetime.date(w1_start.year - 1 if w1_start.month < 3 else w1_start.year, 8, 1) if SEASON == 'FW'
+                else datetime.date(w1_start.year, 1, 1))
         max_n = (w1_start - (aug1 - datetime.timedelta(days=6))).days // 7 + 1
         aug_cols = [idx for n, idx in wk.items() if 1 <= n <= max_n]
+        # 주차별 판매 추이용: 시즌 시작 주 ~ W1 (오래된 주부터), 머리글 날짜는 한 번만 기록
+        TREND_COLS = [wk[n] for n in range(max_n, 0, -1) if n in wk]
+        if 'TREND_WEEKS' not in globals():
+            TREND_WEEKS = [(w1_start - datetime.timedelta(days=7 * (n - 1))).isoformat() for n in range(max_n, 0, -1) if n in wk]
     print('%s: 전주 %s / 2주전 %s / 8월이후 주 %d개' % (co_sheet, txt(hdr[w1i]), txt(hdr[w2i]), len(aug_cols)))
     for r in ws.iter_rows(min_row=4, values_only=True):
         code = txt(r[co['style']] if len(r) > co['style'] else '')
@@ -419,6 +431,7 @@ for co_sheet in (CO_MAIN, CO_RUN):
             'total': num(r[co['total']]),
             'rate': num(r[co['rate']]),
             'aug': sum((num(r[i]) or 0) for i in aug_cols if len(r) > i),
+            'wk': [int(num(r[i]) or 0) for i in TREND_COLS] if aug_cols else [],
         })
         s['augSales'] = (s.get('augSales') or 0) + sum(
             (num(r[i]) or 0) for i in aug_cols if len(r) > i)
@@ -520,6 +533,8 @@ for code, s in styles.items():
     # 판매·재고는 나눌 수 없으니 전체 그대로 → 판매율은 '최초입고 대비'가 된다. 전체값은 planFull/qtyInFull 에 남긴다.
     for c in s['colors']:
         c['planFull'], c['qtyInFull'] = c['plan'], c['qtyIn']
+        if SEASON == 'SS':                            # 26SS 카드는 리오더 포함(작지·전체 입고)이 본값 — 리오더가 최초의 10배인 품번이 많아 최초 기준이면 판매율 1,000% 가 된다(2026-11-09). 팝업이 최초/리오더를 나눠 보여 준다
+            continue
         if c['_p0'] is not None:
             c['plan'] = c['_p0']
         if c['_i0'] is not None:                      # CO 기획입고 열 그대로 (입고 − 리오더입고 와 수십 장 다를 수 있어 열을 직접 쓴다)
@@ -569,6 +584,8 @@ for g, members in groups.items():
                                            'plan': 0, 'qtyIn': 0, 'w1': 0, 'w2': 0, 'total': 0, 'aug': 0})
         for f in ('plan', 'qtyIn', 'w1', 'w2', 'total', 'aug'):
             m[f] += c.get(f) or 0
+        if c.get('wk'):
+            m['wk'] = [a + b for a, b in zip(m.get('wk') or [0] * len(c['wk']), c['wk'])]
     for m in merged.values():
         m['rate'] = (m['total'] / m['qtyIn'] * 100) if m['qtyIn'] else None
     p['colors'] = list(merged.values())
@@ -627,8 +644,33 @@ if stock_sheet:
         openpyxl.utils.get_column_letter(i_color + 1) + '열' if i_color is not None else '없음'))
 
 LOTS_RUN = {}   # 러닝 카드 style -> 이월재고 컬러 목록 (차수 분해용)
+if SEASON == 'SS':
+    # 26SS 러닝(구품번 31, 신품번 없음): 카드 값 = 1/1~ 기준. 컬러별 기획·입고(투입) = 12/31 재고 + 2026 생산, 누계 = 2026 판매,
+    # 전주·2주전은 주간판매(CO) 그대로. 원천 = 구글 시트 '컬러생판재(현재,ST)' − '시점재고(~25.12.31,컬러생판재)' (ERP 칼라 조회 두 시점).
+    _cc, _dc = GS.get('color_now'), GS.get('color_dec')
+    if not (_cc and _dc): raise SystemExit('26SS 러닝 카드용 컬러생판재 탭(현재·12/31)이 없습니다 — erp_client.py --screen psi_c / stk_dec_c --gsheet')
+    _nrun = 0
+    for s in data:
+        if s['line'] != '러닝': continue
+        base_t = new_t = 0
+        for c in s['colors']:
+            k = (s['style'], c['color'])
+            now, dec = _cc.get(k) or {}, _dc.get(k) or {}
+            base = dec.get('stock', 0); new_in = now.get('prod', 0) - dec.get('prod', 0); sold = now.get('sales', 0) - dec.get('sales', 0)
+            c['planFull'], c['qtyInFull'] = c['plan'], c['qtyIn']
+            c['plan'] = c['qtyIn'] = base + new_in; c['total'] = sold
+            c['rate'] = (sold / c['qtyIn'] * 100) if c['qtyIn'] else None
+            c['base'], c['newIn'] = base, new_in
+            base_t += base; new_t += new_in
+        s['ttl'] = calc_ttl(s['colors']); s['ttlFull'] = {'plan': s['ttl']['plan'], 'qtyIn': s['ttl']['qtyIn']}
+        s['stock'] = sum((_cc.get((s['style'], c['color'])) or {}).get('stock', 0) for c in s['colors'])
+        s['runBasis'] = {'base': base_t, 'newIn': new_t, 'since': '%d-01-01' % FILE_YEAR}
+        s['arrived'] = '입고' if s['ttl']['qtyIn'] > 0 else '미입고'
+        s.pop('re', None); s['reorder'] = 'X'
+        _nrun += 1
+    print('26SS 러닝 카드 %d장: 1/1~ 기준(12/31 재고 + 2026 생산 · 2026 판매)' % _nrun)
 for s in data:
-    if s['line'] != '러닝':
+    if SEASON == 'SS' or s['line'] != '러닝':
         continue
     sub = s['sub'] if s.get('sub') else s          # 신규품번 (짝 없는 GF7 단독 카드는 자기 자신)
     tt = sub['ttl']
@@ -711,6 +753,7 @@ print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
 # ---- 차수(초도 · 리오더 N차)별 입고·판매 (build/lots.py, MD 2026-10-19) ----
 # 총량은 스타일맵(CO) 값 그대로, 차수 쪼개기는 입고스케줄 '리오더' 탭, 판매는 컬러별 선입선출 추정. 못 읽으면 기존 팝업 그대로.
 import lots as LOTMOD
+if SEASON == 'SS': LOTMOD = None      # 입고스케줄 차수·MARK 채널은 26FW 자료라 26SS 카드에는 넣지 않는다
 _hub_data = os.environ.get('INTAKE_DIR') or os.path.join(os.path.dirname(ROOT), 'production-hub', 'tools', 'review-build', 'data')
 import datetime as _dt0
 _lot_today = _updated or _dt0.date.today().isoformat()      # 파일명에서 날짜를 못 읽으면 오늘 — 빈 값이면 파샬이 전부 '미래'가 된다
@@ -768,6 +811,7 @@ if INTAKE_ROWS:
 # ---- 온라인/오프라인 판매 (build/chan.py, MD 2026-10-19) ----
 # 스타일맵에는 채널별 판매가 없어 허브 MARK 채널 자료(신상 판매 리뷰와 같은 팀 정의)를 쓴다. 기준일이 카드 마감일과 같을 때만 숫자가 맞는다.
 import chan as CHANMOD
+if SEASON == 'SS': CHANMOD = None
 _ch_cards = {(s.get('altStyle') or s['style']): [c['color'] for c in s['colors']] for s in data}
 try:
     CH_BY, CH_AT, CH_SRC = CHANMOD.load(HERE, _hub_data, DATA_END, _ch_cards)
@@ -886,13 +930,51 @@ for s in styles.values():
         saved += 1
         break
 
-# 더 이상 쓰이지 않는 이미지 파일 정리
-for f in os.listdir(IMG_DIR):
+# 더 이상 쓰이지 않는 이미지 파일 정리 (SS 모드에서는 FW 카드 이미지가 남아 있어야 하므로 건드리지 않는다)
+for f in (os.listdir(IMG_DIR) if SEASON == 'FW' else []):
     if f.lower().endswith('.jpg') and f not in written:
         os.remove(os.path.join(IMG_DIR, f))
         print('  삭제(미사용):', f)
 
 print('images: supabase 링크 %d / 파일 %d장 (share/img) / 카드 %d' % (linked, len(written), len(data)))
+
+# ---- 주차별 판매 추이 (2026-11-09 사용자: 26SS·26FW 카드 공통) — 시즌 시작 주 ~ W1, 스타일 합 + 컬러별 ----
+TREND = {'weeks': globals().get('TREND_WEEKS') or []}
+for s in data:
+    cols = [c for c in s['colors'] if c.get('wk')]
+    if not cols:
+        continue
+    n = max(len(c['wk']) for c in cols)
+    ttl = [0] * n
+    for c in cols:
+        for i, v in enumerate(c['wk']): ttl[i] += v
+    s['wk'] = {'ttl': ttl, 'colors': {c['color']: c['wk'] for c in cols}}
+    for c in s['colors']: c.pop('wk', None)
+print('주차별 추이: %d주 (%s ~ %s) · 카드 %d장' % (len(TREND['weeks']), TREND['weeks'][0] if TREND['weeks'] else '-', TREND['weeks'][-1] if TREND['weeks'] else '-', sum(1 for s in data if s.get('wk'))))
+
+
+def render(tpl_name, out_path, **repl):
+    tpl = open(os.path.join(HERE, tpl_name), encoding='utf-8').read()
+    for k, v in repl.items():
+        tpl = tpl.replace(k, v)
+    tpl = tpl.replace('__UPDATED__', updated)
+    open(out_path, 'w', encoding='utf-8').write(tpl)
+    print('written:', out_path, round(len(tpl.encode()) / 1e6, 2), 'MB')
+
+
+def card_tokens():
+    """카드 템플릿 치환 — 시즌 라벨·시점재고 날짜·시즌 시작 등 (26SS 카드는 같은 템플릿을 시즌 글귀만 바꿔 쓴다)"""
+    return {'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END, '__CHAT__': globals().get('CH_AT', '') or '',
+            '/*__TREND__*/{}': json.dumps(TREND, ensure_ascii=False), '__SEASON__': '26' + SEASON,
+            '__SEASON_START__': '8/1' if SEASON == 'FW' else '1/1', '__STOCK_DATE__': '26.07.31' if SEASON == 'FW' else '25.12.31'}
+
+
+if SEASON == 'SS':
+    base = os.path.basename(SRC)
+    updated = '20%s-%s-%s' % (base[0:2], base[2:4], base[4:6]) if base[:6].isdigit() else ''
+    render('salecards_template.html', OUT_CARD, **card_tokens())
+    print('26SS 카드 완료 — 집계표·연간은 FW 빌드에서 만든다')
+    sys.exit(0)
 
 # ---------------- '종합' 시트 -> 집계표 데이터 ----------------
 # 좌측 블록(신상품) 지표 열. 러닝 블록은 여기서 27칸 오른쪽으로 밀려 있다.
@@ -1665,17 +1747,7 @@ json.dump({'ver': 4, 'giftOut': True, 'date': updated,
           open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
 print('스냅샷 저장:', os.path.basename(SNAP), updated)
 
-def render(tpl_name, out_path, **repl):
-    tpl = open(os.path.join(HERE, tpl_name), encoding='utf-8').read()
-    for k, v in repl.items():
-        tpl = tpl.replace(k, v)
-    tpl = tpl.replace('__UPDATED__', updated)
-    open(out_path, 'w', encoding='utf-8').write(tpl)
-    print('written:', out_path, round(len(tpl.encode()) / 1e6, 2), 'MB')
-
-
-render('salecards_template.html', OUT_CARD,
-       **{'/*__DATA__*/[]': json.dumps(data, ensure_ascii=False), '__DATAEND__': DATA_END, '__CHAT__': CH_AT})
+render('salecards_template.html', OUT_CARD, **card_tokens())
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})

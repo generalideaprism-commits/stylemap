@@ -77,8 +77,9 @@ def _client():
     return gsheet, gsheet.Sheets(cfg)
 
 
-def load(verbose=True):
-    """구글 시트 → {'wb': GridWB, 'themes': {품번: 테마}, 'ref': 기준 일요일(date), 'title': 파일 제목, 'info': [로그 줄]}"""
+def load(verbose=True, season='FW'):
+    """구글 시트 → {'wb': GridWB, 'themes': {품번: 테마}, 'ref': 기준 일요일(date), 'title': 파일 제목, 'info': [로그 줄]}
+    season='SS' 이면 러닝 리스트를 '시즌별 러닝아이템' 26SS 열(구품번 31, 짝 없음)로 만들고 컬러생판재 두 시점 탭(현재·12/31)도 읽는다."""
     import jonghap
     gsheet, S = _client()
     title, tabs = S.meta()
@@ -89,6 +90,13 @@ def load(verbose=True):
         gid, xname = TABS[key]
         name = by_gid.get(gid)
         if name is None: raise SystemExit("구글 시트 '%s' 에 %s 탭(gid %s)이 없습니다" % (title, xname, gid))
+        q = "'" + name.replace("'", "''") + "'"
+        v = S._req('GET', '/values/' + gsheet._enc(q) + '?valueRenderOption=UNFORMATTED_VALUE').get('values', [])
+        return name, _norm(v)
+
+    def read_name(part):
+        name = next((k for k in tabs if part.replace(' ', '') in k.replace(' ', '')), None)
+        if name is None: return None, None
         q = "'" + name.replace("'", "''") + "'"
         v = S._req('GET', '/values/' + gsheet._enc(q) + '?valueRenderOption=UNFORMATTED_VALUE').get('values', [])
         return name, _norm(v)
@@ -145,6 +153,10 @@ def load(verbose=True):
     except ValueError: raise SystemExit("%s 탭 2행에서 '26FW' / '26FW - 과거품번' 머리글을 찾지 못했습니다: %s" % (nm_r, hdr))
     i_tc, i_tt = (hdr.index('품번'), hdr.index('테마')) if '품번' in hdr and '테마' in hdr else (None, None)
     pairs = [(_t(r[i_old]), _t(r[i_new])) for r in run[2:] if _t(r[i_old]) and _t(r[i_new])]
+    if season == 'SS':                                   # 26SS 러닝 = 26SS 열의 구품번 그대로(신품번 없음) → 자기 자신과 짝
+        if '26SS' not in hdr: raise SystemExit("%s 탭 2행에 '26SS' 머리글이 없습니다" % nm_r)
+        j = hdr.index('26SS')
+        pairs = [(_t(r[j]).upper(), _t(r[j]).upper()) for r in run[2:] if len(r) > j and _t(r[j])]
     y25 = []
     for lab in ('25SS', '25FW'):
         if lab in hdr:
@@ -153,7 +165,7 @@ def load(verbose=True):
                 if c and c not in y25: y25.append(c)
     tmap = [(_t(r[i_tc]), _t(r[i_tt])) for r in run[2:] if i_tc is not None and _t(r[i_tc])]
     rows = [['기존품번', '신규러닝품번', None, None, '품번', '테마', None, None, '25년 러닝', None]]
-    body = pairs + [(n, n) for _, n in pairs]                    # 엑셀과 같게: 구품번→신품번 뒤에 신품번→신품번
+    body = pairs + ([(n, n) for _, n in pairs] if season == 'FW' else [])      # 엑셀과 같게: 구품번→신품번 뒤에 신품번→신품번
     for i in range(max(len(body), len(tmap), len(y25))):
         a, b = body[i] if i < len(body) else (None, None)
         e, f = tmap[i] if i < len(tmap) else (None, None)
@@ -172,7 +184,36 @@ def load(verbose=True):
     if verbose:
         print("원천: 구글 시트 '%s' · 기준 일요일 %s" % (title, ref))
         for l in info: print('  ' + l)
-    return {'wb': GridWB(sheets), 'themes': themes, 'ref': ref, 'title': title, 'info': info, 'grids': grids, 'jonghap': jong}
+    out = {'wb': GridWB(sheets), 'themes': themes, 'ref': ref, 'title': title, 'info': info, 'grids': grids, 'jonghap': jong}
+    if season == 'SS':
+        # 컬러생판재 두 시점 → {(품번, 칼라): {'stock': 전체 재고, 'prod': 누적 생산, 'sales': 누적 판매(기간)}}
+        def color_map(part):
+            nm_c, g = read_name(part)
+            if not g: return nm_c, None
+            h1 = [_t(v) for v in g[0]]; h2 = [_t(v) for v in g[1]]
+            grp, cur_g = [], ''
+            for a in h1:
+                if a: cur_g = a.split('|')[0]
+                grp.append(cur_g)
+            def col(gname, sub):
+                return next(i for i in range(len(h2)) if grp[i] == gname and h2[i] == sub)
+            si, ci = h2.index('스타일'), h2.index('칼라')
+            i_stk, i_prod, i_sales = col('재고', '전체'), col('생산', '수량'), col('판매(기간)', '수량')
+            m = {}
+            for r in g[2:]:
+                code = _t(r[si]).upper() if len(r) > si else ''
+                if not re.match(r'^[A-Z0-9]{8,}$', code): continue
+                k = (code, _t(r[ci]))
+                a = m.setdefault(k, {'stock': 0.0, 'prod': 0.0, 'sales': 0.0})
+                for key, i in (('stock', i_stk), ('prod', i_prod), ('sales', i_sales)):
+                    v = r[i] if i < len(r) else None
+                    a[key] += float(v) if isinstance(v, (int, float)) else 0.0
+            return nm_c, m
+        nm1, out['color_now'] = color_map('컬러생판재(현재')
+        nm2, out['color_dec'] = color_map('시점재고(~25.12.31,컬러')
+        info.append('컬러생판재: 현재 %s %s행 · 12/31 %s %s행' % (nm1, len(out['color_now'] or {}), nm2, len(out['color_dec'] or {})))
+        if verbose: print('  ' + info[-1])
+    return out
 
 
 if __name__ == '__main__':
