@@ -696,6 +696,14 @@ for s in data:
                   'cost', 'costV', 'mult', 'multReal', 'tag', 'tagErp', 'tagNA', 'real', 'vendor'):
             s[f] = sub.get(f)
         s['priceStyle'] = sub['style']   # 단가·원가·마크업이 어느 품번 기준인지 카드에 표기
+        # 리오더 표시·차수 팝업(re)·작지 전체값(ttlFull)도 신규품번 기준 — 구품번의 지난 시즌 리오더(최초/리오더 기획)가
+        # 신규품번 카드 아래 팝업으로 뜨던 문제(2026-11-09 사용자, WBE4L10522 카드에 WBE4L10522 의 25FW 리오더 5,790 이 보임)
+        s['reorder'] = sub.get('reorder', 'X')
+        s['ttlFull'] = sub.get('ttlFull') or {'plan': sub['ttl']['plan'], 'qtyIn': sub['ttl']['qtyIn']}
+        if sub.get('re'):
+            s['re'] = sub['re']
+        else:
+            s.pop('re', None)
     s['arrived'] = '입고' if new_in > 0 else '미입고'
 print('통합 카드:', len(subs), '쌍')
 print('styles:', len(data), '/ colors:', sum(len(s['colors']) for s in data))
