@@ -179,7 +179,7 @@
   /* 표 글씨는 카드 폭에 맞춰 줄어든다(cqw) — 어떤 화면 폭·확대에서도 숫자가 말줄임(…)으로 잘리지 않는다 */
   .card table{font-size:11px;font-size:clamp(4.5px,3.0cqw,11px)}
   /* 주차별 판매 추이(2026-11-09): 막대 = 주간 판매, 마지막 주 = 전주(파랑). 제목을 누르면 컬러별 주차 표 */
-  .trend{margin:8px 10px 0;border-top:1px dashed var(--line);padding-top:6px}
+  .trend{margin:4px 10px 8px;border-top:1px dashed var(--line);padding-top:6px}
   .trend .tl{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;color:var(--sub);cursor:pointer}
   .trend .tl b{color:var(--ink)} .trend .tl small{color:var(--muted)}
   .trend .bars{display:flex;align-items:flex-end;gap:1.5px;height:44px;margin-top:4px}
@@ -430,8 +430,8 @@ function trendBlock(s){
   const cols = Object.keys(w.colors || {});
   const tbl = `<div class="tw"><table class="tt"><thead><tr><th>주</th>${cols.map(c => `<th>${esc(c)}</th>`).join('')}<th>TTL</th></tr></thead><tbody>${
     w.ttl.map((v, k) => k < from ? '' : `<tr${k === n-1 ? ' class="ttl"' : ''}><td>${wkLabel(weeks[k])}</td>${cols.map(c => `<td>${n0((w.colors[c] || [])[k])}</td>`).join('')}<td>${n0(v)}</td></tr>`).reverse().join('')}</tbody></table></div>`;
-  return `<details class="trend"><summary class="tl"><span>주차별 판매 추이 <small>${shown}주 · 최근 4주 평균 <b>${n0(Math.round(avg4))}</b>장 · 최고 ${wkLabel(weeks[pk])}주 <b>${n0(max)}</b>장</small></span><small>▾ 컬러별 표</small></summary>${tbl}</details>
-    <div class="trend" style="border-top:0;padding-top:0;margin-top:2px"><div class="bars">${bars}</div><div class="ax"><span>${wkLabel(weeks[from])}주</span><span>${wkLabel(weeks[n-1])}주(전주)</span></div></div>`;
+  return `<div class="trend"><div class="tl" style="cursor:default"><span>주차별 판매 추이 <small>${shown}주 · 최근 4주 평균 <b>${n0(Math.round(avg4))}</b>장 · 최고 ${wkLabel(weeks[pk])}주 <b>${n0(max)}</b>장</small></span></div><div class="bars">${bars}</div><div class="ax"><span>${wkLabel(weeks[from])}주</span><span>${wkLabel(weeks[n-1])}주(전주)</span></div>
+    <details><summary class="tl" style="justify-content:flex-end;margin-top:2px"><small>▾ 컬러별 주차 표</small></summary>${tbl}</details></div>`;
 }
 
 function card(s){
@@ -478,6 +478,7 @@ function card(s){
       <div class="lb"><span>판매 진행률</span><b>${pct(t.rate)}</b></div>
       <div class="bar"><i style="width:${rate}%"></i></div>
     </div>
+    ${trendBlock(s)}
     <table>
       <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
       <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
@@ -488,7 +489,6 @@ function card(s){
           <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td>${pct(t.rate)}</td></tr>
       </tbody>
     </table>
-    ${trendBlock(s)}
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
     ${lotLine(s)}
     <div class="meta">
