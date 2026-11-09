@@ -1782,3 +1782,12 @@ render('summary_v2_template.html', OUT_SUM2,
 if os.path.exists(OUT_CMP):
     os.remove(OUT_CMP)
     print('removed:', OUT_CMP)
+
+# ---------------------------------------------------------------------------
+# 허브 '26FW 시즌 판매 현황' 페이지에 이번 주 종합(2) 계산값을 한 주차로 넣는다 (구글 시트 모드에서만; 실패해도 빌드는 성공)
+if GS:
+    try:
+        import season_status
+        season_status.update(GS['jonghap'], GS['ref'], os.path.basename(SRC))
+    except Exception as _e:
+        print('[경고] 시즌 판매 현황 갱신 실패 — 다른 산출물은 정상:', _e)

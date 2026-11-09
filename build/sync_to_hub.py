@@ -36,6 +36,13 @@ if not os.path.exists(INDEX):
 
 # 1) 파일 복사 --------------------------------------------------------------
 htmls = [f for f in os.listdir(SRC_SHARE) if f.endswith('.html')]
+# 시즌 판매 현황 페이지는 허브가 원본(다른 PC 의 생성기도 쓴다) — 이번 빌드가 새로 만든 것일 때만 덮는다
+_st = '26fw-season-status.html'
+if _st in htmls:
+    _hub_st = os.path.join(HUB_SHARE, _st)
+    if os.path.exists(_hub_st) and os.path.getmtime(os.path.join(SRC_SHARE, _st)) <= os.path.getmtime(_hub_st):
+        htmls.remove(_st)
+        print('시즌 판매 현황: 허브 쪽이 더 새것이라 복사하지 않음')
 for f in htmls:
     shutil.copy2(os.path.join(SRC_SHARE, f), os.path.join(HUB_SHARE, f))
 print('HTML 복사:', ', '.join(htmls))
@@ -66,6 +73,8 @@ print('데이터 날짜:', date)
 
 # 3) 허브 카탈로그 갱신 ------------------------------------------------------
 idx = open(INDEX, encoding='utf-8').read()
+if '26fw-season-status.html' in htmls:          # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
+    KEYS.append('status26fw')
 for key in KEYS:
     i = idx.find("key:'%s'" % key)
     if i < 0:
