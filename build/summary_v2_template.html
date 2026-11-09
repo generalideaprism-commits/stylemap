@@ -1464,7 +1464,7 @@ const isSSs = s => s === '봄' || s === '여름';
 const hasSS = () => !!(SS && SS.block1 && SS.block1.length);
 const annRow = (s, item) => (isSSs(s)
   ? (hasSS() ? SS.block1.find(d => d.mode === 'new' && d.season === s && d.item === item) : null)
-  : SUM.block1.find(d => d.mode === 'new' && d.season === s && d.item === item)) || null;
+  : ((PERIOD === 'annual' && hasAnn()) ? ANN.fw.block1 : SUM.block1).find(d => d.mode === 'new' && d.season === s && d.item === item)) || null;      // 연간(단일 원천)의 26FW 몫은 SS 와 같은 기준(리오더 포함)으로 다시 센 행
 function annSum(seasons, item){                       // 시즌들의 합 — 이번은 합산, 전년은 한 곳이라도 없는 지표를 비운다(기존 cmpSum 규칙)
   const rows = seasons.map(s => annRow(s, item));
   if(!rows.length || rows.some(r => !r)) return null;
@@ -1916,7 +1916,8 @@ function noteHtml(){
     if(TAB === 'gender') return `<b>${lab} · 성별</b> — 신상품 기준(러닝 제외) 여성 · 유니맨(남성+공용) 비중입니다. 26SS 성별 값은 스타일별 시트에서 합쳤고(사은품성 품번 제외), 25SS 성별 열은 올해와 같은 기준인지 확인되지 않아 전년 비교는 만들지 않았습니다.`;
     if(TAB === 'run') return PERIOD === 'ss' ? `<b>26SS 러닝</b> — 12월말 기초재고와 신규 물량의 1/1~ 누계입니다. ${hasAnn() ? '구글 시트 ERP 자동조회(12/31 시점 + 현재) 기준이라 전년 러닝 비교는 없습니다.' : '전년 동시점은 25SS 러닝이며 종합 시트에 있는 입고·판매·금액만 비교됩니다.'} ${ssOldAddNote()}` : (hasAnn() ? `<b>연간 러닝</b> — 구글 시트 ERP 자동조회 한 원천으로 구품번은 1/1~ 기준 한 번만, 신품번(GF7·GF8)은 26FW 생판재 그대로 더한 합계입니다: ${annRunFormula()}.` : hasRunY() ? `<b>연간 러닝</b> — 시즌 기준으로 구품번은 26SS(1/1~), 신품번만 26FW(판매 8/1~)로 세어 더한 합계입니다: ${annRunFormula()}. FW ‘시점재고 합산’의 이월(구품번 ${RUNY.checks.fwOldN}개)은 더하지 않았습니다(근거는 아래 카드).` : `<b>연간 러닝</b> — 26SS 러닝(12월말 기초재고 기준·1/1~)과 26FW 러닝(7/31 시점재고 기준·8/1~)은 기준과 기간이 달라 합치지 않고 나란히 둡니다.`);
     if(TAB === 'all') return `<b>전체 표</b> — 기존 집계표의 표 6종은 26FW 에만 있습니다.`;
-    return `<b>${lab}</b> — ${PERIOD === 'ss' ? `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''})과 비교합니다. 러닝은 아래 카드에 따로 둡니다.` : `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. ${(INCRUN && hasRunY()) ? '합계는 <b>신상품 + 러닝(시즌 기준)</b> — 러닝은 구품번은 26SS, 신품번만 26FW 로 세어 FW 이월(구품번)은 더하지 않았습니다.' : '합계는 <b>신상품만</b> — 러닝은 따로 둡니다(‘신상품 + 러닝’ 버튼이나 러닝 탭에서 시즌 기준으로 봅니다).'}`} 원가는 입고 기준·VAT 포함입니다.`;
+    const recon = (PERIOD === 'annual' && hasAnn()) ? (() => { const fwT = SUM_FW.block1.find(d => d.kind === '신상품 TTL'), anT = ANN.fw.block1.find(d => d.kind === '신상품 TTL'); if(!fwT || !anT) return ''; const dq = (anT.cur.qtyIn || 0) - (fwT.cur.qtyIn || 0), dp = (anT.cur.plan || 0) - (fwT.cur.plan || 0); return ` <b>기준 메모</b>: 연간의 26FW 신상은 26SS 와 같은 기준(기획 = 작지 · 입고 = 생산 전체, <b>리오더 포함</b>)이라 26FW 탭(최초기획·기획입고, 리오더는 별도 행)보다 기획 ${sgn(dp)}장 · 입고 ${sgn(dq)}장 큽니다 — 26SS 탭 + 26FW 탭 신상 + 26FW 리오더 = 연간. 판매·주간은 같습니다.`; })() : '';
+    return `<b>${lab}</b> — ${PERIOD === 'ss' ? `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''})과 비교합니다. 러닝은 아래 카드에 따로 둡니다.` : `26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. ${(INCRUN && hasRunY()) ? '합계는 <b>신상품 + 러닝(시즌 기준)</b> — 러닝은 구품번은 26SS, 신품번만 26FW 로 세어 FW 이월(구품번)은 더하지 않았습니다.' : '합계는 <b>신상품만</b> — 러닝은 따로 둡니다(‘신상품 + 러닝’ 버튼이나 러닝 탭에서 시즌 기준으로 봅니다).'}`} 원가는 입고 기준·VAT 포함입니다.${recon}`;
   }
   if(false) return `<b>연간(SS+FW)</b> — 26SS(${SS_END() ? '~ ' + SS_END() : '기준일 미확인'})와 26FW(${RNG_CUR})를 ‘전년 동시점’(25SS ${SS_PREV_END() ? '~ ' + SS_PREV_END() : ''} · 25FW ${RNG_PREV})과 비교합니다. 합계는 <b>신상품만</b> — 러닝은 따로 둡니다(‘신상품 + 러닝’ 버튼이나 러닝 탭에서 시즌 기준으로 봅니다). 원가는 입고 기준·VAT 포함입니다.`;
   const a = BASIS === 'yr'
