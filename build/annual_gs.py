@@ -145,7 +145,7 @@ AMT_ADJ = {}      # {품번: (누계 실판매금액에서 뺄 값, 주간 판�
 CUT731 = None     # (현재 Psi, 7/31 ColorPsi, {품번}) — 이 품번들은 metrics 에서 생산·판매·재고를 7/31 시점 값으로 센다(8/1~ 는 26FW 러닝 이월로 가므로). 26SS 신상이면서 FW 과거품번인 GF1 10개
 
 
-def metrics(psi, codes, co_sku=None, basis=None, co_in=None):
+def metrics(psi, codes, co_sku=None, basis=None, co_in=None, cap_all=None):
     """품번 묶음의 시즌 지표 합(ss_data 의 cur 모양). basis 에 따라 기획·입고를 리오더 포함/제외로 센다.
     co_in({품번: 주간판매(CO) 입고 합})을 주면 입고 수량만 그 값으로 센다 — 26FW 집계표가 CO 입고를 쓰므로 연간의 26FW 몫도 같은 화면 값으로 맞춘다
     (ERP 두 화면의 입고 수량이 다른 품번이 있다: 2026-11-09 GF7LKC507·GF4LJP505·GF3UKP008). 금액은 두 쪽 모두 생판재(ST) 값."""
@@ -157,7 +157,12 @@ def metrics(psi, codes, co_sku=None, basis=None, co_in=None):
         cut = bool(CUT731) and psi is CUT731[0] and c in CUT731[2]
         src = CUT731[1] if cut else psi                              # 7/31 로 자르는 품번은 생산·판매·재고를 7/31 시점 값으로
         q_in = co_in[c] if (co_in is not None and c in co_in and not cut) else src.n(c, ki)
-        a['plan'] += psi.n(c, kp); a['planCost'] += psi.n(c, kpc); a['qtyIn'] += q_in; a['tag'] += src.n(c, kt); a['cost'] += src.n(c, kc)
+        v_p, v_pc, v_t, v_c = psi.n(c, kp), psi.n(c, kpc), src.n(c, kt), src.n(c, kc)
+        if cap_all is not None:                                      # 리오더 제외 값이 전체 값보다 크면(ERP 생산 구분 오차, 예 GF7LPT501 −1장) 전체 값으로 눌러 리오더가 음수가 되지 않게 한다
+            q_in = min(q_in, cap_all[c] if (cap_all and c in cap_all) else src.n(c, 'prodAll'))
+            v_p, v_pc = min(v_p, psi.n(c, 'planAll')), min(v_pc, psi.n(c, 'planAllCost'))
+            v_t, v_c = min(v_t, src.n(c, 'prodAllTag')), min(v_c, src.n(c, 'prodAllCost'))
+        a['plan'] += v_p; a['planCost'] += v_pc; a['qtyIn'] += q_in; a['tag'] += v_t; a['cost'] += v_c
         for k in ('sales', 'salesTag', 'salesAmt', 'salesCost', 'stock'):
             a[k] += src.n(c, k)
         if not cut:
@@ -410,7 +415,7 @@ def build(GS, verbose=True):
     # 성별 러닝(간소화 페이지용): 여성 / 남성(유니맨) × ssRun(1/1~7/31) · fwOld(8/1~) · fwNew
     sexg = lambda c: '여성' if t(cur.g(c, 'sex')) == '여성' else '남성'
     # 26FW 리오더 제외 값(대시보드 26FW 집계표 본 숫자와 같은 기준: 최초기획·기획입고·기획생산 금액) — 정리안 페이지가 '본 숫자 + 리오더 행' 으로 나눠 보이는 데 쓴다(2026-11-10)
-    fwp0 = lambda cs: metrics(cur, cs, co_sku, basis='plan0', co_in=co_in0)
+    fwp0 = lambda cs: metrics(cur, cs, co_sku, basis='plan0', co_in=co_in0, cap_all=co_in)        # 리오더(전체 − 제외)가 음수면 0 으로 바닥(2026-11-10 사용자)
     fw_plan0 = {'TOTAL': {'new': fwp0(fw_codes), 'runNew': fwp0(run_new_erp)}}
     for item in ITEMS:
         fw_plan0[item] = {'new': fwp0([c for c in fw_codes if it(c) == item]), 'runNew': fwp0([c for c in run_new_erp if it(c) == item])}
@@ -474,8 +479,8 @@ def fw_split_reorder(GS, SUM, verbose=True):
     se = lambda c: t(cur.g(c, 'season')); it = lambda c: GRP_OF.get(t(cur.g(c, 'it'))); cat = lambda c: t(cur.g(c, 'item'))
     sex = lambda c: '여성' if t(cur.g(c, 'sex')) == '여성' else '남성'
     new = [c for c in codes if se(c) in FW_SEASONS]; run = [c for c in codes if '러닝' in se(c)]
-    d_tag = {c: cur.n(c, 'prodAllTag') - cur.n(c, 'tag') for c in new + run}
-    d_cost = {c: cur.n(c, 'prodAllCost') - cur.n(c, 'cost') for c in new + run}
+    d_tag = {c: max(0.0, cur.n(c, 'prodAllTag') - cur.n(c, 'tag')) for c in new + run}        # 음수(ERP 생산 구분 오차)는 0 으로 바닥
+    d_cost = {c: max(0.0, cur.n(c, 'prodAllCost') - cur.n(c, 'cost')) for c in new + run}
     itm = lambda x: 'ACC' if x in ('ACC', 'ACCESSORY') else x
     whole = lambda x: x in ('TTL', 'TOTAL', '', None)
     n_fix = [0]

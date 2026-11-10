@@ -548,7 +548,7 @@ for code, s in styles.items():
     # 리오더기획은 지난 시즌 것이라 뺀다. 판매는 차수로 나뉘지 않으므로 기획·입고·원가·TAG 만 싣는다.
     if re_qty > 0 and code.startswith('GF') and code[2] in '3478':
         _rk = '러닝' if s['line'] == '러닝' else s['season']
-        _ir = sum(c['_ir'] or 0 for c in s['colors'])
+        _ir = max(0, sum(c['_ir'] or 0 for c in s['colors']))            # 리오더입고 음수(ERP 생산 구분 오차, GF7LPT501 −1장)는 0 으로 바닥(2026-11-10 사용자)
         _t = REORDER.setdefault(_rk, {'styles': 0, 'sku': 0, 'plan': 0, 'inM': 0, 'inSku': 0, 'qtyIn': 0,
                                       'planCost': 0, 'cost': 0, 'tag': 0, 'codes': []})
         _t['styles'] += 1
