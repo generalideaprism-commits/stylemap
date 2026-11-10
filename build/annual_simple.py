@@ -142,6 +142,7 @@ const MET = {costV: {l:'원가 총액', f:o => fmtW(o.cost * 1.1), v:o => o.cost
 const SNAME = {ss:'26SS', fw:'26FW', all:'연간 (SS+FW)'}, SLABEL = {ss:'26SS (신상 + 러닝)', fw:'26FW (신상 + 러닝)', all:'연간 (26SS + 26FW · 신상 + 러닝)'};
 const PYLAB = {ss:'25SS 동시점', fw:'25FW 동시점', all:'25SS+25FW 동시점'};
 let SEASON = 'all', VIEW = 'overview', AMET = 'costV', OSCOPE = '전체';
+const IN_FRAME = (() => { try { return window.parent !== window; } catch(e){ return true; } })();
 const OPEN = new Set();                                             // 펼쳐 둔 행(전년 비교)·그룹의 키 — 다시 그려도 유지
 const dPct = (cur, py) => (py == null || !py) ? null : (cur - py) / py;
 const dHtml = d => d == null ? '<span class="dim">-</span>' : `<span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d * 100).toFixed(1)}%</span>`;
@@ -353,7 +354,9 @@ function rule(){
 function render(){
   document.querySelectorAll('#segSeason .opt').forEach(b => b.classList.toggle('on', b.dataset.season === SEASON));
   document.querySelectorAll('#segView .opt').forEach(b => b.classList.toggle('on', b.dataset.view === VIEW));
-  document.getElementById('rng').textContent = `기준일 ${D.refS}(일) · 원천 구글 시트 ERP 자동 조회 · 원가 VAT 포함 · 만든 시각 ${D.gen}`;
+  const rngTxt = `기준일 ${D.refS}(일) · 원천 구글 시트 ERP 자동 조회 · 원가 VAT 포함 · 만든 시각 ${D.gen}`;
+  document.getElementById('rng').textContent = rngTxt;
+  if(IN_FRAME){ document.querySelector('.hd1').style.display = 'none'; try{ window.parent.postMessage({type:'page-meta', text: rngTxt}, '*'); }catch(e){} }   // 허브 안에서는 허브 머리글이 제목을 보여 주므로 페이지 제목은 숨기고 기준일만 올려 보낸다
   const V = {overview: viewOverview, item: viewItem, gender: viewGender, run: viewRun, onoff: viewOnOff, tables: viewTables};
   document.getElementById('view').innerHTML = (V[VIEW] || viewOverview)();
   document.title = `${SNAME[SEASON]} 집계표`;
