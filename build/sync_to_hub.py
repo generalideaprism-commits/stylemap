@@ -81,6 +81,8 @@ idx = open(INDEX, encoding='utf-8').read()
 KEYS.extend(_st_keys)                           # 시즌 판매 현황도 빌드가 갱신했으면(구글 시트 모드) 카탈로그 날짜를 맞춘다
 if '26ss-sales-cards.html' in htmls:            # 26SS 판매자료 카드(2026-11-09 부터 같은 빌드 --ss 로 생성)
     KEYS.append('cards26ss')
+if '26-annual-simple.html' in htmls:           # 26년 연간 집계표 정리안(2026-11-10 부터, FW 빌드가 생성)
+    KEYS.append('annual26')
 for key in KEYS:
     i = idx.find("key:'%s'" % key)
     if i < 0:

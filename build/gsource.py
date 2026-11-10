@@ -157,6 +157,21 @@ def load(verbose=True, season='FW'):
         if '26SS' not in hdr: raise SystemExit("%s 탭 2행에 '26SS' 머리글이 없습니다" % nm_r)
         j = hdr.index('26SS')
         pairs = [(_t(r[j]).upper(), _t(r[j]).upper()) for r in run[2:] if len(r) > j and _t(r[j])]
+        # 2026-11-09: 26SS 러닝 = 러닝 구품번 전체(annual_gs 와 같은 규칙) — 26SS 열 뒤에 다른 시즌 열의 구품번도 붙인다.
+        # 2026 신상(러닝 아님)과 생판재에 없는 품번은 뺀다. 이래야 26SS 카드·26SS 탭·연간의 러닝 품번 수가 같다.
+        import annual_gs as _ag
+        _psi = _ag.Psi(st_x, '생판재(ST)')
+        _new26 = set(c for c in _psi.rows if _t(_psi.g(c, 'year')) == '2026' and '러닝' not in _t(_psi.g(c, 'season')))
+        _seen = set(a for a, _ in pairs)
+        for lab in _ag.RUN_SEASON_COLS:
+            if lab not in hdr: continue
+            jj = hdr.index(lab)
+            for r in run[2:]:
+                c = _t(r[jj]).upper() if len(r) > jj else ''
+                if c and c not in _seen: _seen.add(c); pairs.append((c, c))
+        _n0 = len(pairs)
+        pairs = [(a, b) for a, b in pairs if a not in _new26 and a in _psi.rows]
+        info.append('26SS 러닝 목록: 구품번 %d개 (러닝아이템 탭 시즌 열 합집합 %d − 2026 신상·생판재에 없는 품번 %d)' % (len(pairs), _n0, _n0 - len(pairs)))
     y25 = []
     for lab in ('25SS', '25FW'):
         if lab in hdr:

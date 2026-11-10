@@ -931,8 +931,16 @@ for s in styles.values():
         break
 
 # 더 이상 쓰이지 않는 이미지 파일 정리 (SS 모드에서는 FW 카드 이미지가 남아 있어야 하므로 건드리지 않는다)
+# 2026-11-09: 26SS 카드(share/26ss-sales-cards.html)가 쓰는 이미지도 남긴다 — FW 빌드를 SS 빌드 뒤에 다시 돌리면 SS 카드 이미지가 지워지던 문제.
+_keep_ss = set()
+try:
+    _ss_html = os.path.join(os.path.dirname(IMG_DIR), '26ss-sales-cards.html')
+    if SEASON == 'FW' and os.path.exists(_ss_html):
+        _keep_ss = set(re.findall(r'img/([A-Za-z0-9_\-]+\.jpg)', open(_ss_html, encoding='utf-8').read()))
+except Exception as _e:
+    print('[경고] 26SS 카드 이미지 목록을 읽지 못함:', _e)
 for f in (os.listdir(IMG_DIR) if SEASON == 'FW' else []):
-    if f.lower().endswith('.jpg') and f not in written:
+    if f.lower().endswith('.jpg') and f not in written and f not in _keep_ss:
         os.remove(os.path.join(IMG_DIR, f))
         print('  삭제(미사용):', f)
 
@@ -1713,6 +1721,15 @@ if PY_RUN_PLAN_SUPPLY and _stk25:
         _py['inRate'] = (_py.get('qtyIn') or 0) / _py['plan'] if _py['plan'] else None
     print('25FW 러닝 기획량 = 7/31 시점재고 %s + 이후 생산 (시트 AI 수식 대체)' % dict(_stock))
 
+# 26FW 집계표 금액 기준 통일(2026-11-09 사용자): 수량은 리오더 제외인데 TAG(전 행)·러닝 원가는 리오더 포함이던 것을 리오더 제외로 맞춘다.
+# 리오더 금액은 리오더 행에만 둔다 → '26FW 본 행 + 리오더 행 = 연간의 26FW 몫' 이 수량·금액 모두에서 성립. 구글 시트 원천일 때만.
+FW_SPLIT = None
+if GS and SUM.get('block1'):
+    try:
+        import annual_gs as _ags
+        FW_SPLIT = _ags.fw_split_reorder(GS, SUM)
+    except Exception as _e:
+        print('[경고] 26FW 금액 기준 통일(리오더 제외)을 하지 못했습니다 — 종합 시트 값 그대로:', type(_e).__name__, _e)
 print('집계표:', {k: len(v) for k, v in SUM.items()})
 
 
@@ -1819,6 +1836,7 @@ ANN = {}
 if GS:
     try:
         import annual_gs
+        annual_gs.AMT_ADJ = {_c: (_d.get('tot', 0), _d.get('wk', 0)) for _c, _d in (globals().get('AMT_FIX_DIFF') or {}).items()}     # 26FW 집계표와 같은 실판매금액 보정
         _ss_gs, ANN = annual_gs.build(GS)
         SS = _ss_gs
         RUNY = {}
@@ -1878,6 +1896,13 @@ print('원가 미입력(입고 있음 / 기획만):', {k: ((v['inN'], v['inQty']
 CHN = {'at': CH_AT, 'src': CH_SRC, 'end': DATA_END,
        'rows': [dict(g=_k[0], bok=_k[1], **{_x: (round(_y) if isinstance(_y, float) else _y) for _x, _y in _v.items()}) for _k, _v in sorted(_chn.items())]}
 print('온·오프 탭: %d행 · 채널 판매 합 %d장 (카드 판매 %d장)' % (len(CHN['rows']), sum(r['on'] + r['off'] + r['etc'] for r in CHN['rows']), sum(r['sales'] for r in CHN['rows'])))
+# 연간 집계표(정리안, 2026-11-10): 26SS/26FW × 신상/러닝 네 칸 · 시즌/화면 캡슐 · 온·오프(CHN)·전체 표(SUM/SS/ANN.fw) 포함 — 기존 v2 페이지를 대체할 예정
+if ANN:
+    try:
+        import annual_simple
+        annual_simple.build(GS, ANN, SS, SUM=SUM, CHN=CHN)
+    except Exception as _e:
+        print('[경고] 연간 집계표(정리안)를 만들지 못했습니다:', type(_e).__name__, _e)
 render('summary_v2_template.html', OUT_SUM2,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '/*__SS__*/{}': json.dumps(SS, ensure_ascii=False), '/*__CHN__*/{}': json.dumps(CHN, ensure_ascii=False), '/*__RUNY__*/{}': json.dumps(RUNY, ensure_ascii=False), '/*__ANN__*/{}': json.dumps(ANN, ensure_ascii=False), '__DATAEND__': DATA_END})
 if os.path.exists(OUT_CMP):
