@@ -124,6 +124,7 @@
   .tag{font-size:9.5px;font-size:clamp(4.5px,3.2cqw,9.5px);border-radius:5px;padding:1px 5px;font-weight:700}
   .tag.b{background:var(--blue);color:#fff}
   .tag.g{background:var(--soft);color:var(--sub);border:1px solid var(--line)}
+  .tag.old{background:#fff7e6;color:#9a5b00;border:1px solid #f0c98a}   /* 과년차 러닝(26SS 목록 밖 구품번) */
   .tag.ro{background:#fff1e6;color:#c2560c;border:1px solid #f6d3b5}
   td.re{color:#c2560c}
   .recard{cursor:pointer}
@@ -167,6 +168,11 @@
   .stats span{display:block;font-size:9px;font-size:clamp(4.5px,3.4cqw,9px);color:var(--muted);margin-top:2px;white-space:nowrap}
   .stats .hl b{color:var(--blue)}
   .stats b span.dim{display:inline;font-size:1em;margin:0}   /* 값 없음 '-' 는 숫자와 같은 크기로 */
+  /* 러닝 카드 전 기간 누계(출시~현재) — 본 숫자(1/1~ 기준) 바로 아래 작은 줄 */
+  .stats.all{margin:0 10px 6px;padding:5px 2px 6px;background:var(--soft);border:1px dashed var(--line);border-radius:8px;position:relative}
+  .stats.all b{font-size:11px;font-size:clamp(5px,4cqw,11px);color:var(--sub)}
+  .stats.all span{color:var(--muted)}
+  .stats.all .cap{grid-column:1/-1;text-align:left;font-size:9.5px;font-size:clamp(4.5px,3.4cqw,9.5px);color:var(--muted);font-weight:700;padding:0 6px 3px;white-space:nowrap}
 
   .prog{margin:2px 12px 13px;background:var(--soft);border:1px solid var(--line);border-radius:8px;
         padding:7px 10px}
@@ -449,8 +455,8 @@ function card(s){
       <span class="code">${s.style}${s.altStyle?` <b>(${s.altStyle})</b>`:''}</span>
       <span class="tags">
         <em class="tag b">${s.gender||'-'}</em>
-        <em class="tag g">${s.season||'-'}</em>
-        <em class="tag g">${s.line}</em>
+        <em class="tag g">${s.runBasis && s.year && s.year!=='20'+SEASON_TAG.slice(0,2) ? "'"+String(s.year).slice(2)+' ' : ''}${s.season||'-'}</em>
+        <em class="tag ${s.oldRun?'old':'g'}">${s.oldRun?'과년차 러닝':s.line}</em>
         ${s.reorder==='O'?`<em class="tag ro">리오더${(s.reN||[]).length>1?'×'+s.reN.length:''}</em>`:''}
       </span>
     </div>
@@ -473,6 +479,12 @@ function card(s){
       <div><b>${n0(t.total)}</b><span>누계판매</span></div>
       <div class="hl"><b>${pct(t.rate)}</b><span>판매율</span></div>
     </div>
+    ${s.allTime ? `<div class="stats all"><div class="cap">전 기간 누계 (${s.year ? "'"+String(s.year).slice(2)+' 출시' : '출시'} ~ 현재)</div>
+      <div><b>${n0(s.allTime.plan)}</b><span>기획량</span></div>
+      <div><b>${n0(s.allTime.qtyIn)}</b><span>입고량</span></div>
+      <div><b>${n0(s.allTime.sold)}</b><span>누계판매</span></div>
+      <div><b>${s.allTime.qtyIn ? pct(s.allTime.sold/s.allTime.qtyIn*100) : '-'}</b><span>판매율</span></div>
+    </div>` : ''}
     ${chRow(s)}
     <div class="prog">
       <div class="lb"><span>판매 진행률</span><b>${pct(t.rate)}</b></div>
@@ -504,7 +516,10 @@ function card(s){
     </div>
     <div class="pnote">마크업 = 택가 ÷ 원가(VAT 포함) · 실판 마크업 = 실판가 ÷ 원가(VAT 포함)${
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
-      <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
+      <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${
+      s.runBasis ? `<br>러닝 카드 = <b>1/1~ 기준</b> · 기획·입고 = 12/31 이월 재고 ${qty(s.runBasis.base)} + ${SEASON_TAG.slice(0,2)}년 생산 ${qty(s.runBasis.newIn)} · 누계판매·금액 = ${SEASON_TAG.slice(0,2)}년 판매분` : ''}${
+      s.allTime ? `<br><b>전 기간 누계(출시~현재)</b> 기획 ${qty(s.allTime.plan)} · 입고 ${qty(s.allTime.qtyIn)} · 판매 ${qty(s.allTime.sold)}장${s.allTime.tagAmt ? ` · TAG판매금액 ${n0(s.allTime.tagAmt)} · 실판매금액 ${n0(s.allTime.saleAmt)} · 할인율 ${s.allTime.discount==null?'-':pct(s.allTime.discount*100,0)}` : ''}` : ''}${
+      s.oldRun ? `<br><b>과년차 러닝</b> — 러닝아이템 ${SEASON_TAG} 목록 밖의 구품번(${s.year ? String(s.year).slice(2)+' '+(s.season||'') : '이전 시즌'}). ${SEASON_TAG} 시즌 집계에는 들어가지 않고 연간 집계표의 '과년차 러닝 상품' 칸에만 잡힌다` : ''}${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
       ${chBlock(s)}
       <div class="rv" data-k="${s.style}"></div>
     </details>

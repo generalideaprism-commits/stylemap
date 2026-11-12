@@ -148,6 +148,7 @@ def load(verbose=True, season='FW'):
     info.append('%s %d행 · %s %d행 · %s %d행' % (nm_b, len(back) - 3, nm_6, len(stk26) - 3, nm_5, len(stk25) - 3))
     # --- 러닝 목록: 엑셀 '26FW 러닝스타일 리스트' 모양으로 다시 짠다 ---
     nm_r, run = read('run')
+    ss_run26 = set()                                     # SS 모드: 러닝아이템 탭 26SS 열 품번(31개) — 카드에서 과년차 러닝을 가르는 데 쓴다
     hdr = [_t(v) for v in run[1]]
     try: i_new, i_old = hdr.index('26FW'), hdr.index('26FW - 과거품번')
     except ValueError: raise SystemExit("%s 탭 2행에서 '26FW' / '26FW - 과거품번' 머리글을 찾지 못했습니다: %s" % (nm_r, hdr))
@@ -170,7 +171,9 @@ def load(verbose=True, season='FW'):
                 c = _t(r[jj]).upper() if len(r) > jj else ''
                 if c and c not in _seen: _seen.add(c); pairs.append((c, c))
         _n0 = len(pairs)
+        _ss26 = set(_t(r[j]).upper() for r in run[2:] if len(r) > j and _t(r[j]))     # 26SS 열 품번(31) — 나머지는 과년차 러닝
         pairs = [(a, b) for a, b in pairs if a not in _new26 and a in _psi.rows]
+        ss_run26 = _ss26
         info.append('26SS 러닝 목록: 구품번 %d개 (러닝아이템 탭 시즌 열 합집합 %d − 2026 신상·생판재에 없는 품번 %d)' % (len(pairs), _n0, _n0 - len(pairs)))
     y25 = []
     for lab in ('25SS', '25FW'):
@@ -199,7 +202,7 @@ def load(verbose=True, season='FW'):
     if verbose:
         print("원천: 구글 시트 '%s' · 기준 일요일 %s" % (title, ref))
         for l in info: print('  ' + l)
-    out = {'wb': GridWB(sheets), 'themes': themes, 'ref': ref, 'title': title, 'info': info, 'grids': grids, 'jonghap': jong}
+    out = {'wb': GridWB(sheets), 'themes': themes, 'ref': ref, 'title': title, 'info': info, 'grids': grids, 'jonghap': jong, 'ss_run26': ss_run26}
     if season == 'SS':
         # 컬러생판재 두 시점 → {(품번, 칼라): {'stock': 전체 재고, 'prod': 누적 생산, 'sales': 누적 판매(기간)}}
         def color_map(part):
@@ -211,16 +214,20 @@ def load(verbose=True, season='FW'):
                 if a: cur_g = a.split('|')[0]
                 grp.append(cur_g)
             def col(gname, sub):
-                return next(i for i in range(len(h2)) if grp[i] == gname and h2[i] == sub)
+                # 'UP-TAG가' 는 탭에 따라 'UP-TAG가금액' 으로도 적혀 있어 앞머리 일치로 찾는다
+                return next(i for i in range(len(h2)) if grp[i] == gname and h2[i].startswith(sub))
             si, ci = h2.index('스타일'), h2.index('칼라')
             i_stk, i_prod, i_sales = col('재고', '전체'), col('생산', '수량'), col('판매(기간)', '수량')
+            # 기획(작지) 수량과 판매 금액(UP-TAG·판매금액)도 같이 담는다 — 러닝 카드의 2026 기획·할인율을 두 시점 차로 만들 때 쓴다
+            i_plan, i_tagamt, i_saleamt = col('기획', '수량'), col('판매(기간)', 'UP-TAG가'), col('판매(기간)', '판매금액')
             m = {}
             for r in g[2:]:
                 code = _t(r[si]).upper() if len(r) > si else ''
                 if not re.match(r'^[A-Z0-9]{8,}$', code): continue
                 k = (code, _t(r[ci]))
-                a = m.setdefault(k, {'stock': 0.0, 'prod': 0.0, 'sales': 0.0})
-                for key, i in (('stock', i_stk), ('prod', i_prod), ('sales', i_sales)):
+                a = m.setdefault(k, {'stock': 0.0, 'prod': 0.0, 'sales': 0.0, 'plan': 0.0, 'tagAmt': 0.0, 'saleAmt': 0.0})
+                for key, i in (('stock', i_stk), ('prod', i_prod), ('sales', i_sales),
+                               ('plan', i_plan), ('tagAmt', i_tagamt), ('saleAmt', i_saleamt)):
                     v = r[i] if i < len(r) else None
                     a[key] += float(v) if isinstance(v, (int, float)) else 0.0
             return nm_c, m

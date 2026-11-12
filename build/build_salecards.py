@@ -318,6 +318,7 @@ for st_sheet, is_main in ((ST_MAIN, True), (ST_RUN, False)):
             'imgCodes': cands,
             'name': txt(r[ST_['name']]),
             'season': season,
+            'year': txt(r[ST_['season'] - 1]),   # ERP 년도(시즌 바로 왼쪽 열) — 러닝 카드 배지에 '25 여름' 처럼 붙인다
             'gender': txt(r[ST_['gender']]),
             'item': txt(r[ST_['item']]),
             'cat2': txt(r[ST_['item2']]),   # 아이템(H열) — 집계표 카테고리명과 대응
@@ -605,6 +606,9 @@ for g, members in groups.items():
     subs.add(g)
 
 for s in styles.values():
+    # 첫 입고 연도 — 러닝 카드에서 작년 날짜('25 5/26)임을 밝히는 데 쓴다
+    s['inYear'] = int(s['_in'][:4]) if s.get('_in') and s['_in'][:4].isdigit() else None
+    s['outYear'] = int(s['_out'][:4]) if s.get('_out') and s['_out'][:4].isdigit() else None
     for k in ('_in', '_out', 'grp'):
         s.pop(k, None)
 
@@ -650,9 +654,17 @@ if SEASON == 'SS':
     _cc, _dc = GS.get('color_now'), GS.get('color_dec')
     if not (_cc and _dc): raise SystemExit('26SS 러닝 카드용 컬러생판재 탭(현재·12/31)이 없습니다 — erp_client.py --screen psi_c / stk_dec_c --gsheet')
     _nrun = 0
+    _ss26 = GS.get('ss_run26') or set()
+    _n_old = 0
     for s in data:
         if s['line'] != '러닝': continue
+        # 러닝아이템 탭 26SS 열(31개) 밖의 구품번(24SS~25FW)은 '과년차 러닝' — 26SS 집계에 안 들어가고 연간 집계표의 별도 칸에만 잡힌다
+        # (사용자 결정 2026-11-10, 카드에도 같은 구분을 붙임 2026-11-12)
+        # 필터(메인/러닝)는 그대로 두고 배지·설명에만 쓴다(사용자 2026-11-12 "과년차 필터는 필요 없다")
+        s['oldRun'] = bool(_ss26) and s['style'] not in _ss26
+        if s['oldRun']: _n_old += 1
         base_t = new_t = 0
+        tag_amt_y = sale_amt_y = 0.0        # 2026 판매 금액 = 현재 누계 − 12/31 누계 (수량과 같은 기간으로 맞춘다)
         for c in s['colors']:
             k = (s['style'], c['color'])
             now, dec = _cc.get(k) or {}, _dc.get(k) or {}
@@ -662,13 +674,28 @@ if SEASON == 'SS':
             c['rate'] = (sold / c['qtyIn'] * 100) if c['qtyIn'] else None
             c['base'], c['newIn'] = base, new_in
             base_t += base; new_t += new_in
+            tag_amt_y += now.get('tagAmt', 0) - dec.get('tagAmt', 0)
+            sale_amt_y += now.get('saleAmt', 0) - dec.get('saleAmt', 0)
         s['ttl'] = calc_ttl(s['colors']); s['ttlFull'] = {'plan': s['ttl']['plan'], 'qtyIn': s['ttl']['qtyIn']}
         s['stock'] = sum((_cc.get((s['style'], c['color'])) or {}).get('stock', 0) for c in s['colors'])
         s['runBasis'] = {'base': base_t, 'newIn': new_t, 'since': '%d-01-01' % FILE_YEAR}
+        # TAG판매금액·실판매금액·할인율도 2026 몫으로 — 전 기간 누적(ST 시트 값)을 그대로 두면 누계판매(2026)와 기간이 어긋난다
+        # (WBE2L03530: 누계 9,529장인데 금액은 17,202장분 8.3억이 찍혔다, 2026-11-12)
+        s['tagAmtFull'], s['saleAmtFull'], s['discountFull'] = s.get('tagAmt'), s.get('saleAmt'), s.get('discount')
+        s['tagAmt'], s['saleAmt'] = tag_amt_y, sale_amt_y
+        s['discount'] = (1 - sale_amt_y / tag_amt_y) if tag_amt_y else None
+        # 전 기간 누계(출시~현재) — 카드 상세에 참고로 한 줄 보인다(사용자 2026-11-12). 기획 = ERP 작지(날짜 없음), 입고 = 생산 누계, 판매 = 판매(기간) 누계
+        _now_all = [(_cc.get((s['style'], c['color'])) or {}) for c in s['colors']]
+        s['allTime'] = {'plan': sum(n.get('plan', 0) for n in _now_all), 'qtyIn': sum(n.get('prod', 0) for n in _now_all),
+                        'sold': sum(n.get('sales', 0) for n in _now_all), 'tagAmt': s['tagAmtFull'], 'saleAmt': s['saleAmtFull'], 'discount': s['discountFull']}
+        # 첫 입고일이 작년이면 연도를 붙여 밝힌다('25 5/26) — 1월부터 판매가 찍히는 카드에 5/26 입고만 보이면 오해한다
+        for fld, yk in (('inDate', 'inYear'), ('outDate', 'outYear')):
+            if s.get(yk) and s[yk] < FILE_YEAR and s.get(fld) and not s[fld].startswith("'"):
+                s[fld] = "'%02d %s" % (s[yk] % 100, s[fld])
         s['arrived'] = '입고' if s['ttl']['qtyIn'] > 0 else '미입고'
         s.pop('re', None); s['reorder'] = 'X'
         _nrun += 1
-    print('26SS 러닝 카드 %d장: 1/1~ 기준(12/31 재고 + 2026 생산 · 2026 판매)' % _nrun)
+    print('26SS 러닝 카드 %d장(26SS 러닝 %d · 과년차 러닝 %d): 1/1~ 기준(12/31 재고 + 2026 생산 · 2026 판매)' % (_nrun, _nrun - _n_old, _n_old))
 for s in data:
     if SEASON == 'SS' or s['line'] != '러닝':
         continue

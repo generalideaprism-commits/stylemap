@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "stylemap-share",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8951", "--directory", "C:\\Users\\User\\Desktop\\stylemap\\share"],
+      "port": 8951
+    }
+  ]
+}
