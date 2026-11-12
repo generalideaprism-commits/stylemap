@@ -262,7 +262,8 @@ def make_lots(key_style, colors, intake_rows, today, base=None, first_in_date=''
     # 초도: 입고일 범위·상태·예정은 입고스케줄 메인 탭(파샬이면 입고중), 없으면 스타일맵 첫 입고일
     m_rd = [d for r in rows_main for d in r['rd']]
     m_pd = [d for r in rows_main for d, t in r['parts'] if d and t and d >= today]
-    first = {'n': 0, 'kind': 'first', 'label': '초도', 'ord': 0, 'recv': 0, 'sold': 0, 'pend': sum(r['pend'] for r in rows_main), 'state': '종결',
+    # 러닝(이월재고 차수가 있는 카드)은 '초도' 대신 '신규' — 이월재고와 대비되는 신품번 첫 입고(사용자 2026-11-12)
+    first = {'n': 0, 'kind': 'first', 'label': '신규' if lots else '초도', 'ord': 0, 'recv': 0, 'sold': 0, 'pend': sum(r['pend'] for r in rows_main), 'state': '종결',
              'rd': _range(m_rd) or (md(first_in_date) if re.match(r'^\d{4}-', first_in_date or '') else (first_in_date or '')),
              'pendDate': _range(m_pd), 'inv': md(min([r['inv'] for r in rows_main if r['inv']], default='')),
              'due': md(max([r['due'] for r in rows_main if r['due']], default='')), 'colors': []}
@@ -274,6 +275,9 @@ def make_lots(key_style, colors, intake_rows, today, base=None, first_in_date=''
         code = c['color']
         ir = c.get('ir') or 0
         qin = c.get('qtyIn') or 0
+        # 리오더입고가 음수(ERP 소급 −1·−2)거나 전체 입고보다 크면 0~전체 입고로 자른다 — 안 그러면 신규 입고가 그만큼 커져
+        # 차수 합이 카드와 어긋나고, 카드 4장(GF3LKC504·WBD3L04501·WBD3L04503·GF1LPT501)이 차수 없이 옛 팝업으로 떨어졌다(2026-11-12)
+        ir = max(0, min(ir, qin))
         first_recv = max(0, qin - ir)
         first_ord = c.get('p0') if c.get('p0') is not None else 0
         # 리오더 차수별 시트 입고 → 스타일맵 리오더입고(정본) 합에 맞춘다

@@ -712,7 +712,9 @@ for s in data:
     s['stock'] = stock
     stat = {'base': base, 'addPlan': ttF['plan'] or 0, 'newIn': new_in,
             'stock': stock, 'sales': run_sales,
-            'rate': (run_sales / stock * 100) if stock else None}
+            'rate': (run_sales / stock * 100) if stock else None,
+            # 팝업 상단 판매율 = 신규(신품번) 판매 ÷ 신규 입고 (사용자 2026-11-12) — 이월재고 판매는 '이월재고' 차수에서 따로 본다
+            'newSales': tt['total'] or 0, 'rateNew': ((tt['total'] or 0) / new_in * 100) if new_in else None}
     # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규 기획량,
     # 입고 = 컬러별 기초재고 + 컬러별 신규 입고량(=현재고), 전주/2주전·누계(8/1 이후)는 구+신 합산,
     # 판매율 = 누계 ÷ 현재고(기초+입고)
@@ -820,6 +822,8 @@ if INTAKE_ROWS:
         if abs(in_sum - in_card) > 0.5 or abs(sold_sum - sold_card) > 0.5:
             # 합이 카드와 다르면 화면에 다른 숫자를 보이느니 이 카드는 차수 정보를 빼고 옛 팝업으로 둔다
             _lot_bad.append('%s 입고 %s/%s 판매 %s/%s' % (s['style'], in_sum, in_card, sold_sum, sold_card))
+            if os.environ.get('LOT_DEBUG'):
+                print('[LOT_DEBUG]', s['style'], 'cols', cols, ' base', base, ' lots', [(L['label'], L['recv'], L['sold'], [(c['c'], c['recv']) for c in L['colors']]) for L in lots])
             continue
         s['lots'] = {'list': lots, 'meta': res['meta'], 'src': INTAKE_SRC}
         if any(L['kind'] == 're' for L in lots):
