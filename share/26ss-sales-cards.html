@@ -829,8 +829,9 @@ function buildFilters(){
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
-  document.getElementById('filters').innerHTML = '<div class="frow" id="wkrow"></div>' +
-    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('') + '<div class="frow" id="viewrow"></div>';
+  document.getElementById('filters').innerHTML =
+    ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('') + '<div class="frow" id="viewrow"></div>' +
+    '<div class="frow" id="wkrow"></div>';                    // 주차 줄은 차수·판매 채널 아래 (사용자 2026-11-16)
   syncWkUI();
   syncViewUI();
   syncSortUI();
