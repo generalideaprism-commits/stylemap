@@ -68,6 +68,18 @@ for n in os.listdir(dst_img):
         removed += 1
 print('이미지 %d장 (변경 %d, 삭제 %d)' % (len(names), copied, removed))
 
+# 26FW 카드 주차별 보관(share/26fw-weeks/*.json) — 카드 페이지 '주차' 줄이 읽는다 (2026-11-16). 바뀐 것만 복사, 지우지는 않는다.
+src_wk, dst_wk = os.path.join(SRC_SHARE, '26fw-weeks'), os.path.join(HUB_SHARE, '26fw-weeks')
+if os.path.isdir(src_wk):
+    os.makedirs(dst_wk, exist_ok=True)
+    _n = 0
+    for n in sorted(os.listdir(src_wk)):
+        if not n.endswith('.json'): continue
+        s, d = os.path.join(src_wk, n), os.path.join(dst_wk, n)
+        if not os.path.exists(d) or open(s, 'rb').read() != open(d, 'rb').read():
+            shutil.copy2(s, d); _n += 1
+    print('26fw-weeks: %d개 변경 복사' % _n)
+
 # 2) 데이터 날짜(= 카드 화면의 업데이트 날짜) 읽기 ---------------------------
 card = open(os.path.join(SRC_SHARE, '26fw-sales-cards.html'), encoding='utf-8').read()
 m = re.search(r'업데이트 날짜 <b>(\d{4}-\d{2}-\d{2})</b>', card)

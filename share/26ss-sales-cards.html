@@ -87,6 +87,10 @@
         padding:5px 12px;font-size:12px;cursor:pointer;transition:.12s;white-space:nowrap}
   .chip:hover{border-color:#c9d2e0;color:var(--ink)}
   .chip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+  /* 주차 줄 — 지난 주 카드(26fw-weeks/MMDD.json) 고르기. 목록이 없으면(26SS 카드·로컬 파일) 줄 자체가 안 보인다 */
+  #wkrow:empty{display:none}
+  .chip.wkc small{opacity:.8;margin-left:3px;font-size:10px}
+  #wknote{display:none;background:#fff7e6;border:1px solid #f0c98a;color:#9a5b00;font-weight:600;font-size:13px;margin:8px 16px 0;padding:8px 12px;border-radius:10px;line-height:1.5}
   #reset{border:1px solid var(--line);background:var(--soft);border-radius:999px;
          padding:8px 14px;font-size:12px;cursor:pointer;color:var(--sub)}
   #reset:hover{background:#eceff4}
@@ -395,6 +399,7 @@
   </div>
 </header>
 <div id="basisnote" style="color:#d92d20;font-weight:700;font-size:13px;margin:8px 16px 0">※ 현재고 수량은 가용재고 온라인+오프라인+매장재고 수량입니다 (조조타운,풀필먼트 수량 제외)</div>
+<div id="wknote"></div>
 <div id="sumbar"></div>
 <div id="itembar"></div>
 <main id="list"></main>
@@ -424,7 +429,7 @@ function nextImg(el){
 }
 
 /* ---------- 주차별 판매 추이 ---------- */
-const TW = (TREND && TREND.weeks) || [];
+let TW = (TREND && TREND.weeks) || [];      // 주차를 바꾸면 그 주 빌드의 주 목록로 갈아 끼운다
 const wkLabel = iso => { const d = new Date(iso + 'T00:00:00'); return (d.getMonth()+1) + '/' + d.getDate(); };
 // 주차 표기는 마감(일요일) 기준 — 'M/D 마감' (사용자 2026-11-16: 11/9주(전주) 대신 11/15 마감)
 const wkEnd = iso => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + 6); return (d.getMonth()+1) + '/' + d.getDate(); };
@@ -552,7 +557,8 @@ function lotsAny(s){
   return [{n:0, kind:'first', label:'초도', ord:+t.plan||0, recv:+t.qtyIn||0, sold:+t.total||0, pend:0, state:(+t.qtyIn>0?'종결':'예정'), colors:[]}];
 }
 const reLotsOf = s => lotsAny(s).filter(l=>l.kind==='re');
-const RESEQ = [...new Set(DATA.flatMap(s=>reLotsOf(s).map(l=>l.n)))].sort((a,b)=>a-b);
+const calcRESEQ = () => [...new Set(DATA.flatMap(s=>reLotsOf(s).map(l=>l.n)))].sort((a,b)=>a-b);
+let RESEQ = calcRESEQ();                                                     // DATA 에서 나오는 값들은 주차를 바꾸면 rederive() 로 다시 계산
 const anyReIn = L => L.some(l=>l.kind==='re' && l.recv>0);                 // 리오더가 실제로 들어왔나 — 아니면 판매는 전부 초도 몫(추정 아님)
 const isApprox = (l, L) => l.kind==='re' || (l.kind==='first' && anyReIn(L));
 let VIEW = 'all';                                                            // 보기: all · first · re · re1 · re2 …
@@ -598,24 +604,26 @@ function reNote(s){
   return `리오더 ${r.n}회 · 지시 ${qty(r.ord)} · 입고 ${qty(r.recv)} · 판매≈ ${qty(r.sold)}${reWait(s)?` · 입고 대기 ${qty(reWait(s))}`:''}`;
 }
 /* 목록 위 '보기' 버튼 — 차수 */
-const HASLOTS = DATA.some(s=>s.lots);                                      // 입고스케줄을 못 읽은 빌드는 차수 보기·리오더 정렬을 숨긴다
-const VIEWS = HASLOTS ? [['all','전체'], ['first','초도'], ['re','리오더']].concat(RESEQ.map(n=>['re'+n, n+'차'])) : [['all','전체']];
+let HASLOTS = DATA.some(s=>s.lots);                                        // 입고스케줄을 못 읽은 빌드는 차수 보기·리오더 정렬을 숨긴다
+const calcVIEWS = () => HASLOTS ? [['all','전체'], ['first','초도'], ['re','리오더']].concat(RESEQ.map(n=>['re'+n, n+'차'])) : [['all','전체']];
+let VIEWS = calcVIEWS();
 function viewCount(v){ return DATA.filter(s=>v==='all'||v==='first'||lotNums(s,v)).length; }
 function viewGroupHTML(){
   if(!HASLOTS) return '';
   return `<div class="fgroup"><span class="flabel">차수</span>${VIEWS.map(([v,t])=>
     `<button class="chip vchip${VIEW===v?' on':''}" data-v="${v}" title="${v==='re'?'리오더한 스타일만':v==='first'?'초도 기준':/^re\d/.test(v)?v.slice(2)+'차 리오더가 있는 스타일만':'전체'}">${t}${v==='all'||v==='first'?'':` <small>${viewCount(v)}</small>`}</button>`).join('')}</div>`;
 }
-const REITEMS = [['v:re','리오더한 것만 보기']].concat(RESEQ.map(n=>['v:re'+n, n+'차 리오더만 보기']),
+const calcREITEMS = () => [['v:re','리오더한 것만 보기']].concat(RESEQ.map(n=>['v:re'+n, n+'차 리오더만 보기']),
   [['reOrdDesc','리오더 지시 많은순'], ['reRecvDesc','리오더 입고 많은순'], ['reSoldDesc','리오더 판매≈ 많은순'],
    ['reWaitDesc','리오더 입고 대기 많은순'], ['reShareDesc','리오더 비중 높은순'], ['reCntDesc','리오더 회차 많은순']]);
+let REITEMS = calcREITEMS();
 /* ---------- 온라인 / 오프라인 판매 (MD 2026-10-19 "온,오프 판매도 볼 수 있어야 되겠다") ----------
    원천 = 허브 MARK 채널 자료(신상 판매 리뷰의 온라인/오프라인 버튼과 같은 팀 정의). 스타일맵에는 채널별 판매가 없다.
    s.ch.t = [온라인 누계, 온라인 전주, 오프라인 누계, 오프라인 전주, 기타 누계, 기타 전주], s.ch.c = {컬러:[…6]}.
    온라인 = 온라인팀(자사몰·몰·풀필먼트·벤더 포함, 반품은 마이너스) · 오프라인 = 직영·백화점·아울렛·면세 매장 · 기타 = 글로벌팀+기타팀. 2주전은 원천이 없어 나누지 않는다. */
-const CHAT = "";                       // MARK 기준일 (카드 마감일과 같아야 합계가 맞는다)
+let CHAT = "";                         // MARK 기준일 (카드 마감일과 같아야 합계가 맞는다) — 주차를 바꾸면 그 주 값
 let CH = 'all';                               // 채널 보기: all · on · off
-const HASCH = DATA.some(s=>s.ch);
+let HASCH = DATA.some(s=>s.ch);
 const chanLabel = c => c==='on' ? '온라인' : c==='off' ? '오프라인' : '합계';
 const chStale = () => !!(CHAT && typeof CARDEND === 'string' && CARDEND && CHAT !== CARDEND);   // MARK 기준일 ≠ 카드 마감일
 function chNums(s){
@@ -687,7 +695,7 @@ function chRow(s){
 // 재고 = 신상 판매 리뷰의 현재고(리오더 체크와 같은 기준: 창고 가용 + 매장, style-lookup.json) — 러닝은 신+구 합계(tstock). 보유재고(물류+채널)는 hstock·hpstock. (MD 2026-10-19 '현재고 전부 리뷰 기준으로')
 // 리뷰 자료를 못 읽었을 때만 예전 계산: 신상 = 입고 − 누계판매 / 러닝 = (시점재고+신규입고) − 판매(스타일맵 스냅샷)
 // 재고금액 = 재고 × 실판가(없으면 TAG가) · 재고원가 = 재고 × 원가(VAT 포함)
-const SGROUPS = [
+const calcSGROUPS = () => [
   ['판매', [['rateDesc','판매율 높은순'],['rateAsc','판매율 낮은순'],['salesDesc','누계판매 많은순'],['salesAsc','누계판매 적은순'],
            ['w1Desc','전주 판매 많은순'],['w1Asc','전주 판매 적은순'],['chgDesc','전주 증가율 높은순'],['chgAsc','전주 증가율 낮은순']]],
   ['재고', [['stockDesc','재고 수량 많은순'],['stockAsc','재고 수량 적은순'],['stockAmtDesc','재고금액 많은순'],['stockAmtAsc','재고금액 적은순'],
@@ -698,8 +706,10 @@ const SGROUPS = [
               ['saleAmtAsc','실판매금액 적은순'],['inDateAsc','입고일 빠른순'],['inDateDesc','입고일 늦은순']]],
   ['리오더', REITEMS],
 ].filter(g=>g[0]!=='리오더' || HASLOTS).concat(HASCH ? [['온·오프', CHITEMS]] : []);
+let SGROUPS = calcSGROUPS();
 const SLABEL = {};
-SGROUPS.forEach(([,o])=>o.forEach(([k,l])=>SLABEL[k]=l));
+const fillSLABEL = () => { Object.keys(SLABEL).forEach(k=>delete SLABEL[k]); SGROUPS.forEach(([,o])=>o.forEach(([k,l])=>SLABEL[k]=l)); };
+fillSLABEL();
 let SORT = '';
 const nz = v => (v==null || v==='' || isNaN(+v)) ? null : +v;
 const rateOf = s => (s.ttl && s.ttl.rate != null) ? s.ttl.rate : null;
@@ -819,8 +829,9 @@ function buildFilters(){
       .concat(vals.map(v=>`<button class="chip" data-k="${k}" data-v="${v}">${v}</button>`));
     return `<div class="fgroup"><span class="flabel">${label}</span>${btns.join('')}</div>`;
   };
-  document.getElementById('filters').innerHTML =
+  document.getElementById('filters').innerHTML = '<div class="frow" id="wkrow"></div>' +
     ROWS.map(r=>`<div class="frow">${r.map(group).join('')}</div>`).join('') + '<div class="frow" id="viewrow"></div>';
+  syncWkUI();
   syncViewUI();
   syncSortUI();
   KEYS.forEach(([k])=>sel[k]='');
@@ -1283,10 +1294,10 @@ function closeSortMenus(){
 /* ---------- 신상 판매 리뷰와 수량 비교 (MD 2026-10-19) ----------
    판매자료 카드(스타일맵 · 일요일 마감 스냅샷)와 신상 판매 리뷰(판매변동표 · 매일 갱신)를 번갈아 보는데 수량이 어긋나서,
    카드 맨 아래 상세에 두 자료의 차이와 이유를 적는다. 리뷰 쪽 값은 같은 폴더의 style-lookup.json(리뷰가 갱신할 때마다 새로 써짐)을 열 때 읽는다. */
-const UPDATED = "2026-11-16";
-const CARDEND = "2026-11-15";            // 카드 '전주'(스타일맵 W1)의 마지막 날(일요일) — 빌드 때 박힘
+let UPDATED = "2026-11-16";              // 주차를 바꾸면 그 주 값 (아래 '주차' 참조)
+let CARDEND = "2026-11-15";              // 카드 '전주'(스타일맵 W1)의 마지막 날(일요일) — 빌드 때 박힘
 let LOOK = null, LOOKAT = '', LOOKW1 = '', LOOKSTATE = 'loading';
-const BYSTYLE = new Map(DATA.map(s=>[s.style, s]));
+let BYSTYLE = new Map(DATA.map(s=>[s.style, s]));
 const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mdD = d => (d.getMonth()+1) + '/' + d.getDate();
 const isoD = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -1304,6 +1315,7 @@ const sd = (v, unit='') => v === 0 ? '<span class="dim">0 (같음)</span>' : `<b
 const sgS = n => (n>=0?'+':'−') + qty(Math.abs(n));
 function rvHTML(s){
   const k = s.altStyle || s.style;                         // 러닝 카드는 신품번 단독 값끼리 비교
+  if(!isLiveWeek()) return '<div class="rvh">📊 신상 판매 리뷰와 수량 비교<small>지난 주차 화면에서는 비교하지 않습니다 — 리뷰 값은 매일 갱신되는 현재 값이라 그 주와 맞지 않습니다</small></div>';
   const head = `<div class="rvh">📊 신상 판매 리뷰와 수량 비교${LOOKAT ? `<small>리뷰 기준 ${esc(LOOKAT)}</small>` : ''}</div>`;
   if(LOOKSTATE === 'loading') return head + '<div class="rvx">리뷰 자료를 불러오는 중…</div>';
   if(!LOOK) return head + '<div class="rvx">리뷰 자료(style-lookup.json)를 읽지 못했습니다. 공유파일(허브) 주소에서 열면 비교가 보입니다.</div>';
@@ -1388,6 +1400,85 @@ const paintRv = all => document.querySelectorAll(all ? '.rv[data-k]' : '.rv[data
 fetch('style-lookup.json', {cache:'no-store'}).then(r=>r.ok ? r.json() : Promise.reject())
   .then(j=>{ LOOK = j.styles || null; LOOKAT = j.at || ''; LOOKW1 = j.w1d || ''; LOOKSTATE = 'ok'; paintRv(true); render(); })
   .catch(()=>{ LOOKSTATE = 'fail'; paintRv(true); });
+
+/* ---------- 주차 (사용자 2026-11-16: 26SS 주차별 카드처럼 지난 주 화면도 본다) ----------
+   {시즌}-weeks/index.json 의 주 목록으로 필터 맨 위 '주차' 줄을 그린다. 최신 주 = 이 페이지에 박힌 DATA 그대로.
+   지난 주를 누르면 {시즌}-weeks/MMDD.json(그 주 빌드의 DATA·TREND·마감일·MARK 기준일·업데이트 날짜)을 받아 DATA 를 통째로 갈아 끼우고
+   DATA 에서 나오는 값(차수 목록·채널 유무·정렬 묶음·품번 색인)을 다시 계산한 뒤 다시 그린다. 필터·정렬은 그대로 둔다.
+   지난 주 JSON 은 매주 빌드가 남기고(이번 주), 그 전 주들은 허브 배포본에서 백필했다(fw_weeks_backfill.py) — 그때 빌드 기준 화면이라
+   차수·온오프·추이 같은 뒤에 생긴 정보는 없을 수 있다(안내 줄에 적는다). 신상 판매 리뷰 비교는 현재 값이라 지난 주에서는 숨긴다. */
+const WEEKS_DIR = SEASON_TAG.toLowerCase() + '-weeks';
+const LIVE = {data: DATA.slice(), trend: Object.assign({}, TREND), chat: CHAT, updated: UPDATED, end: CARDEND};
+let WEEKS = [], WK = null;                  // WEEKS: 주 목록(오래된 순) · WK: 지금 보는 주의 k(MMDD), null = 최신(박힌 데이터)
+const WKCACHE = {};
+const wkKey = end => (end || '').slice(5, 7) + (end || '').slice(8, 10);
+const wkLab = end => { const d = new Date(end + 'T00:00:00'); return isNaN(d) ? (end || '-') : (d.getMonth()+1) + '/' + d.getDate(); };
+function isLiveWeek(){ return WK === null || (!!LIVE.end && WK === wkKey(LIVE.end)); }
+function rederive(){                        // DATA 가 바뀐 뒤 — 위에서 DATA 로 한 번 계산해 둔 값들을 다시
+  RESEQ = calcRESEQ(); HASLOTS = DATA.some(s=>s.lots); VIEWS = calcVIEWS(); REITEMS = calcREITEMS();
+  HASCH = DATA.some(s=>s.ch); SGROUPS = calcSGROUPS(); fillSLABEL();
+  BYSTYLE = new Map(DATA.map(s=>[s.style, s]));
+  if(VIEW !== 'all' && !VIEWS.some(v=>v[0]===VIEW)) VIEW = 'all';      // 그 주에 없는 차수 보기는 전체로
+  if(CH !== 'all' && !HASCH) CH = 'all';
+  if(SORT && !SLABEL[SORT]) SORT = '';
+}
+function swapIn(doc){
+  DATA.splice(0, DATA.length, ...(doc.data || []));
+  TREND.weeks = (doc.trend && doc.trend.weeks) || []; TW = TREND.weeks;
+  CHAT = doc.chat || ''; UPDATED = doc.updated || ''; CARDEND = doc.end || '';
+  rederive();
+  const b = document.querySelector('.upd b:last-child'); if(b) b.textContent = UPDATED || '-';
+}
+const wkHow = w => (LIVE.end && w.k === wkKey(LIVE.end)) ? '이번 빌드' : w.how === 'deployed' ? '그 주에 배포했던 판 그대로' : w.how === 'rebuild' ? '원본 ' + esc(w.src || '') + ' 로 다시 만든 판' : '그 주 빌드 그대로';
+function wkRowHTML(){
+  if(!WEEKS.length) return '';
+  const liveK = wkKey(LIVE.end);
+  return `<div class="fgroup"><span class="flabel">주차</span>${WEEKS.slice().reverse().map(w => {
+    const live = w.k === liveK, on = WK === null ? live : WK === w.k;
+    return `<button class="chip wkc${on ? ' on' : ''}" data-wk="${w.k}" title="${esc(w.end)} 마감 · ${wkHow(w)} · 카드 ${qty(w.n||0)}장">${wkLab(w.end)}${live ? ' <small>최신</small>' : ''}</button>`;
+  }).join('')}</div>`;
+}
+function syncWkUI(){
+  const row = document.getElementById('wkrow'); if(!row) return;
+  row.innerHTML = wkRowHTML();
+  row.querySelectorAll('.chip[data-wk]').forEach(b => b.addEventListener('click', () => setWeek(b.dataset.wk)));
+}
+function wkNote(){
+  const el = document.getElementById('wknote'); if(!el) return;
+  if(isLiveWeek()){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  const w = WEEKS.find(x => x.k === WK) || {end: CARDEND, n: DATA.length};
+  const miss = [];
+  if(!w.hasCh) miss.push('온/오프 채널 값 없음');
+  if(!w.hasLots) miss.push('차수(초도·리오더) 정보 없음');
+  if(!w.hasWk) miss.push('주차별 추이 없음');
+  el.innerHTML = `※ <b>${wkLab(w.end)} 마감 주</b> 기준 화면입니다 (${wkHow(w)} · 카드 ${qty(w.n||0)}장)${miss.length ? ' — 이 주 자료에는 ' + miss.join(' · ') : ''} · 신상 판매 리뷰 비교는 지난 주차에서 숨깁니다 · 최신 주로 돌아가려면 '주차'에서 <b>${wkLab(LIVE.end)} 최신</b>을 누르세요`;
+  el.style.display = '';
+}
+function afterSwap(){
+  syncWkUI(); syncViewUI(); syncSortUI(); wkNote(); render();
+  try{ history.replaceState(null, '', isLiveWeek() ? location.pathname + location.search : '#wk=' + WK); }catch(e){}
+}
+function setWeek(k){
+  if(!k || k === wkKey(LIVE.end)){ WK = null; swapIn(LIVE); afterSwap(); return; }
+  const go = doc => { WK = k; swapIn(doc); afterSwap(); };
+  if(WKCACHE[k]) return go(WKCACHE[k]);
+  const row = document.getElementById('wkrow'); if(row) row.style.opacity = '.5';
+  fetch(WEEKS_DIR + '/' + k + '.json', {cache:'no-store'}).then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(doc => { WKCACHE[k] = doc; go(doc); })
+    .catch(e => alert('그 주 자료(' + WEEKS_DIR + '/' + k + '.json)를 읽지 못했습니다: ' + e))
+    .finally(() => { if(row) row.style.opacity = ''; });
+}
+fetch(WEEKS_DIR + '/index.json', {cache:'no-store'}).then(r => r.ok ? r.json() : Promise.reject())
+  .then(j => {
+    const liveK = wkKey(LIVE.end);
+    WEEKS = (j.weeks || []).filter(w => w.k && w.end && (!LIVE.end || w.end <= LIVE.end));
+    if(LIVE.end && !WEEKS.some(w => w.k === liveK))
+      WEEKS.push({k: liveK, end: LIVE.end, how: 'live', n: LIVE.data.length, hasLots: LIVE.data.some(s=>s.lots), hasWk: LIVE.data.some(s=>s.wk), hasCh: LIVE.data.some(s=>s.ch)});
+    WEEKS.sort((a, b) => a.end < b.end ? -1 : 1);
+    syncWkUI();
+    const m = location.hash.match(/wk=(\d{4})/);
+    if(m && m[1] !== liveK && WEEKS.some(w => w.k === m[1])) setWeek(m[1]);
+  }).catch(() => {});
 
 buildFilters();
 document.getElementById('q').addEventListener('input',render);

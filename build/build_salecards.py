@@ -1803,6 +1803,15 @@ json.dump({'ver': 4, 'giftOut': True, 'date': updated,
 print('스냅샷 저장:', os.path.basename(SNAP), updated)
 
 render('salecards_template.html', OUT_CARD, **card_tokens())
+# 주차별 보관: 이번 주 카드 데이터를 share/26fw-weeks/MMDD.json 으로 남기고 목록을 다시 쓴다 — 카드 페이지의 '주차' 줄이 읽는다 (2026-11-16 사용자)
+if SEASON == 'FW' and DATA_END:
+    try:
+        sys.path.insert(0, HERE)
+        import fwweeks
+        fwweeks.save_week(DATA_END, data, TREND, globals().get('CH_AT', '') or '', updated, os.path.basename(SRC), 'live', '이번 빌드')
+        print('26fw-weeks: %s 저장 · 주차 %d개' % (DATA_END, len(fwweeks.rebuild_index())))
+    except Exception as _e:
+        print('[경고] 26fw-weeks 저장 실패:', _e)
 # 26FW/25FW 블록 배치는 집계표의 '전년 대비 비교 DATA' 캡슐로 편입됐다 (별도 파일 없음)
 render('summary_template.html', OUT_SUM,
        **{'/*__SUM__*/{}': json.dumps(SUM, ensure_ascii=False), '__DATAEND__': DATA_END})
