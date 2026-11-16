@@ -1177,9 +1177,14 @@ function lotOnlyCard(s){
 function lotDetail(s, l){
   const L = lotsOf(s), a = ap(l, L), isB = l.kind==='base', rate = lotRate(l), left = l.recv - l.sold;
   const bar = rate==null ? 0 : Math.max(0, Math.min(100, rate));
+  /* 실제 현재고(리오더 체크 기준 · style-lookup.json) — '잔여'는 입고−판매 계산값이라 이월+신규 잔여 합이 전체 탭 현재고와 안 맞는다는 MD 지적(2026-11-16).   러닝: 이월 = 구품번(pstock) · 신규 = 신품번(stock) · 둘의 합 = 전체 탭 현재고(tstock). 차수별 재고 기록은 없어 신품번 값은 전 차수 합이다. */
+  const lr = (typeof LOOK !== 'undefined' && LOOK) ? LOOK[s.altStyle || s.style] : null, run = !!(s.popup && lr && lr.tstock != null && lr.pstock != null);
+  const act = !lr ? null : isB ? (run ? (+lr.pstock||0) : null) : (lr.stock != null && (run || !s.popup) ? (+lr.stock||0) : null);
+  const nonB = L.filter(x=>x.kind!=='base').length;
+  const actLine = act==null ? '' : `<div class="lotinfo" style="border-left:3px solid #2563eb;padding-left:8px"><b>실제 현재고 ${qty(act)}장</b> · ${isB ? '구품번 '+esc(s.style) : (run ? '신품번 '+esc(s.altStyle) : '품번 '+esc(s.style)) + (nonB>1 ? ' 전 차수 합(차수별 재고 기록 없음)' : '')} · 창고 가용 + 매장(리오더 체크 기준${LOOKAT ? ' · '+esc(LOOKAT) : ''})<br>위 ‘잔여(계산)’는 ${isB?'기초재고':'입고'} − 판매로 계산한 값이라 실제 재고와 다릅니다 — 카드 마감 뒤 판매, 예약할당, 조조타운·풀필먼트 등 다른 채널 재고, 반품·조정이 빠지지 않은 값입니다.${run ? `<br>구품번 ${qty(+lr.pstock||0)} + 신품번 ${qty(+lr.stock||0)} = 전체 현재고 <b>${qty(+lr.tstock||0)}</b>` : ''}</div>`;
   const tiles = isB
-    ? [['기초재고(7/31)', qty(l.recv)], ['구품번 판매(7/27주~)', qty(l.sold)], ['잔여', qty(left)], ['판매율', rate==null?'-':rate.toFixed(1)+'%', 1]]
-    : [['지시', qty(l.ord)], ['입고', qty(l.recv)], ['판매'+a, l.state==='예정'&&!l.recv ? '-' : qty(l.sold)], ['잔여'+a, l.state==='예정'&&!l.recv ? '-' : qty(left)], ['판매율'+a, rate==null?'-':rate.toFixed(1)+'%', 1]];
+    ? [['기초재고(7/31)', qty(l.recv)], ['구품번 판매(7/27주~)', qty(l.sold)], ['잔여(계산)', qty(left)]].concat(act==null ? [] : [['현재고(실제)', qty(act)]]).concat([['판매율', rate==null?'-':rate.toFixed(1)+'%', 1]])
+    : [['지시', qty(l.ord)], ['입고', qty(l.recv)], ['판매'+a, l.state==='예정'&&!l.recv ? '-' : qty(l.sold)], ['잔여(계산)'+a, l.state==='예정'&&!l.recv ? '-' : qty(left)], ['판매율'+a, rate==null?'-':rate.toFixed(1)+'%', 1]];
   const info = isB ? '러닝 이월재고 — 구품번 26.07.31 시점재고와 구품번 7/27주 이후 주간 판매(추정 아님 · 주 단위 집계라 7/27~7/31 판매가 일부 포함)'
     : l.kind==='first' ? `${l.rd?`입고 ${esc(l.rd)} · `:''}${l.state}${l.pend?` · 입고 예정 ${qty(l.pend)}장${l.pendDate?`(${esc(l.pendDate)})`:''}`:''}`
     : `투입 ${esc(l.inv||'-')} · ${l.state==='예정' ? `납기 ${esc(l.due||'-')} 입고 예정 — 판매·판매율은 입고 후부터` : `입고 ${esc(l.rd||'-')} · ${l.state}${l.pend?` · 예정 ${qty(l.pend)}장`:''}`}`;
@@ -1196,7 +1201,7 @@ function lotDetail(s, l){
     ${popHead(s, `<em class="tag ro">${l.label}</em>`)}
     <div class="stats${tiles.length===5?' s5':''}">${tiles.map(t=>`<div${t[2]?' class="hl"':''}><b>${t[1]}</b><span>${t[0]}</span></div>`).join('')}</div>
     <div class="prog"><div class="lb"><span>${l.label} 판매 진행률 (입고 기준)</span><b>${rate==null?'-':rate.toFixed(1)+'%'}</b></div><div class="bar"><i style="width:${bar}%"></i></div></div>
-    <div class="lotinfo">${info}</div>
+    <div class="lotinfo">${info}</div>${actLine}
     ${cols.length ? `<table class="lt lc"><thead><tr><th class="l">컬러</th>${isB?'':'<th>지시</th>'}<th>입고</th><th>판매${a}</th><th>잔여${a}</th><th>판매율${a}</th></tr></thead><tbody>${rows}
       <tr class="sum"><td class="l">TTL</td>${isB?'':`<td>${qty(sum.ord)}</td>`}<td>${qty(sum.recv)}</td><td>${l.state==='예정'&&!sum.recv?'-':qty(sum.sold)}</td><td>${l.state==='예정'&&!sum.recv?'-':qty(sum.recv-sum.sold)}</td><td>${pr==null?'-':pr.toFixed(1)+'%'}</td></tr></tbody></table>` : ''}
     ${lotNote(s, l)}
