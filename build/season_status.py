@@ -199,6 +199,17 @@ def update(jong, ref, src_name, hub_page=HUB_PAGE, out_page=OUT_PAGE, verbose=Tr
             weeks.remove(week); weeks.append(week)
     else:
         weeks[idx] = week
+    # 엑셀 종합 시트 CE66(TOTAL 행 이름 칸)은 '=+CE65+CE64' 가 글자('ACC TOTAL'+'ACC제외')를 더해 #VALUE! 로 찍힌다(09/14~11/02 주차).
+    # 백데이터는 두지 않고 화면 표시만 'TOTAL' 로 바꾼다(사용자 2026-11-16). 숫자 칸은 손대지 않는다.
+    fixed = 0
+    for w in weeks:
+        cols = [c[0] for c in w.get('cols') or []]
+        for r in w.get('rows') or []:
+            if r[0] != 66: continue
+            for c in r[1]:
+                if c[1] == '#VALUE!' and c[0] < len(cols) and cols[c[0]] == 'CE':
+                    c[1] = 'TOTAL'; fixed += 1
+    if verbose and fixed: print('시즌 판매 현황: 지난 주차 CE66 #VALUE! → TOTAL %d칸' % fixed)
     D['gen'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     if SHEET_LABEL not in D.get('src', ''):
         D['src'] = (D.get('src') or '') + ' · 11/09 주부터 ' + SHEET_LABEL
