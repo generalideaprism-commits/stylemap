@@ -426,17 +426,19 @@ function nextImg(el){
 /* ---------- 주차별 판매 추이 ---------- */
 const TW = (TREND && TREND.weeks) || [];
 const wkLabel = iso => { const d = new Date(iso + 'T00:00:00'); return (d.getMonth()+1) + '/' + d.getDate(); };
+// 주차 표기는 마감(일요일) 기준 — 'M/D 마감' (사용자 2026-11-16: 11/9주(전주) 대신 11/15 마감)
+const wkEnd = iso => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + 6); return (d.getMonth()+1) + '/' + d.getDate(); };
 function trendBlock(s){
   const w = s.wk; if(!w || !w.ttl || !w.ttl.length || !TW.length) return '';
   const n = w.ttl.length, weeks = TW.slice(TW.length - n);           // 카드 배열은 뒤(최근)에서 맞춘다
   const max = Math.max(1, ...w.ttl), pk = w.ttl.indexOf(max);
   const first = w.ttl.findIndex(v => v > 0), from = first < 0 ? 0 : first;   // 첫 판매 주부터 그린다(그 앞 0 주는 생략)
-  const bars = w.ttl.slice(from).map((v, i) => { const k = from + i; return `<i class="${k === n-1 ? 'last' : (k === pk ? 'peak' : '')}" style="height:${Math.max(2, Math.round(v / max * 100))}%" data-t="${wkLabel(weeks[k])}주 ${n0(v)}장"></i>`; }).join('');
+  const bars = w.ttl.slice(from).map((v, i) => { const k = from + i; return `<i class="${k === n-1 ? 'last' : (k === pk ? 'peak' : '')}" style="height:${Math.max(2, Math.round(v / max * 100))}%" data-t="${wkEnd(weeks[k])} 마감 ${n0(v)}장"></i>`; }).join('');
   const shown = n - from, avg4 = w.ttl.slice(-4).reduce((a, b) => a + b, 0) / Math.min(4, n);
   const cols = Object.keys(w.colors || {});
-  const tbl = `<div class="tw"><table class="tt"><thead><tr><th>주</th>${cols.map(c => `<th>${esc(c)}</th>`).join('')}<th>TTL</th></tr></thead><tbody>${
-    w.ttl.map((v, k) => k < from ? '' : `<tr${k === n-1 ? ' class="ttl"' : ''}><td>${wkLabel(weeks[k])}</td>${cols.map(c => `<td>${n0((w.colors[c] || [])[k])}</td>`).join('')}<td>${n0(v)}</td></tr>`).reverse().join('')}</tbody></table></div>`;
-  return `<div class="trend"><div class="tl" style="cursor:default"><span>주차별 판매 추이 <small>${shown}주 · 최근 4주 평균 <b>${n0(Math.round(avg4))}</b>장 · 최고 ${wkLabel(weeks[pk])}주 <b>${n0(max)}</b>장</small></span></div><div class="bars">${bars}</div><div class="ax"><span>${wkLabel(weeks[from])}주</span><span>${wkLabel(weeks[n-1])}주(전주)</span></div>
+  const tbl = `<div class="tw"><table class="tt"><thead><tr><th>마감</th>${cols.map(c => `<th>${esc(c)}</th>`).join('')}<th>TTL</th></tr></thead><tbody>${
+    w.ttl.map((v, k) => k < from ? '' : `<tr${k === n-1 ? ' class="ttl"' : ''}><td>${wkEnd(weeks[k])}</td>${cols.map(c => `<td>${n0((w.colors[c] || [])[k])}</td>`).join('')}<td>${n0(v)}</td></tr>`).reverse().join('')}</tbody></table></div>`;
+  return `<div class="trend"><div class="tl" style="cursor:default"><span>주차별 판매 추이 <small>${shown}주 · 최근 4주 평균 <b>${n0(Math.round(avg4))}</b>장 · 최고 ${wkEnd(weeks[pk])} 마감 주 <b>${n0(max)}</b>장</small></span></div><div class="bars">${bars}</div><div class="ax"><span>${wkEnd(weeks[from])} 마감</span><span><b>${wkEnd(weeks[n-1])} 마감</b></span></div>
     <details><summary class="tl" style="justify-content:flex-end;margin-top:2px"><small>▾ 컬러별 주차 표</small></summary>${tbl}</details></div>`;
 }
 
