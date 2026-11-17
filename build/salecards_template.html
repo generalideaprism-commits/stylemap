@@ -451,7 +451,7 @@ function card(s){
   const t = s.ttl, codes = s.imgCodes || [s.style];
   const rate = t.rate==null ? 0 : Math.max(0, Math.min(100, t.rate));
   const rows = s.colors.map(c=>`
-    <tr>
+    <tr${c.old?' class="oldc"':''}>
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
@@ -525,6 +525,8 @@ function card(s){
       s.priceStyle && s.priceStyle !== s.style ? ` · 단가·원가 기준 품번 <b>${s.priceStyle}</b>(러닝 실품번)` : ''}
       <br>TAG가 · 실판가는 스타일맵(전산) 기준 · TAG판매금액 · 실판매금액 · 할인율은 ERP 전산 집계값${
       s.runBasis ? `<br>러닝 카드 = <b>1/1~ 기준</b> · 기획·입고 = 12/31 이월 재고 ${qty(s.runBasis.base)} + ${SEASON_TAG.slice(0,2)}년 생산 ${qty(s.runBasis.newIn)} · 누계판매·금액 = ${SEASON_TAG.slice(0,2)}년 판매분` : ''}${
+      s.fullRun && s.popup ? `<br>러닝 카드 = <b>전체 기준</b> · 기획 = 7/31 시점재고 ${qty(s.popup.stat.base)} + 신규품번 작지 ${qty(s.popup.stat.addPlan)}(리오더 포함) · 입고 = 시점재고 + 신규 입고 ${qty(s.popup.stat.newIn)} · 누계 = 구품번 8/1~ 판매 + 신규품번 판매 ${qty(s.popup.stat.newSales)}${s.colors.some(c=>c.old) ? ' · <span class="oldc">회색 컬러</span>는 26FW 미진행(시점재고만)' : ''}` : ''}${
+      !s.fullRun && s.re ? `<br>카드 기획·입고 = <b>최초 + 리오더 전체</b>(작지 ${qty(s.re.stat.plan)} · 리오더 기획 ${qty(s.re.stat.planRe)} · 리오더 입고 ${qty(s.re.stat.inRe)}) · 최초 기획만 보려면 '차수' 보기의 <b>초도</b>` : ''}${
       s.allTime ? `<br><b>전 기간 누계(출시~현재)</b> 기획 ${qty(s.allTime.plan)} · 입고 ${qty(s.allTime.qtyIn)} · 판매 ${qty(s.allTime.sold)}장${s.allTime.tagAmt ? ` · TAG판매금액 ${n0(s.allTime.tagAmt)} · 실판매금액 ${n0(s.allTime.saleAmt)} · 할인율 ${s.allTime.discount==null?'-':pct(s.allTime.discount*100,0)}` : ''}` : ''}${
       s.oldRun ? `<br><b>과년차 러닝</b> — 러닝아이템 ${SEASON_TAG} 목록 밖의 구품번(${s.year ? String(s.year).slice(2)+' '+(s.season||'') : '이전 시즌'}). ${SEASON_TAG} 시즌 집계에는 들어가지 않고 연간 집계표의 '과년차 러닝 상품' 칸에만 잡힌다` : ''}${s.tagNA?'<br><b>TAG가 미확인</b> — MDP 최종TAG 가 아직 없어 전산(스타일맵) 택가를 그대로 두었다':''}</div>
       ${chBlock(s)}
@@ -643,6 +645,8 @@ function chNote(s){
   const n = chNums(s); if(!n) return '채널 판매 자료 없음 — 맨 뒤로 정렬';
   return `온라인 ${qty(n.on)} (${pct0(n.all>0?n.on/n.all:null)}) · 오프라인 ${qty(n.off)} (${pct0(n.all>0?n.off/n.all:null)}) · 전주 온 ${qty(n.onW)} / 오프 ${qty(n.offW)}`;
 }
+/* 채널 합과 견줄 카드 누계 — 러닝 전체 기준 카드(구+신)는 채널 자료가 신품번뿐이라 신품번 판매와 견준다 */
+const chCardTot = s => (s.fullRun && s.popup) ? (+s.popup.stat.newSales || 0) : (+(s.ttl||{}).total || 0);
 /* 카드 상세·팝업: 온/오프 표 */
 function chBlock(s){
   if(!HASCH) return '';
@@ -653,7 +657,7 @@ function chBlock(s){
     return `<div class="chb">${head}<div class="rvx">${why} 온/오프 판매 자료가 없습니다.</div></div>`;
   }
   const row = (lb, k) => `<tr${CH===k?' class="hl"':''}><td class="l">${lb}</td><td>${qty(n[k])}</td><td>${n.all>0?(n[k]/n.all*100).toFixed(1)+'%':'-'}</td><td>${qty(n[k+'W'])}</td></tr>`;
-  const cardTot = +(s.ttl||{}).total || 0, gap = cardTot - n.all;
+  const cardTot = chCardTot(s), gap = cardTot - n.all;
   const cols = (s.colors||[]).map(c=>{
     const v = s.ch.c[c.color]; if(!v) return '';
     const all = v[0]+v[2]+v[4];
@@ -863,7 +867,7 @@ function summarize(list){
     const nn = numsOf(s); if(!nn) continue;                  // 보기(차수) 기준 수량 — 전체면 카드 값 그대로
     const p = nn.ord, qi = nn.recv; let tot = nn.sold; if(nn.est) r.est = true;
     const cn = chNums(s); if(cn){ r.on += cn.on; r.off += cn.off; r.et += cn.et; r.cn++; }
-    if(cn) r.cardTot = (r.cardTot||0) + (+(s.ttl||{}).total || 0);
+    if(cn) r.cardTot = (r.cardTot||0) + chCardTot(s);
     if(CH!=='all' && VIEW==='all') tot = cn ? cn[CH] : 0;    // 채널 보기: 그 채널의 판매
     r.plan += p; r.qtyIn += qi; r.sales += tot;
     if(!amtOK(s)){ r.noPrice++; continue; }          // 택가·원가 미확인 — 금액에서만 제외
@@ -894,7 +898,7 @@ function renderSummary(list){
   sumEl.innerHTML =
     si('스타일',         `${qty(r.styles)} / ${qty(DATA.length)}`) +
     (VIEW!=='all' ? si('보기', `${viewLabel(VIEW)}`, 'hl') : '') +
-    si('수량',           `${VIEW==='all'?'기획':'지시'} ${qty(r.plan)} → 입고 ${qty(r.qtyIn)}장${VIEW==='all' && HASLOTS ? '<small>메인 리오더 지시 미포함 · 러닝은 포함</small>' : ''}`, 'wrapx') +
+    si('수량',           `${VIEW==='all'?'기획':'지시'} ${qty(r.plan)} → 입고 ${qty(r.qtyIn)}장${VIEW==='all' ? '<small>전체 기준 — 메인 리오더 포함 · 러닝 이월재고 포함</small>' : ''}`, 'wrapx') +
     si('공급액',         `${eok(r.supIn)}<small>기획 ${eok(r.supPlan)}</small>`) +
     si('원가(VAT 포함)', `${eok(r.costIn)}<small>기획 ${eok(r.costPlan)}</small>`) +
     si('마크업',         markup, 'hl') +
@@ -1325,16 +1329,18 @@ function rvHTML(s){
   const head = `<div class="rvh">📊 신상 판매 리뷰와 수량 비교${LOOKAT ? `<small>리뷰 기준 ${esc(LOOKAT)}</small>` : ''}</div>`;
   if(LOOKSTATE === 'loading') return head + '<div class="rvx">리뷰 자료를 불러오는 중…</div>';
   if(!LOOK) return head + '<div class="rvx">리뷰 자료(style-lookup.json)를 읽지 못했습니다. 공유파일(허브) 주소에서 열면 비교가 보입니다.</div>';
-  const t = s.ttl || {}, r = LOOK[k];
+  // 러닝 전체 기준 카드(2026-11-17)는 리뷰가 신품번 기준이라 신품번 값(작지 전체 입고 · 신규 판매 · 신규 전주)으로 견준다
+  const fr = !!(s.fullRun && s.popup), t = fr ? {w1: s.popup.stat.newW1, w2: s.popup.stat.newW2} : (s.ttl || {}), r = LOOK[k];
+  const qinC = fr ? (+(s.ttlFull||{}).qtyIn || 0) : qin(s), soldC = fr ? (+s.popup.stat.newSales || 0) : sold(s);
   if(!r){
     const why = s.item === 'ACC' ? 'ACC(잡화) 품번이라 신상 판매 리뷰의 스타일 비교 자료에 없습니다.'
               : (!(+s.tag > 0) ? '택가가 확정되지 않아 신상 판매 리뷰의 스타일 비교 자료에서 빠진 품번으로 보입니다.'
                                : '신상 판매 리뷰의 스타일 비교 자료에 이 품번이 없습니다.');
-    return head + `<div class="rvx">${why}<br>카드 기준 — 입고 ${qty(qin(s))} · 누계판매 ${qty(sold(s))}</div>`;
+    return head + `<div class="rvx">${why}<br>카드 기준 — 입고 ${qty(qinC)} · 누계판매 ${qty(soldC)}</div>`;
   }
-  const cIn = qin(s), cSale = sold(s), cStock = cIn - cSale;
+  const cIn = qinC, cSale = soldC, cStock = cIn - cSale;
   const dIn = (+r.inq||0) - cIn, dSale = (+r.sale||0) - cSale, rHold = (r.hstock != null ? +r.hstock : +r.stock) || 0, dStock = rHold - cStock;
-  const cRate = rateOf(s), rRate = r.rate != null ? +r.rate : null;
+  const cRate = fr ? (cIn > 0 ? cSale / cIn * 100 : null) : rateOf(s), rRate = r.rate != null ? +r.rate : null;
   const cRate1 = cRate == null ? null : Math.round(cRate*10)/10;          // 화면에 보이는 소수 1자리끼리 비교
   const dRate = (cRate1 != null && rRate != null) ? Math.round((rRate - cRate1)*10)/10 : null;
   const row = (lb, c, v, d) => `<div class="rvc l">${lb}</div><div class="rvc">${c}</div><div class="rvc">${v}</div><div class="rvc">${d}</div>`;
@@ -1376,7 +1382,7 @@ function rvHTML(s){
           : ' 차이가 카드 전주 판매보다 커서 최근 주 집계만으로는 설명되지 않습니다. 원천(스타일맵 ↔ 판매변동표) 확인이 필요합니다.'}`);
       }
       const cc = new Map((s.colors||[]).map(c=>[c.color, +c.total||0]));
-      const cd = (r.colors||[]).map(c=>[c.c, (+c.sale||0) - (cc.get(c.c)||0)]).filter(x=>x[1]!==0);
+      const cd = fr ? [] : (r.colors||[]).map(c=>[c.c, (+c.sale||0) - (cc.get(c.c)||0)]).filter(x=>x[1]!==0);   // 전체 기준 러닝 카드의 컬러 누계는 구+신 합산이라 신품번 리뷰와 못 견준다
       if(cd.length) notes.push('컬러별 차이(리뷰−카드): ' + cd.map(x=>`${esc(x[0])} ${x[1]>0?'+':'−'}${qty(Math.abs(x[1]))}`).join(' · '));
     }
   }
@@ -1477,7 +1483,8 @@ function wkNote(){
   if(!w.hasLots) miss.push('차수(초도·리오더) 정보 없음');
   const derived = !w.hasWk && !!(WKCACHE[WK] && WKCACHE[WK].wkDerived);
   if(!w.hasWk && !derived) miss.push('주차별 추이 없음');
-  el.innerHTML = `※ <b>${wkLab(w.end)} 마감 주</b> 기준 화면입니다 (${wkHow(w)} · 카드 ${qty(w.n||0)}장)${miss.length ? ' — 이 주 자료에는 ' + miss.join(' · ') : ''}${derived ? ' · 주차별 판매 추이는 최신 자료의 주간 이력을 이 주 마감까지 잘라 표시' : ''} · 신상 판매 리뷰 비교는 지난 주차에서 숨깁니다 · 최신 주로 돌아가려면 '주차'에서 <b>${wkLab(LIVE.end)} 최신</b>을 누르세요`;
+  const oldBasis = w.basis !== 'full';          // 2026-11-17 전 판: 메인 = 최초 기획·기획입고(리오더 제외) · 러닝 = 신규품번만(이월재고 제외)
+  el.innerHTML = `※ <b>${wkLab(w.end)} 마감 주</b> 기준 화면입니다 (${wkHow(w)} · 카드 ${qty(w.n||0)}장)${miss.length ? ' — 이 주 자료에는 ' + miss.join(' · ') : ''}${derived ? ' · 주차별 판매 추이는 최신 자료의 주간 이력을 이 주 마감까지 잘라 표시' : ''}${oldBasis ? ' · <b>이 주 화면은 배포 당시의 최초 기획 기준</b>(메인은 리오더 기획·입고 제외, 러닝은 신규품번만)이라 전체 기준인 최신 주와 기획·입고·판매율 숫자가 다릅니다' : ''} · 신상 판매 리뷰 비교는 지난 주차에서 숨깁니다 · 최신 주로 돌아가려면 '주차'에서 <b>${wkLab(LIVE.end)} 최신</b>을 누르세요`;
   el.style.display = '';
 }
 function afterSwap(){

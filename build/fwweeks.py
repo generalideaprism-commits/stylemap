@@ -57,10 +57,11 @@ def week_key(end):
     return end[5:7] + end[8:10]
 
 
-def save_week(end, data, trend, chat, updated, src, how, note=''):
-    """한 주 저장 -> 파일 경로. how: 'live'(이번 빌드) · 'deployed'(허브 배포본) · 'rebuild'(엑셀로 다시 만든 판)"""
+def save_week(end, data, trend, chat, updated, src, how, note='', basis=''):
+    """한 주 저장 -> 파일 경로. how: 'live'(이번 빌드) · 'deployed'(허브 배포본) · 'rebuild'(엑셀로 다시 만든 판)
+    basis: 'full' = 카드 본값이 전체 기준(메인 리오더 포함 · 러닝 이월재고 포함, 2026-11-17 부터). 빈 값 = 그 전의 최초 기획 기준 판."""
     os.makedirs(WEEKS_DIR, exist_ok=True)
-    doc = {'k': week_key(end), 'end': end, 'updated': updated or '', 'chat': chat or '', 'src': src, 'how': how, 'note': note,
+    doc = {'k': week_key(end), 'end': end, 'updated': updated or '', 'chat': chat or '', 'src': src, 'how': how, 'note': note, 'basis': basis,
            'n': len(data), 'hasLots': any(s.get('lots') for s in data), 'hasWk': any(s.get('wk') for s in data),
            'hasCh': any(s.get('ch') for s in data), 'built': datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
            'trend': trend or {}, 'data': data}
@@ -84,7 +85,7 @@ def rebuild_index():
             except Exception as e:
                 print('[26fw-weeks] %s 읽기 실패: %s' % (f, e))
                 continue
-            weeks.append({k: d.get(k) for k in ('k', 'end', 'updated', 'chat', 'src', 'how', 'note', 'n', 'hasLots', 'hasWk', 'hasCh', 'built')})
+            weeks.append({k: d.get(k) for k in ('k', 'end', 'updated', 'chat', 'src', 'how', 'note', 'basis', 'n', 'hasLots', 'hasWk', 'hasCh', 'built')})
     weeks.sort(key=lambda w: w['end'])
     os.makedirs(WEEKS_DIR, exist_ok=True)
     with open(os.path.join(WEEKS_DIR, 'index.json'), 'w', encoding='utf-8') as f:

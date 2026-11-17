@@ -564,7 +564,8 @@ function addR(a, r){
   t.muPlan   = t.planCost ? (t.tag||0)/t.planCost/1.1 : null;
   return t;
 }
-// 비교 상대(py/was)는 리오더 쪽에도 값이 있을 때만 더한다 — 없으면 기준이 어긋나므로 증감을 비운다(첫 스냅샷 주 · 25FW 는 없음)
+// 전주 비교(was)는 리오더 쪽에도 스냅샷이 있을 때만 더한다 — 없으면 기준이 어긋나므로 증감을 비운다(첫 스냅샷 주).
+// 전년(py, 25FW)은 ERP 전년비교 시트의 작지·생산 전체라 리오더가 항상 들어 있다 → 리오더 포함을 켜도 그대로 둔다(그때가 같은 기준) (사용자 2026-11-17)
 const cmpR = (a, r) => (a && r) ? addR(a, r) : null;
 const rowR = (d, r) => (!d || !REON || !r) ? d : Object.assign({}, d, {cur: addR(d.cur, r), py: d.py, was: cmpR(d.was, r.was)});
 const reoRowName = () => '리오더' + (REON ? '' : ' <small class="gx">26FW 리오더 · 합계 제외</small>');

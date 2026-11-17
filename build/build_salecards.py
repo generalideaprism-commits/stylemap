@@ -514,6 +514,7 @@ CO_SPLIT = {(code, c['color']): (c.get('plan0'), c.get('planRe'), c.get('inRe'))
 # CO 시트의 작지(R) = 최초기획(S) + 리오더기획(T) 이다. 러닝 카드와 같은 방식으로
 # 본 카드는 최초 기획만 보여 주고, 클릭하면 리오더 기획을 합산한 팝업을 띄운다.
 REORDER = {}          # 시즌('가을'/'겨울'/'러닝') -> 26FW 리오더 집계 (아래 루프에서 채움, 집계표 SUM['reorder'] 로 넘긴다)
+TTL0 = {}             # 품번 -> 최초 기획 기준 합계(최초기획 / 기획입고) — 집계표 재고 집계용
 for code, s in styles.items():
     re_qty = sum(c.get('planRe') or 0 for c in s['colors'])      # 러닝도 같이 본다 (2026-11-02: 기획=최초기획으로 통일)
     s['reorder'] = 'O' if re_qty > 0 else 'X'
@@ -530,20 +531,25 @@ for code, s in styles.items():
                                'planRe': c['_pr'] or 0, 'plan': c['plan'], 'qtyIn': c['qtyIn'],
                                'w1': c['w1'], 'w2': c['w2'], 'total': c['total'], 'rate': c['rate']}
                               for c in s['colors']]}
-    # 카드·집계 기준 = 최초기획 / 기획입고 — 리오더 기획·리오더 입고는 뺀다 (2026-11-02 MD, 종합 시트 I·L·BJ·BM열과 동일 정의)
-    # 판매·재고는 나눌 수 없으니 전체 그대로 → 판매율은 '최초입고 대비'가 된다. 전체값은 planFull/qtyInFull 에 남긴다.
+    # 카드 본값 = 전체(작지 = 최초기획 + 리오더기획 / 전체 입고) — 2026-11-17 사용자: 카드 그리드의 판매 현황은
+    # 신규+이월재고+리오더 전체 기준. 판매(누계)는 차수로 나뉘지 않아 원래 전체값이었으니 분모만 맞춰 준 것.
+    # 26SS 카드도 같은 정의(2026-11-09). 최초 기획 기준(최초기획 / 기획입고, 종합 시트 I·L·BJ·BM열 정의)은
+    # 집계표 쪽(재고 집계)에서만 쓰므로 TTL0 에 따로 둔다 — 집계표는 2026-11-17 결정대로 최초 기준 그대로.
+    _c0 = []
     for c in s['colors']:
         c['planFull'], c['qtyInFull'] = c['plan'], c['qtyIn']
-        if SEASON == 'SS':                            # 26SS 카드는 리오더 포함(작지·전체 입고)이 본값 — 리오더가 최초의 10배인 품번이 많아 최초 기준이면 판매율 1,000% 가 된다(2026-11-09). 팝업이 최초/리오더를 나눠 보여 준다
-            continue
-        if c['_p0'] is not None:
-            c['plan'] = c['_p0']
-        if c['_i0'] is not None:                      # CO 기획입고 열 그대로 (입고 − 리오더입고 와 수십 장 다를 수 있어 열을 직접 쓴다)
-            c['qtyIn'] = c['_i0']
-        elif c['_ir']:
-            c['qtyIn'] = (c['qtyIn'] or 0) - c['_ir']
-        c['rate'] = (c['total'] / c['qtyIn'] * 100) if c['qtyIn'] and c.get('total') is not None else c.get('rate')
+        if SEASON == 'FW':                            # 26SS 는 시트의 판매율 열 그대로(종전과 동일)
+            c['rate'] = (c['total'] / c['qtyIn'] * 100) if c['qtyIn'] and c.get('total') is not None else c.get('rate')
+        d = dict(c)
+        if d['_p0'] is not None:
+            d['plan'] = d['_p0']
+        if d['_i0'] is not None:                      # CO 기획입고 열 그대로 (입고 − 리오더입고 와 수십 장 다를 수 있어 열을 직접 쓴다)
+            d['qtyIn'] = d['_i0']
+        elif d['_ir']:
+            d['qtyIn'] = (d['qtyIn'] or 0) - d['_ir']
+        _c0.append(d)
     s['ttl'] = calc_ttl(s['colors'])
+    TTL0[code] = calc_ttl(_c0)                        # 최초 기획 기준 합계 (집계표 재고 집계용, 카드 JSON 에는 싣지 않는다)
     # ---- 26FW 리오더 집계 (집계표 ① 시즌 요약 '리오더' 행, 2026-11-04) ----
     # 26FW 신품번만 센다: GF3/GF4 = 신상(가을·겨울), 러닝 시트 품번(GF7/GF8) = 러닝. 구품번(WB…·GF1…)의
     # 리오더기획은 지난 시즌 것이라 뺀다. 판매는 차수로 나뉘지 않으므로 기획·입고·원가·TAG 만 싣는다.
@@ -714,7 +720,8 @@ for s in data:
             'stock': stock, 'sales': run_sales,
             'rate': (run_sales / stock * 100) if stock else None,
             # 팝업 상단 판매율 = 신규(신품번) 판매 ÷ 신규 입고 (사용자 2026-11-12) — 이월재고 판매는 '이월재고' 차수에서 따로 본다
-            'newSales': tt['total'] or 0, 'rateNew': ((tt['total'] or 0) / new_in * 100) if new_in else None}
+            'newSales': tt['total'] or 0, 'rateNew': ((tt['total'] or 0) / new_in * 100) if new_in else None,
+            'newW1': tt['w1'] or 0, 'newW2': tt['w2'] or 0}      # 신규품번 전주·2주전 (리뷰 비교용 — 카드 본값이 구+신 합산이 된 뒤 2026-11-17)
     # 팝업 컬러 표 (신규 기획 컬러만): 기획 = 컬러별 기초재고 + 컬러별 신규 기획량,
     # 입고 = 컬러별 기초재고 + 컬러별 신규 입고량(=현재고), 전주/2주전·누계(8/1 이후)는 구+신 합산,
     # 판매율 = 누계 ÷ 현재고(기초+입고)
@@ -758,11 +765,21 @@ for s in data:
         mc = next((x for x in merged_colors if x['color'] == col), None) or {}
         _bl.append({'color': col, 'cname': mc.get('cname', ''), 'recv': int(base_c), 'sold': int(mc.get('aug') or 0), 'old': True})
     LOTS_RUN[s['style']] = [b for b in _bl if b['recv'] or b['sold']]
-    # 본 카드는 신규품번 내용으로 표시 (메인 카드와 동일 레이아웃)
+    # 본 카드 = 전체 기준(이월재고 + 신규품번 최초·리오더) — 2026-11-17 사용자. 팝업 '현재고 기준'과 같은 숫자를 카드에 올린다.
+    # 기획 = 7/31 시점재고 + 신규 작지(리오더 포함), 입고 = 시점재고 + 신규 전체 입고(=보유), 누계 = 구품번 8/1~ + 신규품번 판매.
+    # 컬러 표는 팝업 컬러 표(기초재고 + 신규, 26FW 미진행 컬러는 old 표시)이고 주차 추이는 구+신 합산 주간 이력(CU 통합본)을 쓴다.
+    for pr in prows:
+        mc = next((x for x in merged_colors if x['color'] == pr['color']), None)
+        if mc and mc.get('wk'):
+            pr['wk'] = mc['wk']
+    s['ttl'] = {'plan': stat['plan'], 'qtyIn': stock,
+                'w1': sum(p['w1'] or 0 for p in prows), 'w2': sum(p['w2'] or 0 for p in prows),
+                'total': run_sales, 'rate': stat['rate']}
+    s['colors'] = prows
+    s['_newColors'] = sub['colors']                  # 차수 분해(lots)는 신규품번 컬러 기준 — JSON 에 싣기 전에 뺀다
+    s['fullRun'] = True                              # 카드 상세 안내문용(템플릿)
     if s.get('sub'):
-        s['ttl'] = sub['ttl']
-        s['colors'] = sub['colors']
-        # 원가·배수·TAG·실판가·생산처도 신규품번(이번 시즌) 기준 — 구품번 원가가 남지 않게
+        # 원가·배수·TAG·실판가·생산처는 신규품번(이번 시즌) 기준 — 구품번 원가가 남지 않게
         for f in ('tagAmt', 'saleAmt', 'discount', 'inDate', 'outDate',
                   'cost', 'costV', 'mult', 'multReal', 'tag', 'tagErp', 'tagNA', 'real', 'vendor'):
             s[f] = sub.get(f)
@@ -801,7 +818,7 @@ if INTAKE_ROWS:
         if not (is_run or has_re):
             continue
         cols = []
-        for c in s['colors']:
+        for c in (s.get('_newColors') or s['colors']):
             p0, pr, ir = CO_SPLIT.get((key, c['color']), (None, None, None))
             if p0 is None:
                 p0 = (c.get('plan') or 0) - (pr or 0)
@@ -980,6 +997,7 @@ print('images: supabase 링크 %d / 파일 %d장 (share/img) / 카드 %d' % (lin
 # ---- 주차별 판매 추이 (2026-11-09 사용자: 26SS·26FW 카드 공통) — 시즌 시작 주 ~ W1, 스타일 합 + 컬러별 ----
 TREND = {'weeks': globals().get('TREND_WEEKS') or []}
 for s in data:
+    s.pop('_newColors', None)                        # 차수 분해용 임시값 — 카드 JSON 에는 싣지 않는다
     cols = [c for c in s['colors'] if c.get('wk')]
     if not cols:
         continue
@@ -1334,7 +1352,8 @@ stkB, stkC = _dd(float), _dd(float)
 for st in data:
     bok = ITEM2BOK.get(st['item'], 'ACC')
     if st['line'] == '메인':
-        v = (st['ttl']['qtyIn'] or 0) - (st['ttl']['total'] or 0)
+        _t0 = TTL0.get(st['style'], st['ttl'])          # 집계표는 최초 기획 기준(기획입고 − 누계) 그대로 — 카드만 전체 기준으로 바뀜(2026-11-17)
+        v = (_t0['qtyIn'] or 0) - (_t0['total'] or 0)
         stkB[(st['season'], bok)] += v
         stkC[(st['season'], st['cat2'])] += v
     else:
@@ -1808,7 +1827,7 @@ if SEASON == 'FW' and DATA_END:
     try:
         sys.path.insert(0, HERE)
         import fwweeks
-        fwweeks.save_week(DATA_END, data, TREND, globals().get('CH_AT', '') or '', updated, os.path.basename(SRC), 'live', '이번 빌드')
+        fwweeks.save_week(DATA_END, data, TREND, globals().get('CH_AT', '') or '', updated, os.path.basename(SRC), 'live', '이번 빌드', basis='full')
         print('26fw-weeks: %s 저장 · 주차 %d개' % (DATA_END, len(fwweeks.rebuild_index())))
     except Exception as _e:
         print('[경고] 26fw-weeks 저장 실패:', _e)
@@ -1886,7 +1905,13 @@ if GS:
     except Exception as _e:
         print('[경고] 연간 단일 원천 계산 실패 — 예전 방식으로 둡니다:', type(_e).__name__, _e)
 # 온·오프 탭 — 판매 카드의 채널 판매(허브 MARK 채널 자료)를 시즌(가을·겨울·러닝)×복종으로 합친다.
-# 러닝은 카드가 신품번 기준이라 신품번 판매만(구품번 이월 판매는 채널 자료가 없다). 판매 원가 = 스타일 원가(VAT 포함) × 판매량 — 채널에 따라 달라지지 않는 단가라 정확하다.
+# 러닝은 신품번 판매만(구품번 이월 판매는 채널 자료가 없다). 판매 원가 = 스타일 원가(VAT 포함) × 판매량 — 채널에 따라 달라지지 않는 단가라 정확하다.
+# 카드 본값이 전체 기준(메인 리오더 포함 · 러닝 이월재고 포함)으로 바뀐 뒤(2026-11-17)에도 집계표는 최초 기획 기준 그대로 두기로 해
+# 여기와 원가 미입력 집계는 TTL0(최초기획 / 기획입고 · 러닝은 신품번) 값을 쓴다.
+def _sum_ttl(c):
+    return TTL0.get(c.get('priceStyle') or c['style']) or c.get('ttl') or {}
+
+
 def _bok_of(it):
     it = str(it or '')
     return 'TOP' if it.startswith(('KNIT', 'INNER')) else ('OUTER' if it == 'OUTER' else 'BOTTOM' if it == 'BOTTOM' else 'ACC')
@@ -1896,11 +1921,11 @@ _chn = {}
 for _c in data:
     _g = '러닝' if _c.get('line') == '러닝' else _c['season']
     _a = _chn.setdefault((_g, _bok_of(_c.get('item'))), dict(cards=0, chCards=0, miss=0, sales=0.0, wk=0.0, on=0, onW=0, off=0, offW=0, etc=0, etcW=0, cost=0.0, costOn=0.0, costOff=0.0, costEtc=0.0))
-    _ttl = (_c.get('ttl') or {}).get('total') or 0
+    _ttl = _sum_ttl(_c).get('total') or 0
     _u = _c.get('costV') or 0
     _a['cards'] += 1
     _a['sales'] += _ttl
-    _a['wk'] += (_c.get('ttl') or {}).get('w1') or 0                       # 스타일맵 주간판매량(최근 1주) — 채널 합과의 차이를 설명하는 데 쓴다
+    _a['wk'] += _sum_ttl(_c).get('w1') or 0                      # 스타일맵 주간판매량(최근 1주) — 채널 합과의 차이를 설명하는 데 쓴다
     _a['cost'] += _u * _ttl
     _v = _c.get('ch')
     if not _v and _ttl > 0:
@@ -1920,8 +1945,8 @@ for _c in data:
         continue
     _g = '러닝' if _c.get('line') == '러닝' else _c['season']
     _x = _noc.setdefault(_g, dict(inN=0, inQty=0, saN=0, saQty=0, planN=0, planQty=0))
-    _qi, _qs = int((_c.get('ttl') or {}).get('qtyIn') or 0), int((_c.get('ttl') or {}).get('total') or 0)
-    _qp = int((_c.get('ttl') or {}).get('plan') or 0)
+    _qi, _qs = int(_sum_ttl(_c).get('qtyIn') or 0), int(_sum_ttl(_c).get('total') or 0)
+    _qp = int(_sum_ttl(_c).get('plan') or 0)
     if _qp > 0:
         _x['planN'] += 1
         _x['planQty'] += _qp
