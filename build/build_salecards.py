@@ -620,11 +620,13 @@ for s in styles.values():
 
 data = [styles[c] for c in order if c not in subs]
 if SEASON == 'SS':
-    # 26SS 카드에는 가을·겨울 시즌 품번을 싣지 않는다 (사용자 2026-11-23 "26SS 판매자료카드에 가을·겨울 품번이 나올 이유가 없다").
-    # 러닝아이템 탭 26SS 열에 들어 있는 가을 품번(에센셜 가디건 등)도 카드에서는 뺀다 — 26SS 시즌 판매 현황의 러닝 31 집계는 그대로.
-    _fw = [s for s in data if s.get('season') in ('가을', '겨울')]
-    data = [s for s in data if s.get('season') not in ('가을', '겨울')]
-    print('26SS 카드: 가을·겨울 품번 %d개 제외 (%s%s)' % (len(_fw), ', '.join(s['style'] for s in _fw[:8]), ' …' if len(_fw) > 8 else ''))
+    # 26SS 카드 = 26SS 신상 + 러닝아이템 탭 26SS 열의 러닝(31개)만. 그 밖의 구품번(과년차 러닝, 24SS~25FW)은 카드에서 뺀다
+    # (사용자 2026-11-23 "26SS 카드·집계에는 26SS 시즌과 26SS 러닝 제품만, 과년차는 카드에서만 빠지면 된다").
+    # 집계(26SS 시즌 판매 현황·연간)는 annual_gs 가 따로 만들므로 영향 없고, 과년차는 연간 집계표의 별도 칸에만 남는다.
+    _ss26 = GS.get('ss_run26') or set()
+    _old = [s for s in data if s['line'] == '러닝' and _ss26 and s['style'] not in _ss26]
+    data = [s for s in data if not (s['line'] == '러닝' and _ss26 and s['style'] not in _ss26)]
+    print('26SS 카드: 과년차 러닝 %d개 제외 (%s%s)' % (len(_old), ', '.join(s['style'] for s in _old[:8]), ' …' if len(_old) > 8 else ''))
 
 # ---- 러닝 현재고: 시점재고 시트(기존품번 M열 -> BO열 '전체') + 신규품번 입고량 ----
 point_stock, point_stock_color = {}, {}
