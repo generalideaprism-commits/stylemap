@@ -76,7 +76,7 @@ def load(build_dir, hub_dir, want_at, cards, log=print):
                 out[key] = {'t': tot, 'c': cs}
         except Exception as e:
             log('[경고] 온/오프: %s 처리 실패 — %s' % (key, e))
-    if at and at == want_at and out:
+    if at and out and (at == want_at or not (snap and snap.get('at') == want_at)):   # 카드 마감일과 같은 날짜 스냅샷이 없으면 허브 최신값이라도 남긴다 — 허브 폴더가 없는 PC 가 오래된 스냅샷(10/18)으로 채우던 문제(2026-11-24)
         tmp = snap_p + '.tmp'
         with io.open(tmp, 'w', encoding='utf-8') as f:
             json.dump({'at': at, 'data': out}, f, ensure_ascii=False, separators=(',', ':'))
