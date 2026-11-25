@@ -196,7 +196,7 @@
   .trend .bars{display:flex;align-items:flex-end;gap:1.5px;height:44px;margin-top:4px}
   .trend .bars i{flex:1 1 0;background:#c9d3e3;border-radius:1px 1px 0 0;min-height:1px;position:relative}
   .trend .bars i.last{background:var(--blue)} .trend .bars i.peak{background:#7f93b8}
-  .trend .bars i:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:10px;padding:2px 5px;border-radius:4px;white-space:nowrap;z-index:5}
+  .trend .bars i:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:10px;padding:2px 5px;border-radius:4px;white-space:nowrap;z-index:5} .trend .bars i:nth-last-child(-n+4):hover::after{left:auto;right:0;transform:none} .trend .bars i:nth-child(-n+4):hover::after{left:0;right:auto;transform:none}
   .trend .ax{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px}
   .trend table.tt{width:100%;border-collapse:collapse;margin-top:6px;font-size:10px}
   .trend table.tt th,.trend table.tt td{padding:2px 3px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -476,7 +476,7 @@ function card(s){
       <span class="noimg">NO IMAGE</span>
     </div>
     <div class="prices">
-      <div${s.real>0 && s.real!==s.tag ? '' : ' class="solo"'}${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><span>TAG가${s.tagNA?'·미확인':''}${s.real>0 && s.real!==s.tag ? ' (실판가)' : ''}</span><b>${won(s.tag)}</b>${s.real>0 && s.real!==s.tag ? `<i>${won(s.real)}</i>` : ''}</div>
+      <div${s.real>0 && s.real!==s.tag ? '' : (s.discount>=0.005 && s.tag>0 ? ' title="평균 판매가 = TAG가 × (1 − 할인율). 전산(스타일맵) 실판가가 택가와 같아 ERP 할인율로 계산한 값"' : ' class="solo"')}${s.tagNA?' title="MDP 최종TAG 미확정 — 전산(스타일맵) 택가 그대로"':''}><span>TAG가${s.tagNA?'·미확인':''}${s.real>0 && s.real!==s.tag ? ' (실판가)' : (s.discount>=0.005 && s.tag>0 ? ' (평균 판매가)' : '')}</span><b>${won(s.tag)}</b>${s.real>0 && s.real!==s.tag ? `<i>${won(s.real)}</i>` : (s.discount>=0.005 && s.tag>0 ? `<i>≈${won(Math.round(s.tag*(1-s.discount)/100)*100)}</i>` : '')}</div>
       <div class="solo" title="원가(VAT 포함)"><span>원가</span><b>${won(s.costV)}</b></div>
       <div class="solo${s.mult!=null && s.multReal!=null && s.mult!==s.multReal ? ' tip' : ''}"${s.mult!=null && s.multReal!=null && s.mult!==s.multReal ? ` data-tip="배수(택가) x${s.mult}"` : ''}><span>배수(실판)</span><b>${s.multReal==null?'-':'x'+s.multReal}</b></div>
       <div class="r"><span>할인율</span><b>${s.discount==null?'-':pct(s.discount*100,0)}</b></div>
