@@ -1031,7 +1031,7 @@ function rePopupCard(s, extra=''){
       <td class="c cl">${ttl ? 'TTL' : `${c.color||''}<small>${c.cname||''}</small>`}</td>
       ${isRun ? `<td class="${dtc} bs">${n0(b.recv)}</td>` : ''}<td class="${dtc}"${!hasBase && RE_FIRST ? ' style="font-weight:700"' : ''}>${n0(c.plan0)}</td><td class="${dtc} re">${c.planRe ? n0(c.planRe) : '-'}</td>
       <td${!hasBase && !RE_FIRST ? ' class="on"' : ''}><b>${n0(N.plan)}</b></td>${isRun ? `<td class="bs${hasBase?' on':''}"><b>${n0(N.planAll)}</b></td>` : ''}
-      <td>${n0(hasBase ? N.qin : c.qtyIn)}</td><td>${n0(N.w2)}</td><td>${n0(N.w1)}</td>
+      <td>${n0(c.qtyIn)}</td><td>${n0(N.w2)}</td><td>${n0(N.w1)}</td>
       <td>${n0(N.tot)}</td><td class="rem">${n0(N.rem)}</td><td>${pct(N.rate)}</td>
     </tr>`;
   const rows = s.re.colors.map(c=>row(c, bOf(c.color), num(c, bOf(c.color)), false)).join('') + row(st, bTtl, T, true);
@@ -1047,7 +1047,7 @@ function rePopupCard(s, extra=''){
       <span class="noimg">NO IMAGE</span>
     </div>
     <div class="stats s5">
-      ${hasBase ? `<div><b>${n0(bTtl.recv)}</b><span>이월재고</span></div><div><b>${n0(st.plan)}</b><span>기획(신규+리오더)</span></div><div class="on"><b>${n0(T.planAll)}</b><span>기획+이월</span></div><div><b>${n0(T.qin)}</b><span>입고(이월 포함)</span></div>`
+      ${hasBase ? `<div><b>${n0(bTtl.recv)}</b><span>이월재고</span></div><div><b>${n0(st.plan)}</b><span>기획(신규+리오더)</span></div><div class="on"><b>${n0(T.planAll)}</b><span>기획+이월</span></div><div><b>${n0(st.qtyIn)}</b><span>입고(신규)</span></div>`
                : `<div${RE_FIRST?' class="on"':''}><b>${n0(st.plan0)}</b><span>${isRun?'신규':'최초'} 기획량</span></div><div><b>${n0(st.planRe)}</b><span>리오더 기획량</span></div><div${RE_FIRST?'':' class="on"'}><b>${n0(st.plan)}</b><span>총 기획량</span></div><div><b>${n0(st.qtyIn)}</b><span>입고량</span></div>`}
       <div class="hl"><b>${pct(T.rate)}</b><span>판매율</span></div>
     </div>
@@ -1059,12 +1059,12 @@ function rePopupCard(s, extra=''){
     <div class="tbar">${foldBtn}<small>${RE_FOLD ? '구성(이월재고·' + (isRun?'신규':'최초') + '·리오더) 열을 접은 상태' : '구성 열을 접으려면 누르세요'}</small></div>
     <table class="retab">
       <thead><tr><th class="c">컬러</th>${isRun ? `<th class="${dtc}" title="구품번 7/31 시점재고">이월재고</th>` : ''}<th class="${dtc}">${isRun ? '신규' : '최초'}</th><th class="${dtc}">리오더</th>
-                 <th${!hasBase && !RE_FIRST ? ' class="on"' : ''}>기획</th>${isRun ? `<th${hasBase?' class="on"':''} title="기획(신규+리오더) + 이월재고">기획+이월</th>` : ''}<th>입고${hasBase?'<small>이월 포함</small>':''}</th>
-                 <th>2주전</th><th>전주</th><th>누계${hasBase?'<small>이월 포함</small>':''}</th><th title="입고 − 누계">잔여</th><th>판매율</th></tr></thead>
+                 <th${!hasBase && !RE_FIRST ? ' class="on"' : ''}>기획</th>${isRun ? `<th${hasBase?' class="on"':''} title="기획(신규+리오더) + 이월재고">기획+이월</th>` : ''}<th${hasBase?' title="신규 입고 (이월재고 제외)"':''}>입고</th>
+                 <th>2주전</th><th>전주</th><th>누계${hasBase?'<small>이월 포함</small>':''}</th><th title="${hasBase ? '입고 + 이월재고 − 누계' : '입고 − 누계'}">잔여${hasBase?'<small>이월 포함</small>':''}</th><th>판매율</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="pnote">${isRun ? '이월재고 = 구품번 7/31 시점재고(컬러별) · 신규 = 신품번 최초 기획량 · 기획+이월 = 기획(신규+리오더) + 이월재고 · ' : ''}기획 = ${isRun ? '신규' : '최초'} 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획)${
-      hasBase ? ' · <b>이월재고가 있어 입고·누계·잔여는 이월분(구품번 8/1~ 판매)을 더한 값</b>이고 판매율 = 누계 ÷ (기획+이월)' : ' · 판매율 = ' + (isRun ? '신규 판매 ÷ 신규 입고' : '누계 ÷ ' + (RE_FIRST?'최초 기획량':'총 기획량')) + (isRun ? '' : s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`)
+      hasBase ? ' · <b>이월재고가 있어 누계는 이월분(구품번 8/1~ 판매)을 더한 값</b>, 입고는 신규 입고만, 잔여 = 입고 + 이월재고 − 누계, 판매율 = 누계 ÷ (기획+이월)' : ' · 판매율 = ' + (isRun ? '신규 판매 ÷ 신규 입고' : '누계 ÷ ' + (RE_FIRST?'최초 기획량':'총 기획량')) + (isRun ? '' : s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`)
     } · 2주전·전주는 신품번 판매 · 리오더 입고 ${n0(st.inRe)}장</div>
   </div>`;
 }
