@@ -90,7 +90,8 @@
   /* 주차 줄 — 지난 주 카드(26fw-weeks/MMDD.json) 고르기. 목록이 없으면(26SS 카드·로컬 파일) 줄 자체가 안 보인다 */
   #wkrow:empty{display:none}
   .chip.wkc small{opacity:.8;margin-left:3px;font-size:10px}
-  #wknote{display:none;background:#fff7e6;border:1px solid #f0c98a;color:#9a5b00;font-weight:600;font-size:13px;margin:8px 16px 0;padding:8px 12px;border-radius:10px;line-height:1.5}
+  td.rem{color:#475467;background:#fafbfc}tr.ttl td.rem{background:inherit}
+#wknote{display:none;background:#fff7e6;border:1px solid #f0c98a;color:#9a5b00;font-weight:600;font-size:13px;margin:8px 16px 0;padding:8px 12px;border-radius:10px;line-height:1.5}
   #reset{border:1px solid var(--line);background:var(--soft);border-radius:999px;
          padding:8px 14px;font-size:12px;cursor:pointer;color:var(--sub)}
   #reset:hover{background:#eceff4}
@@ -455,7 +456,7 @@ function card(s){
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
-      <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
+      <td>${n0(c.total)}</td><td class="rem">${n0((+(c.qtyIn)||0) - (+(c.total)||0))}</td><td>${pct(c.rate)}</td>
     </tr>`).join('');
   return `<div class="card${(s.popup||s.re||s.lots)?' has-sub':''}" data-style="${s.style}"${(s.popup||s.re||s.lots)?' tabindex="0" aria-haspopup="dialog"':''}>
     <div class="chead">
@@ -499,13 +500,13 @@ function card(s){
     </div>
     ${trendBlock(s)}
     <table>
-      <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
+      <colgroup><col style="width:12.5%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:11%"><col style="width:11%"><col style="width:13.5%"><col style="width:12.5%"><col style="width:12.5%"></colgroup>
       <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
-                 <th>2주전</th><th>누계</th><th>판매율</th></tr></thead>
+                 <th>2주전</th><th>누계</th><th title="입고 − 누계">잔여</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
           <td>${n0(t.plan)}</td><td>${n0(t.qtyIn)}</td><td>${n0(t.w1)}</td>
-          <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td>${pct(t.rate)}</td></tr>
+          <td>${n0(t.w2)}</td><td>${n0(t.total)}</td><td class="rem">${n0((+(t.qtyIn)||0) - (+(t.total)||0))}</td><td>${pct(t.rate)}</td></tr>
       </tbody>
     </table>
     <details class="det"><summary>원가 · 입출고 · 매출 상세</summary>
@@ -957,7 +958,7 @@ function popupCard(s, extra=''){
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td>${n0(c.plan)}</td><td>${n0(c.qtyIn)}</td>
       <td>${n0(c.w1)}</td><td>${n0(c.w2)}</td>
-      <td>${n0(c.total)}</td><td>${pct(c.rate)}</td>
+      <td>${n0(c.total)}</td><td class="rem">${n0((+(c.qtyIn)||0) - (+(c.total)||0))}</td><td>${pct(c.rate)}</td>
     </tr>`).join('');
   const w1t = s.popup.colors.reduce((a,c)=>a+(c.w1||0),0);
   const w2t = s.popup.colors.reduce((a,c)=>a+(c.w2||0),0);
@@ -982,13 +983,13 @@ function popupCard(s, extra=''){
     </div>
     ${extra}
     <table>
-      <colgroup><col style="width:13.5%"><col style="width:15.5%"><col style="width:15.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:15.5%"><col style="width:15%"></colgroup>
+      <colgroup><col style="width:12.5%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:11%"><col style="width:11%"><col style="width:13.5%"><col style="width:12.5%"><col style="width:12.5%"></colgroup>
       <thead><tr><th class="c">컬러</th><th>기획</th><th>입고</th><th>전주</th>
-                 <th>2주전</th><th>누계</th><th>판매율</th></tr></thead>
+                 <th>2주전</th><th>누계</th><th title="입고 − 누계">잔여</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
           <td>${n0(st.plan==null ? st.stock : st.plan)}</td><td>${n0(st.stock)}</td><td>${n0(w1t)}</td>
-          <td>${n0(w2t)}</td><td>${n0(st.sales)}</td><td>${pct(st.rate)}</td></tr>
+          <td>${n0(w2t)}</td><td>${n0(st.sales)}</td><td class="rem">${n0((+(st.stock)||0) - (+(st.sales)||0))}</td><td>${pct(st.rate)}</td></tr>
       </tbody>
     </table>
     <div class="pnote">기획 = 26FW 러닝 기획량 + 26.07.31 시점재고 · 입고 = 시점재고 + 26FW 신규 입고량${
@@ -1011,7 +1012,7 @@ function rePopupCard(s, extra=''){
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>
       <td${RE_FIRST?' class="on"':''}>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td${RE_FIRST?'':' class="on"'}><b>${n0(c.plan)}</b></td>
       <td>${n0(c.qtyIn)}</td><td>${n0(c.w1)}</td>
-      <td>${n0(c.total)}</td><td>${pct(rt(c))}</td>
+      <td>${n0(c.total)}</td><td class="rem">${n0((+(c.qtyIn)||0) - (+(c.total)||0))}</td><td>${pct(rt(c))}</td>
     </tr>`).join('');
   const label = isRun ? '신규 입고량 기준' : RE_FIRST ? '최초 기획량 기준' : '총 기획량(최초+리오더) 기준';
   return `<div class="card ${s.lots?'lotcard':'recard'}"${s.lots||isRun?'':' title="클릭하면 판매율 기준이 바뀝니다"'}>
@@ -1036,13 +1037,13 @@ function rePopupCard(s, extra=''){
     </div>
     ${extra}
     <table>
-      <colgroup><col style="width:13%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:13%"><col style="width:12.5%"><col style="width:10.5%"><col style="width:12.5%"><col style="width:13.5%"></colgroup>
+      <colgroup><col style="width:12%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:11.5%"><col style="width:9.5%"><col style="width:11.5%"><col style="width:10.5%"><col style="width:11%"></colgroup>
       <thead><tr><th class="c">컬러</th><th${RE_FIRST?' class="on"':''}>최초</th><th>리오더</th><th${RE_FIRST?'':' class="on"'}>기획</th><th>입고</th>
-                 <th>전주</th><th>누계</th><th>판매율</th></tr></thead>
+                 <th>전주</th><th>누계</th><th title="입고 − 누계">잔여</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>
           <td${RE_FIRST?' class="on"':''}>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td${RE_FIRST?'':' class="on"'}>${n0(st.plan)}</td>
-          <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td>${pct(rt(st))}</td></tr>
+          <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td class="rem">${n0((+(st.qtyIn)||0) - (+(st.total)||0))}</td><td>${pct(rt(st))}</td></tr>
       </tbody>
     </table>
     <div class="pnote">기획 = 최초 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = ${isRun ? '신규 판매 ÷ 신규 입고 (이월재고 판매는 이월재고 차수에서)' : '누계 ÷ ' + (RE_FIRST?'최초 기획량':'총 기획량')}${isRun ? '' : s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`} · 리오더 입고 ${n0(st.inRe)}장</div>
