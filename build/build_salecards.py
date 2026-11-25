@@ -745,7 +745,12 @@ for s in data:
         prows.append({'color': sc['color'], 'cname': sc['cname'],
                       'plan': base_c + (sc.get('planFull', sc['plan']) or 0), 'qtyIn': stock_c,
                       'w1': mc.get('w1'), 'w2': mc.get('w2'),
-                      'total': tot, 'rate': (tot / stock_c * 100) if stock_c else None})
+                      'total': tot, 'rate': (tot / stock_c * 100) if stock_c else None,
+                      # 팝업 컬러 표 분해용(리오더 없는 러닝도 리오더 팝업과 같은 구조 — 사용자 2026-11-25):
+                      # 이월재고(컬러별 7/31 시점재고·구품번 8/1~ 판매) / 신규(신품번 기획·입고·누계·전주·2주전)
+                      'base': base_c, 'baseSold': max(0, tot - (sc.get('aug') or 0)) if s.get('sub') else 0,
+                      'nPlan': sc.get('planFull', sc['plan']) or 0, 'nIn': in_c, 'nTot': sc.get('aug') or 0,
+                      'nW1': sc.get('w1'), 'nW2': sc.get('w2')})
     # 26FW 미진행 컬러(구품번에서만 진행, 시점재고만 있음): 기획 = 입고 = 시점재고, 판매는 구품번 8/1 이후
     new_cols = {sc['color'] for sc in sub['colors']}
     for (bc, col), base_c in sorted(point_stock_color.items()):
@@ -756,7 +761,8 @@ for s in data:
         prows.append({'color': col, 'cname': mc.get('cname', ''), 'old': True,
                       'plan': base_c, 'qtyIn': base_c,
                       'w1': mc.get('w1'), 'w2': mc.get('w2'),
-                      'total': tot, 'rate': (tot / base_c * 100) if base_c else None})
+                      'total': tot, 'rate': (tot / base_c * 100) if base_c else None,
+                      'base': base_c, 'baseSold': tot, 'nPlan': 0, 'nIn': 0, 'nTot': 0, 'nW1': 0, 'nW2': 0})
     stat['plan'] = base + (ttF['plan'] or 0)         # 컬러 표 TTL 기획 = 기초재고 + 추가 기획량(리오더 포함)
     stat['colorBase'] = bool(base_code) and any(k[0] == base_code for k in point_stock_color)
     s['popup'] = {'stat': stat, 'colors': prows}
