@@ -1015,10 +1015,11 @@ function rePopupCard(s, extra=''){
     return pc ? Math.max(0, (+pc.qtyIn||0) - (+(rc&&rc.qtyIn)||0)) : 0; };
   const baseTtl = isRun ? (baseLot ? (+baseLot.recv||0) : (+s.popup.stat.base||0)) : null;
   const baseCell = v => isRun ? `<td class="bs">${n0(v)}</td>` : '';
+  const sumCell = (plan, base) => isRun ? `<td class="bs"><b>${n0((+plan||0) + (+base||0))}</b></td>` : '';     // 기획 + 이월재고 (사용자 2026-11-25)
   const rows = s.re.colors.map(c=>`
     <tr>
       <td class="c cl">${c.color||''}<small>${c.cname||''}</small></td>${baseCell(baseOf(c.color))}
-      <td${RE_FIRST?' class="on"':''}>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td${RE_FIRST?'':' class="on"'}><b>${n0(c.plan)}</b></td>
+      <td${RE_FIRST?' class="on"':''}>${n0(c.plan0)}</td><td class="re">${c.planRe?n0(c.planRe):'-'}</td><td${RE_FIRST?'':' class="on"'}><b>${n0(c.plan)}</b></td>${sumCell(c.plan, baseOf(c.color))}
       <td>${n0(c.qtyIn)}</td><td>${n0(c.w1)}</td>
       <td>${n0(c.total)}</td><td class="rem">${n0((+(c.qtyIn)||0) - (+(c.total)||0))}</td><td>${pct(rt(c))}</td>
     </tr>`).join('');
@@ -1045,17 +1046,17 @@ function rePopupCard(s, extra=''){
     </div>
     ${extra}
     <table>
-      ${isRun ? '<colgroup><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:11%"><col style="width:10.5%"><col style="width:8.5%"><col style="width:10%"><col style="width:9.5%"><col style="width:9.5%"></colgroup>'
+      ${isRun ? '<colgroup><col style="width:10.5%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9.5%"><col style="width:10%"><col style="width:9.5%"><col style="width:7.5%"><col style="width:9%"><col style="width:8.5%"><col style="width:8.5%"></colgroup>'
               : '<colgroup><col style="width:12%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:11.5%"><col style="width:9.5%"><col style="width:11.5%"><col style="width:10.5%"><col style="width:11%"></colgroup>'}
-      <thead><tr><th class="c">컬러</th>${isRun ? '<th title="구품번 7/31 시점재고">이월재고</th>' : ''}<th${RE_FIRST?' class="on"':''}>${isRun ? '신규' : '최초'}</th><th>리오더</th><th${RE_FIRST?'':' class="on"'}>기획</th><th>입고</th>
+      <thead><tr><th class="c">컬러</th>${isRun ? '<th title="구품번 7/31 시점재고">이월재고</th>' : ''}<th${RE_FIRST?' class="on"':''}>${isRun ? '신규' : '최초'}</th><th>리오더</th><th${RE_FIRST?'':' class="on"'}>기획</th>${isRun ? '<th title="기획(신규+리오더) + 이월재고">기획+이월</th>' : ''}<th>입고</th>
                  <th>전주</th><th>누계</th><th title="입고 − 누계">잔여</th><th>판매율</th></tr></thead>
       <tbody>${rows}
         <tr class="ttl"><td class="c">TTL</td>${baseCell(baseTtl)}
-          <td${RE_FIRST?' class="on"':''}>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td${RE_FIRST?'':' class="on"'}>${n0(st.plan)}</td>
+          <td${RE_FIRST?' class="on"':''}>${n0(st.plan0)}</td><td class="re">${n0(st.planRe)}</td><td${RE_FIRST?'':' class="on"'}>${n0(st.plan)}</td>${sumCell(st.plan, baseTtl)}
           <td>${n0(st.qtyIn)}</td><td>${n0(st.w1)}</td><td>${n0(st.total)}</td><td class="rem">${n0((+(st.qtyIn)||0) - (+(st.total)||0))}</td><td>${pct(rt(st))}</td></tr>
       </tbody>
     </table>
-    <div class="pnote">${isRun ? '이월재고 = 구품번 7/31 시점재고(컬러별) · 신규 = 신품번 최초 기획량 · ' : ''}기획 = ${isRun ? '신규' : '최초'} 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = ${isRun ? '신규 판매 ÷ 신규 입고 (이월재고 판매는 이월재고 차수에서)' : '누계 ÷ ' + (RE_FIRST?'최초 기획량':'총 기획량')}${isRun ? '' : s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`} · 리오더 입고 ${n0(st.inRe)}장</div>
+    <div class="pnote">${isRun ? '이월재고 = 구품번 7/31 시점재고(컬러별) · 신규 = 신품번 최초 기획량 · 기획+이월 = 기획(신규+리오더) + 이월재고 · ' : ''}기획 = ${isRun ? '신규' : '최초'} 기획량 + 리오더 기획량 (주간판매-26FW 리오더기획) · 판매율 = ${isRun ? '신규 판매 ÷ 신규 입고 (이월재고 판매는 이월재고 차수에서)' : '누계 ÷ ' + (RE_FIRST?'최초 기획량':'총 기획량')}${isRun ? '' : s.lots ? ' · 판매율 기준은 위 버튼으로 바꿉니다' : ` · 카드를 클릭하면 ${RE_FIRST?'총 기획량':'최초 기획량'} 기준으로 바뀜`} · 리오더 입고 ${n0(st.inRe)}장</div>
   </div>`;
 }
 listEl.addEventListener('click', e=>{
